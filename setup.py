@@ -30,7 +30,7 @@ setup(
     long_description=long_description,
 
     # The project's main homepage.
-    url='http://brie.sourceforge.net',
+    url='http://brie-rna.sourceforge.net',
 
     # Author details
     author='Yuanhua Huang',
