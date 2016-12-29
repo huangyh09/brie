@@ -40,7 +40,7 @@ Detailed mannual
 
 See the documentation_ on how to install, to use, to find the annotation data etc.
 
-.. _documentation: http://brie.sourceforge.net
+.. _documentation: http://brie-rna.sourceforge.net
 
 
 References
