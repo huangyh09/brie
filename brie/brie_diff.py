@@ -6,7 +6,6 @@ import time
 import h5py
 import numpy as np
 import multiprocessing
-import scipy.stats as st
 from optparse import OptionParser, OptionGroup
 
 PROCESSED = 0
@@ -78,9 +77,6 @@ def main():
         tran_ids2 = np.array(f["tran_ids"])
         f.close()
 
-        # sigma1 = 4.271
-        # sigma2 = 4.767
-
     maxBF = options.maxBF
     bootstrap = options.bootstrap
 
@@ -107,7 +103,7 @@ def main():
     c21 = np.round(counts2[idx])
     c22 = np.round(counts2[idx+1])
 
-    data = np.zeros((len(idx), 12))
+    data = np.zeros((len(idx), 11))
     data[:,0] = logistic(y1)
     data[:,1] = logistic(y2)
     data[:,2] = x1.mean(axis=1)
@@ -130,11 +126,9 @@ def main():
         data[i,9] = np.mean(np.abs(post_diff) <= 0.05)
         data[i,9] = max(data[i,9], data[i,8] / maxBF)
         data[i,10] = data[i,8] / data[i,9]
-        data[i,11] = st.fisher_exact([[c11[i], c12[i]],[c21[i],c22[i]]])[1]
 
-    # save data
     labels = ["prior1", "prior2", "pis1", "psi2", "C11", "C12", "C21", "C22", 
-              "prior_prob", "post_prob", "BF", "Fisher_pval"]
+              "prior_prob", "post_prob", "Bayes_factor"]
     fid.writelines("tran_id\t" + "\t".join(labels) + "\n")
     for i in range(data.shape[0]):
         aline = "\t".join(["%.2f" %x for x in data[i,:]])

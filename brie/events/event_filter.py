@@ -198,8 +198,8 @@ def save_out(anno_in, anno_ref, out_file):
 
     ginfo_idx = map_ids(exon_str_SE, exon_str_ref)
 
-    print len(exon_str_SE), len(exon_str_ref)
-    print len(ginfo_idx), len(gene_info), len(anno_in)
+    # print len(exon_str_SE), len(exon_str_ref)
+    # print len(ginfo_idx), len(gene_info), len(anno_in)
     #exit()
 
     temp_gene = []

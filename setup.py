@@ -16,7 +16,7 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
     
-reqs = ['numpy', 'pysam', 'diceseq', 'Cython']
+reqs = ['numpy', 'pysam', 'h5py']
 
 setup(
     name='brie',
@@ -24,9 +24,9 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version=brie.__version__,#'0.2.0', #check __init__.py
+    version=brie.__version__,
 
-    description='Brie: Bayesian regression for isoform estimate',
+    description='BRIE: Bayesian regression for isoform estimate',
     long_description=long_description,
 
     # The project's main homepage.
@@ -41,16 +41,18 @@ setup(
 
     # What does your project relate to?
     keywords=['splicing isoform estimate', 'Bayesian regression', 
-              'RNA-seq', 'Markov chain Monte Carlo'],
+              'single cell RNA-seq', 'Markov chain Monte Carlo'],
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages=find_packages(),#['brie', 'brie.utils', 'brie.models'],#
+    packages=find_packages(),
 
     entry_points={
           'console_scripts': [
               'brie = brie.brie:main',
+              'brie-diff = brie.brie_diff:main',
               'brie-factor = brie.brie_factor:main',
+              'brie-event = brie.events.event_maker:main',
               ],
           }, 
 

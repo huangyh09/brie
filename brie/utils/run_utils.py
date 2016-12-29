@@ -2,7 +2,11 @@
 
 import os
 import numpy as np
-from diceseq import load_samfile, TranSplice, BiasFile, FastaFile
+# from diceseq import load_samfile, TranSplice, BiasFile, FastaFile
+
+from .sam_utils import load_samfile
+from .bias_utils import BiasFile, FastaFile
+from .tran_utils import TranUnits, TranSplice
 
 def set_info(g, sam_file, bias_mode, ref_file, bias_file, FLmean, FLstd,
     mate_mode, auto_min):
@@ -36,47 +40,6 @@ def set_info(g, sam_file, bias_mode, ref_file, bias_file, FLmean, FLstd,
     return RV
 
 
-# def map_data(feature_file, tran_ids, log_out=True):
-#     if ["hdf5", "h5", "HDF5", "H5"].count(feature_file.split(".")[-1]) == 1:
-#         import h5py
-#         f = h5py.File(feature_file, "r")
-#         ids = np.array(f["gene_ids"], "S50")
-#         feature = np.array(f["features"])
-#         feature_ids = np.array(f["factors"])
-#         for i in range(ids.shape[0]):
-#             ids[i] = ids[i] + ".in"
-#     else:
-#         data = np.loadtxt(feature_file, delimiter="\t", dtype="str")
-#         ids = data[1:,0]
-#         feature = data[1:, 2:].astype("float")
-#         feature_ids = data[0, 2:]
-
-#     # print ids[:20]
-#     # print tran_ids[:20]
-
-#     idx1 = np.argsort(ids)
-#     idx2 = np.argsort(tran_ids)
-#     feature_all = np.zeros((len(tran_ids), feature.shape[1]))
-
-#     i, j = 0, 0
-#     while i < len(idx1) and j < len(idx2):
-#         if i >= len(idx1) or ids[idx1[i]] > tran_ids[idx2[j]]:
-#             feature_all[idx2[j], :] = None
-#             j += 1
-#         elif ids[idx1[i]] == tran_ids[idx2[j]]:
-#             feature_all[idx2[j], :] = feature[idx1[i], :].astype("float")
-#             i += 1
-#             j += 1
-#         elif ids[idx1[i]] < tran_ids[idx2[j]]:
-#             i += 1
-
-#     idx = np.where(feature_all != feature_all)[0]
-#     # print idx
-#     feature_all[idx] = 0.0
-
-#     return feature_all, feature_ids
-
-
 def map_data(feature_file, tran_ids, log_out=False, add_intercept=True):
     """
     Format of feature file: genen_id tran_id feature_1 ...
@@ -94,7 +57,7 @@ def map_data(feature_file, tran_ids, log_out=False, add_intercept=True):
         # for i in range(factors.shape[0]):
         #     feature_ids.append(factors[i,2]+"|"+factors[i,1]+"|"+factors[i,3])
         for i in range(factors.shape[0]):
-            feature_ids.append("feature_%d" %i)
+            feature_ids.append("F%d:%s" %(i, factors[i]))
         feature_ids = np.array(feature_ids)
     else:
         data = np.loadtxt(feature_file, delimiter="\t", dtype="str")
@@ -146,14 +109,14 @@ def get_CI(data, percent=0.95):
     return RV
 
 
-def save_data(out_file, sample_num, gene_ids, tran_ids, tran_len, 
+def save_data(out_dir, sample_num, gene_ids, tran_ids, tran_len, 
     feature_all, feature_ids, Psi_all, RPK_all, Cnt_all, W_all, sigma_):
 
     m1 = int(Psi_all.shape[1]*3/4)
     m2 = int(W_all.shape[1]*3/4)
 
     # save weights
-    fid = open(out_file + ".weights.tsv", "w")
+    fid = open(os.path.join(out_dir, "weights.tsv"), "w")
     fid.writelines("feature_ids\tfeature_weights\n")
     for i in range(len(feature_ids)):
         fid.writelines("%s\t%.3e\n" %(feature_ids[i], W_all[i,-m2:].mean()))
@@ -162,7 +125,7 @@ def save_data(out_file, sample_num, gene_ids, tran_ids, tran_len,
     fid.close()
 
     # save psi
-    fid = open(out_file + ".brie.tsv", "w")
+    fid = open(os.path.join(out_dir, "fractions.tsv"), "w")
     _line = "tran_id\tgene_id\ttransLen\tcounts\tFPKM\tPsi\tPsi_low\tPsi_high"
     fid.writelines(_line + "\n")
     for i in range(len(tran_ids)):
@@ -177,7 +140,7 @@ def save_data(out_file, sample_num, gene_ids, tran_ids, tran_len,
     # save samples for all Psi
     if sample_num > 0:
         import h5py
-        f = h5py.File(out_file + ".h5", "w")
+        f = h5py.File(os.path.join(out_dir, "samples.h5"), "w")
         f.create_dataset("gene_ids", data=gene_ids, compression="gzip")
         f.create_dataset("tran_ids", data=tran_ids, compression="gzip")
         f.create_dataset("features", data=feature_all, compression="gzip")

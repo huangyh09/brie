@@ -15,9 +15,9 @@ import h5py
 import numpy as np
 import multiprocessing
 from optparse import OptionParser, OptionGroup
-from diceseq import load_annotation
 
-import pyximport; pyximport.install()
+# import pyximport; pyximport.install()
+from utils.gtf_utils import loadgene
 from utils.fasta_utils import get_factor, get_factorID, motif_score
 
 PROCESSED = 0
@@ -41,12 +41,10 @@ def show_progress(RV=None):
 
 
 def main():
-    print("Welcome to Brie-factor extactor!")
-
     #part 0. parse command line options
     parser = OptionParser()
     parser.add_option("--anno_file", "-a", dest="anno_file", default=None,
-        help="Annotation file of genes")
+        help="Annotation file for genes and transcripts in GTF or GFF3")
     parser.add_option("--ref_seq", "-r", dest="ref_seq", default=None,
         help="Genome sequence reference in fasta file.")
     parser.add_option("--phastCons", "-c", dest="phast_file", default=None,
@@ -57,9 +55,6 @@ def main():
     group = OptionGroup(parser, "Optional arguments")
     group.add_option("--nproc", "-p", type="int", dest="nproc", default=4,
         help="Number of subprocesses [default: %default]")
-    group.add_option("--anno_type", dest="anno_type", default="GTF",
-        help="Type of annotation file: GTF, GFF3, UCSC_table "
-        "[default: %default]")
     group.add_option("--MSA5ss", dest="msa_5ss", default=None,
         help=("Mutiple sequence alignment file for 5'splice-site. It is from "
               "-4 to 7. As default, MSA is based on input 5 splice sites."))
@@ -70,6 +65,7 @@ def main():
 
     (options, args) = parser.parse_args()
     if len(sys.argv[1:]) == 0:
+        print("Welcome to Brie-factor extactor!\n")
         print("use -h or --help for help on argument.")
         sys.exit(1)
     if options.anno_file is None:
@@ -78,10 +74,9 @@ def main():
     else:
         sys.stdout.write("\rloading annotation file...")
         sys.stdout.flush()    
-        anno = load_annotation(options.anno_file, options.anno_type)
+        genes = loadgene(options.anno_file)
         sys.stdout.write("\rloading annotation file... Done.\n")
         sys.stdout.flush()
-        genes = anno["genes"]
     if options.ref_seq is None:
         print("Error: need --ref_seq for genome reference.")
         sys.exit(1)

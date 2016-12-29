@@ -1,4 +1,6 @@
 # This module is to process fasta files and some utils.
+# download bigWigSummary binary file:
+# http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigSummary
 
 import pysam
 import itertools
