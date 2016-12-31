@@ -11,9 +11,10 @@
 # with others, then only keep the genes with given biotype. Finally, based on
 # those genes, we will include the exons with high quality.
 
+import sys
 import numpy as np
-from diceseq import FastaFile
-from optparse import OptionParser
+from brie.utils.fasta_utils import FastaFile
+from optparse import OptionParser, OptionGroup
 
 def get_gene_idx(anno_in):
     """To get the index of all genes in the annotation lines.
@@ -78,7 +79,7 @@ def gene_overlap_check(anno_in, g_idx, g_chr, mode="exon"):
 
 
 def as_exon_check(fastaFile, anno_in, g_idx, as_exon_min, as_exon_max, 
-    as_exon_tss, as_exon_tts, chroms):
+    as_exon_tss, as_exon_tts, chroms, no_splice_site=False):
     """check the quality of alternative exon."""
     
     anno_out = []
@@ -103,19 +104,20 @@ def as_exon_check(fastaFile, anno_in, g_idx, as_exon_min, as_exon_max,
         if chroms.count(chrom) == 0:
             continue
 
-        # check 3: surrounding splice sites AG--exon--GT 
-        if vals_g[6] == "+":
-            up_ss3 = fastaFile.get_seq(chrom, _exon_loc[0]-2, _exon_loc[0]-1)
-            dn_ss5 = fastaFile.get_seq(chrom, _exon_loc[1]+1, _exon_loc[1]+2)
-            if up_ss3 != "AG" or dn_ss5 != "GT":
-                continue
-            # print up_ss3, dn_ss5
-        else:
-            up_ss3 = fastaFile.get_seq(chrom, _exon_loc[1]+1, _exon_loc[1]+2)
-            dn_ss5 = fastaFile.get_seq(chrom, _exon_loc[0]-2, _exon_loc[0]-1)
-            if up_ss3 != "CT" or dn_ss5 != "AC": 
-                continue
-            # print up_ss3, dn_ss5
+        # check 3: surrounding splice sites AG--exon--GT
+        if no_splice_site == False:
+            if vals_g[6] == "+":
+                up_ss3 = fastaFile.get_seq(chrom, _exon_loc[0]-2, _exon_loc[0]-1)
+                dn_ss5 = fastaFile.get_seq(chrom, _exon_loc[1]+1, _exon_loc[1]+2)
+                if up_ss3 != "AG" or dn_ss5 != "GT":
+                    continue
+                # print up_ss3, dn_ss5
+            else:
+                up_ss3 = fastaFile.get_seq(chrom, _exon_loc[1]+1, _exon_loc[1]+2)
+                dn_ss5 = fastaFile.get_seq(chrom, _exon_loc[0]-2, _exon_loc[0]-1)
+                if up_ss3 != "CT" or dn_ss5 != "AC": 
+                    continue
+                # print up_ss3, dn_ss5
 
         # check 4: not too close to TSS or TTS
         # and not too short introns.
@@ -277,19 +279,32 @@ def main():
     parser.add_option("--out_file", "-o", dest="out_file", default=None,
         help="The prefix of out files.")
 
-    parser.add_option("--as_exon_min", dest="as_exon_min", default="50",
+    group = OptionGroup(parser, "Optional arguments")
+    group.add_option("--as_exon_min", dest="as_exon_min", default="50",
         help="the minimum length for the alternative splicing exon.")
-    parser.add_option("--as_exon_max", dest="as_exon_max", default="450",
+    group.add_option("--as_exon_max", dest="as_exon_max", default="450",
         help="the maximum length for the alternative splicing exon.")
-    parser.add_option("--as_exon_tss", dest="as_exon_tss", default="500",
+    group.add_option("--as_exon_tss", dest="as_exon_tss", default="500",
         help="the minimum length for the alternative exon to TSS.")
-    parser.add_option("--as_exon_tts", dest="as_exon_tts", default="500",
+    group.add_option("--as_exon_tts", dest="as_exon_tts", default="500",
         help="the minimum length for the alternative exon to TTS.")
 
-    parser.add_option("--add_chrom", dest="add_chrom", default="chrX",
+    group.add_option("--add_chrom", dest="add_chrom", default="chrX",
         help="the extra chromosomes besides autosome, e.g., chrX,chrY,chrM")
 
+    group.add_option("--keep_overlap", action="store_true", dest="keep_overlap",
+        default=False, help="Keep overlapped events; otherwise not")
+    group.add_option("--no_splice_site", action="store_true", 
+        dest="no_splice_site", default=False, 
+        help="Don't check splice sites, i.e., GT-AG; otherwise check.")
+    parser.add_option_group(group)
+
     (options, args) = parser.parse_args()
+    if len(sys.argv[1:]) == 0:
+        print("Welcome to brie-event-filter!\n")
+        print("use -h or --help for help on argument.")
+        sys.exit(1)
+
     if options.anno_file is None:
         print("Error: need --anno_file for annotation.")
         sys.exit(1)
@@ -319,6 +334,8 @@ def main():
     as_exon_max = int(options.as_exon_max)
     as_exon_tss = int(options.as_exon_tss)
     as_exon_tts = int(options.as_exon_tts)
+    keep_overlap = options.keep_overlap
+    no_splice_site = options.no_splice_site
 
     chroms = []
     for i in range(1,23):
@@ -335,12 +352,14 @@ def main():
 
     # alternative exon quality check
     anno_out, g_num, ex_num = as_exon_check(fastaFile, anno_in, g_idx, 
-        as_exon_min, as_exon_max, as_exon_tss, as_exon_tts, chroms)
+        as_exon_min, as_exon_max, as_exon_tss, as_exon_tts, chroms, 
+        no_splice_site)
     print("%d Skipped Exon events pass the qulity control." %(g_num))
     
     # remove overlapped skipping exons
-    g_idx, g_chr, g_start, g_stop = get_gene_idx(anno_out)
-    anno_out = gene_overlap_check(anno_out, g_idx, g_chr, "exon")
+    if keep_overlap == False:
+        g_idx, g_chr, g_start, g_stop = get_gene_idx(anno_out)
+        anno_out = gene_overlap_check(anno_out, g_idx, g_chr, "exon")
 
     g_idx, g_chr, g_start, g_stop = get_gene_idx(anno_out)
     print("%d Skipped Exon events pass the overlapping check." %(len(g_idx)))

@@ -4,7 +4,7 @@
 # DATA_DIR=/afs/inf.ed.ac.uk/user/s13/s1333321/research
 
 DATA_DIR=/home/yuanhua/test/brie-examples
-BRIE_DIR=.
+BRIE_DIR=/home/yuanhua/Dropbox/mycodes/publish/brie
 
 anno_ref=$DATA_DIR/anno/gencode.vM6.annotation.gtf
 fasta_file=$DATA_DIR/anno/GRCm38.p4.genome.fa
@@ -15,7 +15,8 @@ fasta_file=$DATA_DIR/anno/GRCm38.p4.genome.fa
 
 
 ### 1.1 Splicing events filtering
-# python $BRIE_DIR/brie/events/event_filter.py -a $DATA_DIR/anno/AS_events/SE.gff3 --anno_ref $anno_ref -r $fasta_file -o $DATA_DIR/anno/gencode.vM6.SE 
+brie-event-filter -a $DATA_DIR/anno/AS_events/SE.gff3 --anno_ref $anno_ref -r $fasta_file
+# brie-event-filter -a $DATA_DIR/anno/AS_events/SE.gff3 --anno_ref $anno_ref -r $fasta_file -o $DATA_DIR/anno/gencode.vM6.SE 
 
 
 ### 2. Extacting sequence feature for BRIE
@@ -37,7 +38,7 @@ sam2=$DATA_DIR/sam/E7.75_c2.sorted.bam
 # brie -a $anno_file -s $sam1 -f $feature_file -o $out_file -p 15
 
 out_file=$DATA_DIR/out/E7.75_c2
-brie -a $anno_file -s $sam2 -f $feature_file -o $out_file -p 15
+# brie -a $anno_file -s $sam2 -f $feature_file -o $out_file -p 15
 
 
 ### 4. BRIE differential splicing
