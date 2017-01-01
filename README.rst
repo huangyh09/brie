@@ -40,8 +40,8 @@ Quick Start
 
 - ``pip install brie``
 - or download this repository, and type ``python setup.py install``; 
-    add ``--user`` if you don't have root permission and you don't use 
-    Anaconda_.
+  add ``--user`` if you don't have root permission and you don't use 
+  Anaconda_.
 
 .. _Anaconda: https://www.continuum.io/anaconda-overview
 
