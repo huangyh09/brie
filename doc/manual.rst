@@ -12,8 +12,159 @@ be run from command line directly: ``brie``, ``brie-diff``, ``brie-factor``,
 shown below.
 
 
+1. BRIE isoform estimate
+========================
 
-1. Splicing events
+This is the main program to quitify the fraction of exon inclusion level. In 
+order to automatically learn the informative prior, the predictive features are 
+required. There are two ways to get the annotation and sequence features: 
+
+1. use our processed annotation file and according sequence features, which you 
+   can download from here_. Currently, we produced data for human_ and mouse_. 
+   We suggest align RNA-seq reads to the according version of reference genome.
+
+2. generate the annotation and fetch the sequence features with the help of 
+   brie-event_ and brie-factor_ by yourself
+
+
+.. _here: https://sourceforge.net/projects/brie-rna/files/annotation/
+.. _human: https://sourceforge.net/projects/brie-rna/files/annotation/human/
+.. _mouse: https://sourceforge.net/projects/brie-rna/files/annotation/mouse/
+.. _brie-event: https://brie-rna.sourceforge.io/manual.html#splicing-events
+.. _brie-factor: https://brie-rna.sourceforge.io/manual.html#sequence-features
+
+
+Then you could input the feature file obtained above, and run it like this:
+
+::
+
+  brie -a AS_events/SE.gold.gtf -s Cell1.sorted.bam -f mouse_features.h5 -o out_dir -p 15
+
+By default, you will have three output files in the out_dir: ``fractions.tsv``, 
+``weights.tsv`` and ``samples.h5``. 
+
+For ``fractions.tsv``, there are 8 columns:
+
+* column 1: transcript id
+* column 2: gene id
+* column 3: transcript length
+* column 4: reads counts for whole events
+* column 5: FPKM for each isoform
+* column 6: fraction for each isoform, called Psi
+* column 7: lower bound of 95% confidence interval of isoform fraction
+* column 8: higher bound of 95% confidence interval of isoform fraction
+
+For ``weights.tsv``, which saves the weights for the Bayesian regression, there 
+#Feature +2 lines, involving each features, interpret and sigma (a hyperparameter). 
+There are two columns each line, with label and numbers.
+
+In order to quantify the differential splicing, the MCMC_ samples, which is an 
+empirical posterior distribution of the Psi. 
+
+.. _MCMC: https://en.wikipedia.org/wiki/Markov_chain_Monte_Carlo
+
+There are more parameters for setting (``brie -h`` always give the version you 
+are using)
+
+.. code-block:: html
+
+  Usage: brie [options]
+
+  Options:
+    -h, --help            show this help message and exit
+    -a ANNO_FILE, --anno_file=ANNO_FILE
+                          Annotation file for genes and transcripts in GTF or
+                          GFF3
+    -s SAM_FILE, --sam_file=SAM_FILE
+                          Sorted and indexed bam/sam files, use ',' for
+                          replicates e.g., rep1.sorted.bam,sam1_rep2.sorted.bam
+    -o OUT_FILE, --out_file=OUT_FILE
+                          Prefix of the output files with full path
+    -f FACTOR_FILE, --factor_file=FACTOR_FILE
+                          HDF5 file with features to predict isoform expression.
+
+    Optional arguments:
+      -p NPROC, --nproc=NPROC
+                          Number of subprocesses [default: 4]
+      -w WEIGHT_FILE, --weight_file=WEIGHT_FILE
+                          File with weights, an output of Brie.
+      -y FTYPE, --ftype=FTYPE
+                          Type of function target: FPKM, Y, Psi [default: Y].
+      --fLen=FRAG_LENG    Two arguments for fragment length: mean and standard
+                          diveation, default: auto-detected
+      --bias=BIAS_ARGS    Three argments for bias correction:
+                          BIAS_MODE,REF_FILE,BIAS_FILE(s). BIAS_MODE: unif,
+                          end5, end3, both. REF_FILE: the genome reference file
+                          in fasta format. BIAS_FILE(s): bias files from dice-
+                          bias, use '---' for time specific files, [default:
+                          unif None None]
+      --sigma=_SIGMA      Sigma in Bayesian regression: the Gaussian standard
+                          deviation of residues [default: Auto].
+      --lambda=_LAMBDA    Lambda in Bayesian regression: the coeffiecient of L2
+                          constrain on weights [default: 0.1].
+      --mcmc=MCMC_RUN     Four arguments for in MCMC iterations:
+                          save_sample,max_run,min_run,gap_run. Required:
+                          save_sample =< 3/4*mim_run. [default: 500 5000 1000 50]
+
+**Hyperparamers**
+
+* ``sigma`` is the square rooted variance of Gaussian noise in Bayesian 
+  regression. By default, it will learn it automatically. Alternatively, you 
+  could set it with your experience, for example, 3 might be a good option. 
+* ``lambda`` is the constrain on weights of Bayesian regression. 0.1 is good 
+  option in ENCODE data.
+* ``weight_file`` is fixed weights for Bayesian regression. Therefore, the 
+  prior is predicted from the input weight file and its sequence features.
+  
+
+
+2. Differential splicing
+========================
+
+This command allows to detect differential splicing between two cells or two 
+conditions by calculating Bayes factor. You could run it like this:
+
+::
+
+  brie-diff -1 cell1/samples.h5 -2 cell2/samples.h5 -o c1_c2.diff.tsv
+
+Then you will have an output file with 12 columns:
+
+* column1: transcript id, or splicing event id
+* column2-3: prior of exon inclusion fraction for cell 1 and cell 2
+* column4-5: posterior of exon inclusion fraction for cell 1 and cell 2
+* column6-9: counts for inclusion / exclusion for cell1, and then cell 2
+* column10-11: probability of prior and posterior diff<0.05
+* column 12: Bayes factor
+
+.. note::
+  Bayes factor is different from p value in hypothesis test. A good threshold 
+  could be ``Bayes factor > 10`` as differential splicing event between two 
+  cells.
+
+There are more parameters for setting (``brie-diff -h`` always give the version 
+you are using):
+
+.. code-block:: html
+
+  Usage: brie-diff [options]
+
+  Options:
+    -h, --help            show this help message and exit
+    -1 COND1_FILE, --cond1_file=COND1_FILE
+                          Brie output file for condition 1
+    -2 COND2_FILE, --cond2_file=COND2_FILE
+                          Brie output file for condition 2
+    -n BOOTSTRAP, --bootstrap=BOOTSTRAP
+                          Number of bootstrap [default: 1000]
+    -m MAXBF, --maxBF=MAXBF
+                          maximum Bayes factor [default: 100000]
+    -o OUT_FILE, --out_file=OUT_FILE
+                          Output files with full path
+
+
+
+3. Splicing events
 ==================
 
 **Splicing events generating from full annotation**
@@ -69,11 +220,12 @@ the version you are using):
 
 **Splicing events quality check**
 
-As the annotation file is not perfect, there may be false splicing events generated 
-from above command line. Therefore, we provide another function ``brie-event-filter``
-to only keep high-quality events, and use informative ids. Based on above ``SE.gff3``, 
-we could select the gold-quality splicing event by following command line. Note, the 
-reference genome sequence is also required, for example, mouse genome_ sequence here.
+As the annotation file is not perfect, there may be false splicing events 
+generated from above command line. Therefore, we provide another function 
+``brie-event-filter`` to only keep high-quality events, and use informative 
+ids. Based on above ``SE.gff3``, we could select the gold-quality splicing 
+event by following command line. Note, the reference genome sequence is also 
+required, for example, mouse genome_ sequence here.
 
 .. _genome : ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_mouse/release_M12/GRCm38.p5.genome.fa.gz
 
@@ -81,8 +233,8 @@ reference genome sequence is also required, for example, mouse genome_ sequence 
 
   brie-event-filter -a AS_events/SE.gff3 -anno_ref gencode.vM12.annotation.gtf -r GRCm38.p5.genome.fa
 
-Then you will find an output file as ``AS_events/SE.gold.gff3``, which only contains 
-splicing events passing the following constrains:
+Then you will find an output file as ``AS_events/SE.gold.gff3``, which only 
+contains splicing events passing the following constrains:
 
 * located on autosome and input chromosome
 * not overlapped by any other AS-exon
@@ -122,7 +274,7 @@ the version you are using):
 
 
 
-2. Sequence features
+4. Sequence features
 ====================
 
 With the splicing annotation file, a set of short sequence feature can be 
@@ -157,10 +309,11 @@ Then, you could get the sequence features by ``brie-factor``, for example,
 
   brie-factor -a AS_events/SE.gold.gtf -r GRCm38.p5.genome.fa -c mm10.60way.phastCons.bw -o mouse_features.h5 -p 10
 
-Then you will have the features stored in a hdf5 file, where three arrays ``factors`` 
-``gene_ids`` and ``features`` are saved.
+Then you will have the features stored in a hdf5 file, where three arrays 
+``factors``, ``gene_ids`` and ``features`` are saved.
  
-There are more parameters for setting (``brie-factor -h`` always give the version you are using):
+There are more parameters for setting (``brie-factor -h`` always give the 
+version you are using):
 
 .. code-block:: html
 
@@ -190,153 +343,23 @@ There are more parameters for setting (``brie-factor -h`` always give the versio
 
 
 
-3. BRIE quantification
-======================
-
-This is the main program to quitify the fraction of exon inclusion level. In order 
-to automatically learn the informative prior, the predictive features are required. 
-You could input the feature file obtained above, and run it like this:
-
-::
-
-  brie -a AS_events/SE.gold.gtf -s Cell1.sorted.bam -f mouse_features.h5 -o out_dir -p 15
-
-By default, you will have three output files in the out_dir: ``fractions.tsv``, ``weights.tsv``
-and ``samples.h5``. 
-
-For ``fractions.tsv``, there are 8 columns:
-
-* column 1: transcript id
-* column 2: gene id
-* column 3: transcript length
-* column 4: reads counts for whole events
-* column 5: FPKM for each isoform
-* column 6: fraction for each isoform, called Psi
-* column 7: lower bound of 95% confidence interval of isoform fraction
-* column 8: higher bound of 95% confidence interval of isoform fraction
-
-For ``weights.tsv``, which saves the weights for the Bayesian regression, there 
-#Feature +2 lines, involving each features, interpret and sigma (a hyperparameter). 
-There are two columns each line, with label and numbers.
-
-In order to quantify the differential splicing, the MCMC_ samples, which is an empirical
-posterior distribution of the Psi. 
-
-.. _MCMC: https://en.wikipedia.org/wiki/Markov_chain_Monte_Carlo
-
-There are more parameters for setting (``brie -h`` always give the version you are using)
-
-.. code-block:: html
-
-  Usage: brie [options]
-
-  Options:
-    -h, --help            show this help message and exit
-    -a ANNO_FILE, --anno_file=ANNO_FILE
-                          Annotation file for genes and transcripts in GTF or
-                          GFF3
-    -s SAM_FILE, --sam_file=SAM_FILE
-                          Sorted and indexed bam/sam files, use ',' for
-                          replicates e.g., rep1.sorted.bam,sam1_rep2.sorted.bam
-    -o OUT_FILE, --out_file=OUT_FILE
-                          Prefix of the output files with full path
-    -f FACTOR_FILE, --factor_file=FACTOR_FILE
-                          HDF5 file with features to predict isoform expression.
-
-    Optional arguments:
-      -p NPROC, --nproc=NPROC
-                          Number of subprocesses [default: 4]
-      -w WEIGHT_FILE, --weight_file=WEIGHT_FILE
-                          File with weights, an output of Brie.
-      -y FTYPE, --ftype=FTYPE
-                          Type of function target: FPKM, Y, Psi [default: Y].
-      --fLen=FRAG_LENG    Two arguments for fragment length: mean and standard
-                          diveation, default: auto-detected
-      --bias=BIAS_ARGS    Three argments for bias correction:
-                          BIAS_MODE,REF_FILE,BIAS_FILE(s). BIAS_MODE: unif,
-                          end5, end3, both. REF_FILE: the genome reference file
-                          in fasta format. BIAS_FILE(s): bias files from dice-
-                          bias, use '---' for time specific files, [default:
-                          unif None None]
-      --sigma=_SIGMA      Sigma in Bayesian regression: the Gaussian standard
-                          deviation of residues [default: Auto].
-      --lambda=_LAMBDA    Lambda in Bayesian regression: the coeffiecient of L2
-                          constrain on weights [default: 0.1].
-      --mcmc=MCMC_RUN     Four arguments for in MCMC iterations:
-                          save_sample,max_run,min_run,gap_run. Required:
-                          save_sample =< 3/4*mim_run. [default: 500 5000 1000 50]
-
-**Hyperparamers**
-
-* ``sigma`` is the square rooted variance of Gaussian noise in Bayesian 
-  regression. By default, it will learn it automatically. Alternatively, you could set 
-  it with your experience, for example, 3 might be a good option. 
-* ``lambda`` is the constrain on weights of Bayesian regression. 0.1 is good option in 
-  ENCODE data.
-* ``weight_file`` is fixed weights for Bayesian regression. Therefore, the prior is 
-  predicted from the input weight file and its sequence features.
-  
-
-
-4. Differential splicing
-========================
-
-This command allows to detect differential splicing between two cells or two conditions 
-by calculating Bayes factor. You could run it like this:
-
-::
-
-  brie-diff -1 cell1/samples.h5 -2 cell2/samples.h5 -o c1_c2.diff.tsv
-
-Then you will have an output file with 12 columns:
-
-* column1: transcript id, or splicing event id
-* column2-3: prior of exon inclusion fraction for cell 1 and cell 2
-* column4-5: posterior of exon inclusion fraction for cell 1 and cell 2
-* column6-9: counts for inclusion / exclusion for cell1, and then cell 2
-* column10-11: probability of prior and posterior diff<0.05
-* column 12: Bayes factor
-
-.. note::
-  Bayes factor is different from p value in hypothesis test. A good threshold could be Bayes 
-  factor > 10 as differential splicing event between two cells.
-
-There are more parameters for setting (``brie-diff -h`` always give the version you are using):
-
-.. code-block:: html
-
-  Usage: brie-diff [options]
-
-  Options:
-    -h, --help            show this help message and exit
-    -1 COND1_FILE, --cond1_file=COND1_FILE
-                          Brie output file for condition 1
-    -2 COND2_FILE, --cond2_file=COND2_FILE
-                          Brie output file for condition 2
-    -n BOOTSTRAP, --bootstrap=BOOTSTRAP
-                          Number of bootstrap [default: 1000]
-    -m MAXBF, --maxBF=MAXBF
-                          maximum Bayes factor [default: 100000]
-    -o OUT_FILE, --out_file=OUT_FILE
-                          Output files with full path
-
-
-
 5. Preprocess
 =============
 
 5.1 reads alignment
 -------------------
 
-Usually, the initial RNA-seq reads is in fastq_ format, without information of where it comes 
-from the genome location. BRIE, similar as DICEseq and MISO, it requires RNA-seq reads aligned
-to genome sequence. It should be in sam/bam format, after sorting and indexing.
+Usually, the initial RNA-seq reads is in fastq_ format, without information of 
+where it comes from the genome location. BRIE, similar as DICEseq and MISO, it 
+requires RNA-seq reads aligned to genome sequence. It should be in sam/bam 
+format, after sorting and indexing.
 
-There are quite a fewer aligner that allows mapping reads to genome reference with big gaps, 
-mainly caused by splicing. For example, you could use STAR_ and HISAT_, which usually return 
-good alignment quality.
+There are quite a fewer aligner that allows mapping reads to genome reference 
+with big gaps, mainly caused by splicing. For example, you could use STAR_ and 
+HISAT_, which usually return good alignment quality.
 
-You could run it like this (based on HISAT 0.1.5), which including alignment, sort and index:
+You could run it like this (based on HISAT 0.1.5), which including alignment, 
+sort and index:
 
 ::
 
@@ -352,6 +375,11 @@ You could run it like this (based on HISAT 0.1.5), which including alignment, so
 6. Examples
 ===========
 
-There are some examples available here: https://sourceforge.net/projects/brie-rna/files/examples/
+There are some examples available here: 
+https://sourceforge.net/projects/brie-rna/files/examples/
 
-You could follow the demo file: https://github.com/huangyh09/brie/blob/master/demo.sh
+You could follow the demo file for running brie and brie-diff:
+https://github.com/huangyh09/brie/blob/master/example/brie_demo.sh
+
+and a demo file to generate splicing events and fetch sequence features:
+https://github.com/huangyh09/brie/blob/master/example/anno_maker.sh
