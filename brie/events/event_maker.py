@@ -7,8 +7,8 @@ import sys
 import time
 from optparse import OptionParser, OptionGroup
 
-import parseTables
-from defineEvents import SE, MXE, RI, A3SS, A5SS
+import brie.events.parseTables as parseTables
+from brie.events.defineEvents import SE, MXE, RI, A3SS, A5SS
 
 # import gffutils
 # import gffutils.helpers as helpers
@@ -32,7 +32,7 @@ def prepareSplicegraph(anno_file, ftype):
         ftype = ftype * len(anno_fnames)
 
     for i in range(len(anno_fnames)): 
-        print "Reading table", anno_fnames[i]
+        print("Reading table", anno_fnames[i])
         DtoA_F, AtoD_F, DtoA_R, AtoD_R = \
             parseTables.populateSplicegraph(anno_fnames[i], ftype[i],
                                             DtoA_F, AtoD_F, DtoA_R, AtoD_R)
@@ -61,7 +61,7 @@ def defineAllSplicing(anno_file, ftype, gff3dir,
     # Encode the flanking exons rule in output directory
     # gff3dir = os.path.join(gff3dir, flanking)
     if os.path.isfile(gff3dir):
-        print "Error: %s is a file!" %(gff3dir)
+        print("Error: %s is a file!" %(gff3dir))
         sys.exit(1)
     try:
         os.makedirs(gff3dir)
@@ -103,7 +103,7 @@ def defineAllSplicing(anno_file, ftype, gff3dir,
     # If asked, sanitize the annotation in place
     if sanitize:
         for _fname in fname_all:
-            print "Sanitizing %s" %(_fname)
+            print("Sanitizing %s" %(_fname))
             helpers.sanitize_gff_file(_fname, in_place=True)
 
 
@@ -154,9 +154,9 @@ def main():
     else:
         output_dir = options.output_dir
 
-    print "Making GFF alternative events annotation..."
-    print "  - Input annotation files: %s" %(options.anno_file)
-    print "  - Output dir: %s" %(output_dir)
+    print("Making GFF alternative events annotation...")
+    print("  - Input annotation files: %s" %(options.anno_file))
+    print("  - Output dir: %s" %(output_dir))
 
     t1 = time.time()
     defineAllSplicing(options.anno_file, options.anno_type, output_dir,
@@ -165,8 +165,8 @@ def main():
                          genome_label=options.genome_label,
                          sanitize=options.sanitize)
     t2 = time.time()
-    print "Took %.2f minutes to make the annotation." \
-          %((t2 - t1)/60.)
+    print("Took %.2f minutes to make the annotation." \
+          %((t2 - t1)/60.))
           
 
 if __name__ == "__main__":

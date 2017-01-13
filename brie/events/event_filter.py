@@ -132,9 +132,9 @@ def as_exon_check(fastaFile, anno_in, g_idx, as_exon_min, as_exon_max,
             dn_dis = _exon_loc[0] - _exon1_loc[1]
             up_dis = _exon3_loc[0] - _exon_loc[1]
         if tts_dis <= 0 and tss_dis <= 0:
-            print "TTS or TSS distance warning: %s" %vals_g[6]
+            print("TTS or TSS distance warning: %s" %vals_g[6])
             for temp in anno_in[g_idx[i,0]:g_idx[i,1]+1]:
-                print temp.split()[:-1]
+                print(temp.split()[:-1])
 
         if tss_dis < as_exon_tss or tts_dis < as_exon_tts:
             # print tss_dis, tts_dis
@@ -172,10 +172,10 @@ def map_ids(id1, id2):
             j += 1
             continue
         else: 
-            print "id mapping warning:"
-            print id1[sidx1[i-1]], id2[sidx2[j-1]]
-            print id1[sidx1[i]], id2[sidx2[j-1]]
-            print id1[sidx1[i]], id2[sidx2[j]]
+            print("id mapping warning:")
+            print(id1[sidx1[i-1]], id2[sidx2[j-1]])
+            print(id1[sidx1[i]], id2[sidx2[j-1]])
+            print(id1[sidx1[i]], id2[sidx2[j]])
             
             idx2.append(None)
             continue
@@ -208,7 +208,7 @@ def save_out(anno_in, anno_ref, out_file):
     fid = open(out_file, "w")
     fid.writelines("#annotation file with high-qulity alternative exons.\n")
     for i in range(0, len(anno_in), 8):
-    	_gene_id = "#"
+        _gene_id = "#"
         if i is not None:
             # idx  = gene_info[i].find("gene_id")
             idx  = gene_info[ginfo_idx[i/8]].find("gene_id")
@@ -219,13 +219,13 @@ def save_out(anno_in, anno_ref, out_file):
         _num = temp_gene.count(_gene_id)
         temp_gene.append(_gene_id)
         if _num > 0:
-        	_gene_id += ".AS%d" %(_num+1)
+            _gene_id += ".AS%d" %(_num+1)
 
         if _gene_id.startswith("#"): 
             if anno_in[i].split()[6] != "-": 
-                print "test"
+                print("test")
                 for temp in anno_in[i:i+8]:
-                    print temp.split()[:-1] 
+                    print(temp.split()[:-1] )
                 continue
 
         ## In gtf format

@@ -10,9 +10,9 @@ import multiprocessing
 from optparse import OptionParser, OptionGroup
 
 # import pyximport; pyximport.install()
-from utils.gtf_utils import loadgene
-from utils.run_utils import set_info, map_data, save_data
-from models.model_brie import brie_MH_Heuristic
+from .utils.gtf_utils import loadgene
+from .utils.run_utils import set_info, map_data, save_data
+from .models.model_brie import brie_MH_Heuristic
 
 PROCESSED = 0
 TOTAL_GENE = 0
@@ -36,8 +36,8 @@ def show_progress(RV=None):
 
 
 def main():
-    # import warnings
-    # warnings.filterwarnings('error')
+    import warnings
+    warnings.filterwarnings('error')
 
     # parse command line options
     parser = OptionParser()
@@ -208,6 +208,25 @@ def main():
     FLmean, FLstd = options.frag_leng
     sample_num, M, initial, gap = options.mcmc_run
 
+    # print(gene_ids)
+    # import h5py
+    # f = h5py.File(os.path.join(out_dir, "samples.h5"), "w")
+    # # f.create_dataset("gene_ids", data=gene_ids, compression="gzip")
+    # # f.create_dataset("tran_ids", data=tran_ids, compression="gzip")
+    # f.create_dataset("features", data=feature_all, compression="gzip")
+    # f.create_dataset("feature_ids", data=feature_ids, compression="gzip")
+    # # f.create_dataset("W_sample", data=W_all[:,-min(m2,sample_num):],
+    # #     compression="gzip", compression_opts=9)
+    # # f.create_dataset("Psi_sample", data=Psi_all[:,-min(m1,sample_num):],
+    # #     compression="gzip", compression_opts=9)
+    # # f.create_dataset("FPKM", data=RPK_all[:,-m1:].mean(axis=1),
+    # #     compression="gzip", compression_opts=9)
+    # # f.create_dataset("counts", data=Cnt_all[:,-m1:].mean(axis=1),
+    # #     compression="gzip", compression_opts=9)
+    # # f.create_dataset("sigma", data=np.array([sigma_]), compression="gzip")
+    # f.close()
+
+    # exit()
 
     print("[Brie] loading reads for %d genes with %d cores..." %(TOTAL_GENE, 
         nproc))

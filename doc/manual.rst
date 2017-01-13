@@ -26,10 +26,9 @@ required. There are two ways to get the annotation and sequence features:
 2. generate the annotation and fetch the sequence features with the help of 
    brie-event_ and brie-factor_ by yourself
 
-
 .. _here: https://sourceforge.net/projects/brie-rna/files/annotation/
-.. _human: https://sourceforge.net/projects/brie-rna/files/annotation/human/
-.. _mouse: https://sourceforge.net/projects/brie-rna/files/annotation/mouse/
+.. _human: https://sourceforge.net/projects/brie-rna/files/annotation/human/gencode.v25/
+.. _mouse: https://sourceforge.net/projects/brie-rna/files/annotation/mouse/gencode.vM12/
 .. _brie-event: https://brie-rna.sourceforge.io/manual.html#splicing-events
 .. _brie-factor: https://brie-rna.sourceforge.io/manual.html#sequence-features
 
@@ -126,7 +125,7 @@ conditions by calculating Bayes factor. You could run it like this:
 
 ::
 
-  brie-diff -1 cell1/samples.h5 -2 cell2/samples.h5 -o c1_c2.diff.tsv
+  brie-diff -1 cell1/samples.csv.gz -2 cell2/samples.csv.gz -o c1_c2.diff.tsv
 
 Then you will have an output file with 12 columns:
 
@@ -378,8 +377,16 @@ sort and index:
 There are some examples available here: 
 https://sourceforge.net/projects/brie-rna/files/examples/
 
-You could follow the demo file for running brie and brie-diff:
-https://github.com/huangyh09/brie/blob/master/example/brie_demo.sh
+- Example to quantify splicing with provided annotation (bash code and data): 
+  brie-examples.zip_
 
-and a demo file to generate splicing events and fetch sequence features:
-https://github.com/huangyh09/brie/blob/master/example/anno_maker.sh
+- Example to quantify splicing with provided annotation (bash code): 
+  brie_demo.sh_
+
+- Example to generate splicing events and fetch sequence factors (bash codes): 
+  anno_maker.sh_
+
+.. _brie-examples.zip: http://ufpr.dl.sourceforge.net/project/brie-rna/examples/brie_quantify/brie-examples.zip
+.. _brie_demo.sh: https://github.com/huangyh09/brie/blob/master/example/brie_demo.sh
+.. _anno_maker.sh: https://github.com/huangyh09/brie/blob/master/example/anno_maker.sh
+

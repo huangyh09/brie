@@ -133,7 +133,7 @@ def get_factor(tran, ref_file, phast_file):
                 cons_val.append(float(output))
             except ValueError:
                 cons_val.append(0.0) #np.nan
-                print "No PhastCons data for %s. Treated as Zero." %tran.tranID
+                print("No PhastCons data for %s. Treated as Zero." %tran.tranID)
                 # print output
 
     # 1 to 4mers #676
@@ -171,7 +171,7 @@ def motif_score(msa, pwm_msa=None):
         negetive score can happen when is poorer than null pwm
     """
     motif_len = len(msa[0])
-    data = np.zeros((len(msa), motif_len), dtype="S1")
+    data = np.zeros((len(msa), motif_len), dtype="str")
     for i in range(len(msa)):
         tmp = []
         tmp[:] = msa[i].upper()
@@ -182,7 +182,7 @@ def motif_score(msa, pwm_msa=None):
         pwm_add = 0.0
     else:
         pwm_add = 0.01 # for smooth the pwm
-        pwmS = np.zeros((len(pwm_msa), motif_len), dtype="S1")
+        pwmS = np.zeros((len(pwm_msa), motif_len), dtype="str")
         for i in range(len(pwm_msa)):
             tmp = []
             tmp[:] = pwm_msa[i].upper()
@@ -190,10 +190,10 @@ def motif_score(msa, pwm_msa=None):
         
     pwm = np.zeros((4, motif_len))
     for i in range(motif_len):
-        pwm[0,i] = (sum(pwmS[:,i]=="A")+pwm_add) / (pwmS.shape[0] + pwm_add*4)
-        pwm[1,i] = (sum(pwmS[:,i]=="T")+pwm_add) / (pwmS.shape[0] + pwm_add*4)
-        pwm[2,i] = (sum(pwmS[:,i]=="G")+pwm_add) / (pwmS.shape[0] + pwm_add*4)
-        pwm[3,i] = (sum(pwmS[:,i]=="C")+pwm_add) / (pwmS.shape[0] + pwm_add*4)
+        pwm[0,i] = (np.sum(pwmS[:,i]=="A")+pwm_add) / (pwmS.shape[0]+pwm_add*4)
+        pwm[1,i] = (np.sum(pwmS[:,i]=="T")+pwm_add) / (pwmS.shape[0]+pwm_add*4)
+        pwm[2,i] = (np.sum(pwmS[:,i]=="G")+pwm_add) / (pwmS.shape[0]+pwm_add*4)
+        pwm[3,i] = (np.sum(pwmS[:,i]=="C")+pwm_add) / (pwmS.shape[0]+pwm_add*4)
         
     score = np.zeros(len(msa))
     s_max = np.sum(np.log2(pwm.max(axis=0)))

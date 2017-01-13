@@ -40,8 +40,7 @@ Quick Start
 
 - ``pip install brie``
 - or download this repository, and type ``python setup.py install``; 
-  add ``--user`` if you don't have root permission and you don't use 
-  Anaconda_.
+- add ``--user`` if you don't have root permission and you don't use Anaconda_.
 
 .. _Anaconda: https://www.continuum.io/anaconda-overview
 
@@ -62,4 +61,6 @@ etc.
 References
 ----------
 
-Coming soon
+Yuanhua Huang and Guido Sanguinetti. `Transcriptome-wide splicing quantification 
+in single cells <http://biorxiv.org/content/early/2017/01/05/098517>`_. 
+\ **bioRxiv**\, 2017, 0985172.

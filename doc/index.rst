@@ -55,11 +55,15 @@ References
 ==========
 
 Yuanhua Huang and Guido Sanguinetti. `Transcriptome-wide splicing quantification 
-in single cells <http://brie-rna.sf.net>`_. coming soon.
+in single cells <http://biorxiv.org/content/early/2017/01/05/098517>`_. 
+\ **bioRxiv**\, 2017, 0985172.
 
 
 
 .. seealso::
+
+   Code: GitHub latest version
+      https://github.com/huangyh09/brie
 
    Data: splicing events annotations
       http://sourceforge.net/projects/brie-rna/files/annotation/

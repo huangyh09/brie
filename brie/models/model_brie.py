@@ -314,7 +314,7 @@ def brie_MH_Heuristic(R_mat, len_isos, prob_isos, feature_all, idxF,
     F_pre = np.zeros(tranNum)
     Y_now = np.zeros(tranNum)
     Y_all = np.zeros((tranNum, M))
-    W_all = np.zeros((X.shape[1], M/gap))
+    W_all = np.zeros((X.shape[1], int(M/gap)))
     Psi_now = np.zeros(tranNum)
     Psi_all = np.zeros((tranNum, M))
     Cnt_now = np.zeros(tranNum)
@@ -347,7 +347,7 @@ def brie_MH_Heuristic(R_mat, len_isos, prob_isos, feature_all, idxF,
 
     # nproc = 1 #!!!
     CONVERG = np.zeros(tranNum, "bool")
-    for m in range(M/gap):
+    for m in range(int(M/gap)):
         idxT = range(m*gap, (m+1)*gap)
         # step 1: propose a value (original)
         if nproc == 1:

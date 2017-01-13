@@ -5,9 +5,12 @@
 # particularly for RI, as the original file used another
 # function.
 
-import os, operator, string
+import os, operator
 
-LETTERS = string.uppercase
+# import string
+# LETTERS = string.uppercase
+
+LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
 def A3SS(DtoA_F, AtoD_F, DtoA_R, AtoD_R, gff3_f,
@@ -17,7 +20,7 @@ def A3SS(DtoA_F, AtoD_F, DtoA_R, AtoD_R, gff3_f,
     A3SS are events where a donor is spliced to >1 acceptor, and the 
     acceptors share a downstream donor site in the same exon.
     """
-    print "Generating alternative 3\' splice sites (A3SS)"
+    print("Generating alternative 3\' splice sites (A3SS)")
     if os.path.isfile(gff3_f):
         print("  - Found file, skipping...")
         return
@@ -219,7 +222,7 @@ def A5SS(DtoA_F, AtoD_F, DtoA_R, AtoD_R, gff3_f,
     A3SS are events where >1 donor is spliced to an acceptor, and the 
     donors share an upstream acceptor site in the same exon.
     """
-    print "Generating alternative 5\' splice sites (A5SS)"
+    print("Generating alternative 5\' splice sites (A5SS)")
     if os.path.isfile(gff3_f):
         print("  - Found file, skipping...")
         return
@@ -429,7 +432,7 @@ def SE(DtoA_F, AtoD_F, DtoA_R, AtoD_R, gff3_f,
       - commonshortest
       - commonlongest
     """
-    print "Generating skipped exons (SE)"
+    print("Generating skipped exons (SE)")
     if os.path.isfile(gff3_f):
         print("  - Found file, skipping...")
         return
@@ -549,7 +552,7 @@ def MXE(DtoA_F, AtoD_F, DtoA_R, AtoD_R, gff3_f,
       - commonshortest
       - commonlongest
     """
-    print "Generating mutually exclusive exons (MXE)"
+    print("Generating mutually exclusive exons (MXE)")
     if os.path.isfile(gff3_f):
         print("  - Found file, skipping...")
         return
@@ -714,7 +717,7 @@ def RI(DtoA_F, AtoD_F, DtoA_R, AtoD_R, gff3_f,
     """
     # return
 
-    print "Generating retained introns (RI)"
+    print("Generating retained introns (RI)")
     if os.path.isfile(gff3_f):
         print("  - Found file, skipping...")
         return

@@ -1,12 +1,13 @@
 # bases functions supporting Brie
 
 import os
+import subprocess
 import numpy as np
-# from diceseq import load_samfile, TranSplice, BiasFile, FastaFile
 
 from .sam_utils import load_samfile
 from .bias_utils import BiasFile, FastaFile
 from .tran_utils import TranUnits, TranSplice
+
 
 def set_info(g, sam_file, bias_mode, ref_file, bias_file, FLmean, FLstd,
     mate_mode, auto_min):
@@ -46,32 +47,28 @@ def map_data(feature_file, tran_ids, log_out=False, add_intercept=True):
     The feature file could contain only part of the transcriptome.
     """
     if ["hdf5", "h5", "HDF5", "H5"].count(feature_file.split(".")[-1]) == 1:
+        ##Note: hdf5 is only supported with Python2
         import h5py
         f = h5py.File(feature_file, "r")
         feature = np.array(f["features"])
-        ids = np.array(f["gene_ids"], "S50")
-        for i in range(ids.shape[0]):
-            ids[i] = ids[i] + ".in"
-        feature_ids = []
-        factors = np.array(f["factors"])
-        # for i in range(factors.shape[0]):
-        #     feature_ids.append(factors[i,2]+"|"+factors[i,1]+"|"+factors[i,3])
-        for i in range(factors.shape[0]):
-            feature_ids.append("F%d:%s" %(i, factors[i]))
-        feature_ids = np.array(feature_ids)
+        feature_ids = np.array(f["factors"])
+
+        # ids = np.array([x+".in" for x in f["gene_ids"]])
+        ids = np.array([str(x.decode("utf-8"))+".in" for x in f["gene_ids"]])
+        f.close()
     else:
-        data = np.loadtxt(feature_file, delimiter="\t", dtype="str")
-        ids = data[1:,0]
-        feature = data[1:, 2:].astype("float")
-        feature_ids = data[0, 2:]
+        data = np.genfromtxt(feature_file, delimiter=",", dtype="str")
+        ids = np.array([x+".in" for x in data[1:,0]])
+        feature = data[1:, 1:].astype("float")
+        feature_ids = data[0, 1:]
 
     feature_all = np.ones((len(tran_ids), feature.shape[1]))
     feature_all[:,:] = None
 
+    idxF = []
+    i, j = 0, 0
     idx1 = np.argsort(ids)
     idx2 = np.argsort(tran_ids)
-    i, j = 0, 0
-    idxF = []
     while j < len(idx2):
         if i >= len(idx1) or ids[idx1[i]] > tran_ids[idx2[j]]:
             feature_all[idx2[j], :] = None
@@ -85,13 +82,12 @@ def map_data(feature_file, tran_ids, log_out=False, add_intercept=True):
             i += 1
 
     if log_out is True:
-        feature_all = np.log(feature_all[:,:-1])
+        feature_all = np.log(feature_all)
 
     if add_intercept is True:
-        temp = np.ones((len(tran_ids), feature.shape[1]+1))
-        temp[:,:-1] = feature_all
-        feature_all = temp
         feature_ids = np.append(feature_ids, "intercept")
+        feature_all = np.append(feature_all, 
+                                np.ones((feature_all.shape[0], 1)), axis=1)
 
     return feature_all, feature_ids, np.array(idxF, "int")
 
@@ -139,21 +135,43 @@ def save_data(out_dir, sample_num, gene_ids, tran_ids, tran_len,
 
     # save samples for all Psi
     if sample_num > 0:
-        import h5py
-        f = h5py.File(os.path.join(out_dir, "samples.h5"), "w")
-        f.create_dataset("gene_ids", data=gene_ids, compression="gzip")
-        f.create_dataset("tran_ids", data=tran_ids, compression="gzip")
-        f.create_dataset("features", data=feature_all, compression="gzip")
-        f.create_dataset("feature_ids", data=feature_ids, compression="gzip")
-        f.create_dataset("W_sample", data=W_all[:,-min(m2,sample_num):],
-            compression="gzip", compression_opts=9)
-        f.create_dataset("Psi_sample", data=Psi_all[:,-min(m1,sample_num):],
-            compression="gzip", compression_opts=9)
-        f.create_dataset("FPKM", data=RPK_all[:,-m1:].mean(axis=1),
-            compression="gzip", compression_opts=9)
-        f.create_dataset("counts", data=Cnt_all[:,-m1:].mean(axis=1),
-            compression="gzip", compression_opts=9)
-        f.create_dataset("sigma", data=np.array([sigma_]), compression="gzip")
-        f.close()
+        # import h5py
+        # f = h5py.File(os.path.join(out_dir, "samples.h5"), "w")
+        # f.create_dataset("gene_ids", data=gene_ids, compression="gzip")
+        # f.create_dataset("tran_ids", data=tran_ids, compression="gzip")
+        # f.create_dataset("features", data=feature_all, compression="gzip")
+        # f.create_dataset("feature_ids", data=feature_ids, compression="gzip")
+        # f.create_dataset("W_sample", data=W_all[:,-min(m2,sample_num):],
+        #     compression="gzip", compression_opts=9)
+        # f.create_dataset("Psi_sample", data=Psi_all[:,-min(m1,sample_num):],
+        #     compression="gzip", compression_opts=9)
+        # f.create_dataset("FPKM", data=RPK_all[:,-m1:].mean(axis=1),
+        #     compression="gzip", compression_opts=9)
+        # f.create_dataset("counts", data=Cnt_all[:,-m1:].mean(axis=1),
+        #     compression="gzip", compression_opts=9)
+        # f.create_dataset("sigma", data=np.array([sigma_]), compression="gzip")
+        # f.close()
 
+        W = W_all[:,-m2:].mean(axis=1)
+        CNT = Cnt_all[:,-m1:].mean(axis=1)
+        idx = np.arange(0, len(tran_ids), 2)
+        priorY = np.zeros(len(tran_ids))
+        priorY[idx] = np.dot(feature_all[idx,:], W)
+        priorY[idx+1] = 0.0 - priorY[idx]
+        
+        samp_num = min(m1, sample_num)
+        sample_file = os.path.join(out_dir, "samples.csv")
+        fid = open(sample_file, "w")
+        comment_line = "#tran_id,gene_id,count,prior_mean,prior_std,N_samples"
+        fid.writelines(comment_line + "\n")
+        for i in range(len(tran_ids)):
+            name_part = "%s,%s" %(tran_ids[i], gene_ids[i])
+            base_part = "%d,%.2e,%.2e" %(CNT[i], priorY[i], sigma_)
+            data_part = ",".join(["%.2e" %(x) for x in Psi_all[i, -samp_num:]])
+            fid.writelines(name_part + "," + base_part + "," + data_part + "\n")
+        fid.close()
+
+        bashCommand = "gzip -f %s" %(sample_file) 
+        pro = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+        output = pro.communicate()[0]
     

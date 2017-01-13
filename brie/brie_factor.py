@@ -11,14 +11,15 @@
 import os
 import sys
 import time
-import h5py
+# import h5py
+import subprocess
 import numpy as np
 import multiprocessing
 from optparse import OptionParser, OptionGroup
 
 # import pyximport; pyximport.install()
-from utils.gtf_utils import loadgene
-from utils.fasta_utils import get_factor, get_factorID, motif_score
+from .utils.gtf_utils import loadgene
+from .utils.fasta_utils import get_factor, get_factorID, motif_score
 
 PROCESSED = 0
 TOTAL_GENE = 0
@@ -87,7 +88,8 @@ def main():
             sys.exit(1)
     
     if options.out_file is None:
-        out_file = os.path.dirname(os.path.abspath(ref_file)) + "/brieFactor.h5"
+        out_file = os.path.join(os.path.dirname(os.path.abspath(ref_file)), 
+                                "/brieFactor.cvs")
     else:
         out_file = options.out_file
     nproc = options.nproc
@@ -158,11 +160,24 @@ def main():
     features[:, 3] = motif_score(SS_seq[:,3], msa_3ss)
     print("")
 
-    f = h5py.File(out_file, "w")
-    f.create_dataset("factors", data=factors, compression="gzip")
-    f.create_dataset("gene_ids", data=gene_ids, compression="gzip")
-    f.create_dataset("features", data=features, compression="gzip")
-    f.close()
+    # f = h5py.File(out_file, "w")
+    # f.create_dataset("factors", data=factors, compression="gzip")
+    # f.create_dataset("gene_ids", data=gene_ids, compression="gzip")
+    # f.create_dataset("features", data=features, compression="gzip")
+    # f.close()
+
+    fid = open(out_file, "w")
+    headline = ["gene_id"] + [x for x in factors]
+    fid.writelines(",".join(headline) + "\n")
+    for i in range(len(gene_ids)):
+        dataline = [gene_ids[i]] + ["%.2e" %x for x in features[i,:]]
+        fid.writelines(",".join(dataline) + "\n")
+    fid.close()
+
+    bashCommand = "gzip -f %s" %(out_file) 
+    pro = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+    output = pro.communicate()[0]
+
 
 
 if __name__ == '__main__':
