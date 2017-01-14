@@ -50,8 +50,8 @@ def main():
         help="Genome sequence reference in fasta file.")
     parser.add_option("--phastCons", "-c", dest="phast_file", default=None,
         help="PhastCons conservation scores in bigWig file.")
-    parser.add_option("--out_file", "-o", dest="out_file",  
-        default="splicing_factor.h5", help="Output in hdf5 file")
+    parser.add_option("--out_file", "-o", dest="out_file", default=None, 
+        help="Output in csv file, [default: brieFactor.cvs]")
 
     group = OptionGroup(parser, "Optional arguments")
     group.add_option("--nproc", "-p", type="int", dest="nproc", default=4,

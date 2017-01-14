@@ -49,7 +49,7 @@ def main():
     parser.add_option("--out_dir", "-o", dest="out_dir", default="output", 
         help="Full path of output directory")
     parser.add_option("--factor_file", "-f", dest="factor_file", default=None,
-        help=("HDF5 file with features to predict isoform expression."))
+        help=("Features in csv.gz file to predict isoform expression."))
 
     group = OptionGroup(parser, "Optional arguments")
     group.add_option("--nproc", "-p", type="int", dest="nproc", default="4",

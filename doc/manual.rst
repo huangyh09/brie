@@ -37,28 +37,28 @@ Then you could input the feature file obtained above, and run it like this:
 
 ::
 
-  brie -a AS_events/SE.gold.gtf -s Cell1.sorted.bam -f mouse_features.h5 -o out_dir -p 15
+  brie -a AS_events/SE.gold.gtf -s Cell1.sorted.bam -f mouse_features.csv.gz -o out_dir -p 15
 
 By default, you will have three output files in the out_dir: ``fractions.tsv``, 
-``weights.tsv`` and ``samples.h5``. 
+``weights.tsv`` and ``samples.csv.gz``. 
 
-For ``fractions.tsv``, there are 8 columns:
+- In ``fractions.tsv``, there are 8 columns:
 
-* column 1: transcript id
-* column 2: gene id
-* column 3: transcript length
-* column 4: reads counts for whole events
-* column 5: FPKM for each isoform
-* column 6: fraction for each isoform, called Psi
-* column 7: lower bound of 95% confidence interval of isoform fraction
-* column 8: higher bound of 95% confidence interval of isoform fraction
+  * column 1: transcript id
+  * column 2: gene id
+  * column 3: transcript length
+  * column 4: reads counts for whole events
+  * column 5: FPKM for each isoform
+  * column 6: fraction for each isoform, called Psi
+  * column 7: lower bound of 95% confidence interval of isoform fraction
+  * column 8: higher bound of 95% confidence interval of isoform fraction
 
-For ``weights.tsv``, which saves the weights for the Bayesian regression, there 
-#Feature +2 lines, involving each features, interpret and sigma (a hyperparameter). 
-There are two columns each line, with label and numbers.
+- In ``weights.tsv``, there are the weights for the Bayesian regression, with 
+  `#Feature+2` lines, involving each features, interpret and sigma (a hyperparameter). 
+  There are two columns each line, including the label and the value.
 
-In order to quantify the differential splicing, the MCMC_ samples, which is an 
-empirical posterior distribution of the Psi. 
+- In ``sample.csv.gz``, there are the MCMC_ samples of posterior distribution of 
+  Psi. These samples are used to detect the differential splicing.
 
 .. _MCMC: https://en.wikipedia.org/wiki/Markov_chain_Monte_Carlo
 
@@ -80,7 +80,7 @@ are using)
     -o OUT_FILE, --out_file=OUT_FILE
                           Prefix of the output files with full path
     -f FACTOR_FILE, --factor_file=FACTOR_FILE
-                          HDF5 file with features to predict isoform expression.
+                          Features in csv.gz file to predict isoform expression.
 
     Optional arguments:
       -p NPROC, --nproc=NPROC
@@ -306,10 +306,10 @@ Then, you could get the sequence features by ``brie-factor``, for example,
 
 ::
 
-  brie-factor -a AS_events/SE.gold.gtf -r GRCm38.p5.genome.fa -c mm10.60way.phastCons.bw -o mouse_features.h5 -p 10
+  brie-factor -a AS_events/SE.gold.gtf -r GRCm38.p5.genome.fa -c mm10.60way.phastCons.bw -o mouse_features.csv -p 10
 
-Then you will have the features stored in a hdf5 file, where three arrays 
-``factors``, ``gene_ids`` and ``features`` are saved.
+Then you will have the features stored in a ``mouse_features.csv.gz`` file, 
+where #`factors` * #`gene_ids` features values are saved.
  
 There are more parameters for setting (``brie-factor -h`` always give the 
 version you are using):
@@ -328,7 +328,7 @@ version you are using):
     -c PHAST_FILE, --phastCons=PHAST_FILE
                           PhastCons conservation scores in bigWig file.
     -o OUT_FILE, --out_file=OUT_FILE
-                          Output in hdf5 file
+                          Output in csv file, [default: brieFactor.cvs]
 
     Optional arguments:
       -p NPROC, --nproc=NPROC
