@@ -100,9 +100,11 @@ def as_exon_check(fastaFile, anno_in, g_idx, as_exon_min, as_exon_max,
             continue
         
         # check 2: chromsome
-        chrom = vals_g[0]
+        chrom = vals_g[0].split("chr")[-1]
         if chroms.count(chrom) == 0:
-            continue
+            chrom = "chr" + chrom
+            if chroms.count(chrom) == 0:
+                continue
 
         # check 3: surrounding splice sites AG--exon--GT
         if no_splice_site == False:
@@ -182,7 +184,7 @@ def map_ids(id1, id2):
     return np.array(idx2)[sidx0]
 
 
-def save_out(anno_in, anno_ref, out_file):
+def save_out(anno_in, anno_ref, out_file, chroms=[]):
     exon_str_SE = []
     for i in range(0, len(anno_in), 8):
         vals = anno_in[i+3].strip().split("\t")
@@ -229,6 +231,13 @@ def save_out(anno_in, anno_ref, out_file):
                 continue
 
         ## In gtf format
+        chrom  = anno_in[i+0].strip().split("\t")[0]
+        if chroms.count(chrom) == 0:
+            if chroms.count("chr"+chrom) == 1:
+                for k in range(8): anno_in[i+k] = "chr" + anno_in[i+k]
+            elif len(chrom) > 3 and chroms.count(chrom[3:]) == 1:
+                for k in range(8): anno_in[i+k] = anno_in[i+k][3:]
+
         vals = anno_in[i+0].strip().split("\t")
         vals[8] = "gene_id \"%s\"" %(_gene_id)
         fid.writelines("\t".join(vals) + "\n")
@@ -339,7 +348,11 @@ def main():
 
     chroms = []
     for i in range(1,23):
-        chroms.append("chr%d" %i)
+        if fastaFile.f.references.count("chr%d" %i) == 1:
+            chroms.append("chr%d" %i)
+        elif fastaFile.f.references.count("%d" %i) == 1:
+            chroms.append("%d" %i)
+
     chroms += add_chrom.split(",")
 
     # remove overlap splicing events
@@ -365,7 +378,7 @@ def main():
     print("%d Skipped Exon events pass the overlapping check." %(len(g_idx)))
 
     # saving out
-    save_out(anno_out, anno_ref, out_file+".gold.gtf")
+    save_out(anno_out, anno_ref, out_file+".gold.gtf", chroms)
     
 
 if __name__ == "__main__":
