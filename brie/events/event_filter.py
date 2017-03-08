@@ -14,6 +14,7 @@
 import sys
 import numpy as np
 from brie.utils.fasta_utils import FastaFile
+from brie.utils.gtf_utils import loadgene, savegene
 from optparse import OptionParser, OptionGroup
 
 def get_gene_idx(anno_in):
@@ -380,6 +381,9 @@ def main():
     # saving out
     save_out(anno_out, anno_ref, out_file+".gold.gtf", chroms)
     
+    # save gff format
+    genes = loadgene(out_file+".gold.gtf")
+    savegene(out_file+".gold.gff3", genes)
 
 if __name__ == "__main__":
     main()

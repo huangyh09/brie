@@ -247,3 +247,63 @@ def loadgene(anno_file, comments="#,>", geneTag="gene",
     return genes
 
 
+def savegene(out_file, genes, atype="GFF3", tags="gene,mRNA,exon"):
+    """Save genes into file in GFF3 or GTF format.
+
+    Parameters
+    ----------
+    out_file: string
+        full path for output file
+    genes: list of ``pyseqlib.Gene``
+        a list of loaded genes
+    atype: string
+        type of output file: GTF or GFF3
+    tags: string
+        tags for gene, mRNA, exon, respectively. Use comma for delimit
+    """
+    fid = open(out_file, "w")
+    fid.writelines("#%s file produced by savegene.\n" %atype)
+
+    tags = tags.split(",")
+    aLine = [".", ".", ",", "0", "0", ".", "+", ".", ""]
+    for g in genes:
+        aLine[0] = g.chrom
+        aLine[2] = tags[0]
+        aLine[3] = str(g.start)
+        aLine[4] = str(g.stop)
+        aLine[6] = g.strand
+        if atype.upper() == "GFF3":
+            aLine[8] = "ID=%s" %g.geneID
+        else:
+            aLine[8] = "gene_id \"%s\"" %g.geneID
+        fid.writelines("\t".join(aLine) + "\n")
+
+        for t in g.trans:
+            aLine[0] = t.chrom
+            aLine[2] = tags[1]
+            aLine[3] = str(t.start)
+            aLine[4] = str(t.stop)
+            aLine[6] = t.strand
+            if atype.upper() == "GFF3":
+                aLine[8] = "ID=%s;Parent=%s" %(t.tranID, g.geneID)
+            else:
+                aLine[8] = "gene_id \"%s\"; transcript_id\"%s\"" %(g.geneID, 
+                    t.tranID)
+            fid.writelines("\t".join(aLine) + "\n")
+
+            exons = t.exons
+            for i in range(exons.shape[0]):
+                aLine[0] = t.chrom
+                aLine[2] = tags[2]
+                aLine[3] = str(exons[i,0])
+                aLine[4] = str(exons[i,1])
+                aLine[6] = t.strand
+                if atype.upper() == "GFF3":
+                    aLine[8] = "ID=%s.%d;Parent=%s" %(t.tranID, i+1, t.tranID)
+                else:
+                    aLine[8] = "gene_id \"%s\"; transcript_id\"%s\"" %(g.geneID, 
+                        t.tranID)
+                fid.writelines("\t".join(aLine) + "\n")
+
+    fid.close()
+
