@@ -144,14 +144,17 @@ def main():
         idx2_perm = np.random.randint(x2.shape[1], size=bootstrap)
         post_diff = x1[i,idx1_perm] - x2[i,idx2_perm]
         data[i,9] = np.mean(np.abs(post_diff) <= 0.05)
-        data[i,9] = max(data[i,9], data[i,8] / maxBF)
-        data[i,10] = data[i,8] / data[i,9]
+        #data[i,9] = max(data[i,9], data[i,8] / maxBF)
+        # data[i,10] = min(np.log10(data[i,8] / data[i,9]), maxBF)
+        data[i,10] = data[i,8] / max(data[i,9], data[i,8]/maxBF)
 
     labels = ["prior1", "prior2", "pis1", "psi2", "C11", "C12", "C21", "C22", 
               "prior_prob", "post_prob", "Bayes_factor"]
     fid.writelines("tran_id\t" + "\t".join(labels) + "\n")
     for i in range(data.shape[0]):
         aline = "\t".join(["%.2f" %x for x in data[i,:]])
+        # aline = "\t".join(["%.2f" %x for x in data[i,:-1]])
+        # aline += "\t%.2e" %(data[i,-1])
         fid.writelines(tran_ids1[i*2] + "\t" + aline+"\n")
     fid.close()
 
