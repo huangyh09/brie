@@ -37,10 +37,10 @@ def main():
 
     # parse command line options
     parser = OptionParser()
-    parser.add_option("--cond1_file", "-1", dest="cond1_file", default=None,
-        help="Brie output file for condition 1")
-    parser.add_option("--cond2_file", "-2", dest="cond2_file", default=None,
-        help="Brie output file for condition 2")
+    parser.add_option("--cell1_files", "-1", dest="cell1_files", default=None,
+        help="Brie output file for cell (group) 1")
+    parser.add_option("--cell2_files", "-2", dest="cell2_files", default=None,
+        help="Brie output file for cell group 2")
     parser.add_option("--out_file", "-o", dest="out_file", default=None, 
         help="Output files with full path")
     parser.add_option("--bootstrap", "-n", type="int", dest="bootstrap", 
@@ -56,7 +56,7 @@ def main():
         sys.exit(1)
 
     if options.out_file is None:
-        out_file = os.path.dirname(os.path.abspath(cond1_file)) + "/brie_BF.tsv"
+        out_file = os.path.dirname(os.path.abspath(cell1_file)) + "/brie_BF.tsv"
     else:
         out_file = options.out_file
     try:
@@ -64,66 +64,62 @@ def main():
     except IOError:
         sys.exit("[Brie-diff] Unable to write: " + out_file)
 
-    if options.cond1_file is None or options.cond2_file is None:
+    if options.cell1_files is None or options.cell2_files is None:
         print("[Brie-diff] Error: need file on both conditions.")
         sys.exit(1)
     else:
         print("[Brie-diff] detecting differential splicing from files:")
-        print("    - %s" %options.cond1_file)
-        print("    - %s" %options.cond2_file)
-
-    ##### For hdf5 files
-    # f = h5py.File(options.cond1_file, "r")
-    # W1 = np.array(f["W_sample"]).mean(axis=1)
-    # sigma1 = np.array(f["sigma"])[0]
-    # counts1 = np.array(f["counts"])
-    # Psi1_all = np.array(f["Psi_sample"])
-    # features1 = np.array(f["features"])
-    # tran_ids1 = np.array(f["tran_ids"])
-    # f.close()
-
-    # f = h5py.File(options.cond2_file, "r")
-    # W2 = np.array(f["W_sample"]).mean(axis=1)
-    # sigma2 = np.array(f["sigma"])[0]
-    # counts2 = np.array(f["counts"])
-    # Psi2_all = np.array(f["Psi_sample"])
-    # features2 = np.array(f["features"])
-    # tran_ids2 = np.array(f["tran_ids"])
-    # f.close()
-
-    # idx = np.arange(0, len(tran_ids1), 2)
-    # x1 = Psi1_all[idx,:]
-    # x2 = Psi2_all[idx,:]
-    # y1 = np.dot(features1[idx,:], W1)
-    # y2 = np.dot(features2[idx,:], W2)
-    # c11 = np.round(counts1[idx])
-    # c12 = np.round(counts1[idx+1])
-    # c21 = np.round(counts2[idx])
-    # c22 = np.round(counts2[idx+1])
+        print("    - %s" %options.cell1_files)
+        print("    - %s" %options.cell2_files)
 
     #######
-    data1 = np.genfromtxt(options.cond1_file, delimiter=",", dtype="str")
-    data2 = np.genfromtxt(options.cond2_file, delimiter=",", dtype="str")
+    cell1_files = options.cell1_files.split(",")
+    cell2_files = options.cell2_files.split(",")
+
+    data1 = np.genfromtxt(cell1_files[0], delimiter=",", dtype="str")
+    data2 = np.genfromtxt(cell2_files[0], delimiter=",", dtype="str")
     idx = np.arange(0, data1.shape[0], 2)
+    tran_ids1 = data1[idx, 0]
+    tran_ids2 = data2[idx, 0]
     
-    y1 = data1[idx, 3].astype(float) #prior Y
-    y2 = data2[idx, 3].astype(float) #prior Y
+    y1 = np.zeros((len(idx), len(cell1_files)))
+    y2 = np.zeros((len(idx), len(cell2_files)))
+    sigma1 = np.zeros(len(cell1_files))
+    sigma2 = np.zeros(len(cell2_files))
+
+    y1[:,0] = data1[idx, 3].astype(float) #prior Y
+    y2[:,0] = data2[idx, 3].astype(float) #prior Y
+    sigma1[0] = data1[idx, 4].astype(float).mean()
+    sigma2[0] = data2[idx, 4].astype(float).mean()
+
     x1 = data1[idx, 5:].astype(float) #posterior samples
     x2 = data2[idx, 5:].astype(float) #posterior samples
     c11 = np.round(data1[idx, 2].astype(float))
     c21 = np.round(data2[idx, 2].astype(float))
     c12 = np.round(data1[idx+1, 2].astype(float))
     c22 = np.round(data2[idx+1, 2].astype(float))
-    sigma1 = data1[idx, 4].astype(float).mean()
-    sigma2 = data2[idx, 4].astype(float).mean()
-    tran_ids1 = data1[:, 0]
-    tran_ids2 = data2[:, 0]
+
+    for i in range(1, len(cell1_files)):
+        data1 = np.genfromtxt(cell1_files[i], delimiter=",", dtype="str")
+        y1[:,i] = data1[idx, 3].astype(float)
+        sigma1[i] = data1[idx, 4].astype(float).mean()
+        x1 = np.append(x1, data1[idx, 5:].astype(float), axis=1)
+        c11 += np.round(data1[idx, 2].astype(float))
+        c12 += np.round(data1[idx+1, 2].astype(float))
+
+    for i in range(1, len(cell2_files)):
+        data2 = np.genfromtxt(cell2_files[i], delimiter=",", dtype="str")
+        y2[:,i] = data2[idx, 3].astype(float)
+        sigma2[i] = data2[idx, 4].astype(float).mean()
+        x2 = np.append(x2, data2[idx, 5:].astype(float), axis=1)
+        c21 += np.round(data2[idx, 2].astype(float))
+        c22 += np.round(data2[idx+1, 2].astype(float))
+
 
     ########
-
     data = np.zeros((len(idx), 11))
-    data[:,0] = logistic(y1)
-    data[:,1] = logistic(y2)
+    data[:,0] = logistic(y1).mean(axis=1)
+    data[:,1] = logistic(y2).mean(axis=1)
     data[:,2] = x1.mean(axis=1)
     data[:,3] = x2.mean(axis=1)
     data[:,4] = c11
@@ -131,12 +127,17 @@ def main():
     data[:,6] = c21
     data[:,7] = c22
 
-    # Bayes factor
+    # Bayes factor #including GDE
     maxBF = options.maxBF
     bootstrap = options.bootstrap
     for i in range(len(x1)):
-        a1 = np.random.normal(y1[i], sigma1, bootstrap)
-        a2 = np.random.normal(y2[i], sigma2, bootstrap)
+        a1, a2 = np.array([]), np.array([])
+        for j in range(y1.shape[1]):
+            a1 = np.append(a1, np.random.normal(y1[i,j], sigma1[j], 
+                int(bootstrap/len(cell1_files))))
+        for j in range(y2.shape[1]):
+            a2 = np.append(a2, np.random.normal(y2[i,j], sigma2[j], 
+                int(bootstrap/len(cell1_files))))
         prior_diff = np.random.permutation(logistic(a1)) - logistic(a2)
         data[i,8] = np.mean(np.abs(prior_diff) <= 0.05)
         
@@ -144,8 +145,6 @@ def main():
         idx2_perm = np.random.randint(x2.shape[1], size=bootstrap)
         post_diff = x1[i,idx1_perm] - x2[i,idx2_perm]
         data[i,9] = np.mean(np.abs(post_diff) <= 0.05)
-        #data[i,9] = max(data[i,9], data[i,8] / maxBF)
-        # data[i,10] = min(np.log10(data[i,8] / data[i,9]), maxBF)
         data[i,10] = data[i,8] / max(data[i,9], data[i,8]/maxBF)
 
     labels = ["prior1", "prior2", "pis1", "psi2", "C11", "C12", "C21", "C22", 
@@ -155,7 +154,7 @@ def main():
         aline = "\t".join(["%.2f" %x for x in data[i,:]])
         # aline = "\t".join(["%.2f" %x for x in data[i,:-1]])
         # aline += "\t%.2e" %(data[i,-1])
-        fid.writelines(tran_ids1[i*2] + "\t" + aline+"\n")
+        fid.writelines(tran_ids1[i] + "\t" + aline+"\n")
     fid.close()
 
     print("[Brie-diff] Finished for %d splicing events." %len(idx))
