@@ -1,12 +1,12 @@
 Simulator for BRIE
 ==================
 
-Two simulation experiments in BRIE paper are based on Spanki_ RNA-seq  reads 
-simulator, which supports specific RPK (reads per kilo-base) value for each 
-transcript.
+The all three simulation experiments in BRIE paper are based on Spanki_ RNA-seq 
+reads simulator, which supports specific RPK (reads per kilo-base) value for 
+each transcript.
 
-Here, we provide two Python wraps to easily replicate the two simulation 
-experiments: 
+Here, we provide two Python wraps that were used to perform the simulation 
+experiments, and can be used to replicate them easily: 
 
 1) simulation of exon-inclusion ratio at different coverages, and generating an
    auxiliary variable for learning informative prior; 
@@ -38,11 +38,11 @@ auxiliary variable for learning informative prior.
   values of UniDiff1, as [0.9, 0.8, 0.7, 0.6, 0.4, 0.3, 0.2, 0.1]. It is for 
   reads in condition 2 in differential splicing calling.
 
-In all above modes, `rpk` values for Spanki input will be generated in a file 
-`tran_rpk.txt`, then the Spanki software will be run automatically, and reads 
+In all above modes, ``rpk`` values for Spanki input will be generated in a file 
+``tran_rpk.txt``, then the Spanki software will be run automatically, and reads 
 in fastq file and output truth (slight different from input rpk values, 
-`transcript_sims.txt`), will be generated, based on which an auxiliary variable 
-will generated `prior_fractions.txt`. Parameter 'priorR' can be used to 
+``transcript_sims.txt``), will be generated, based on which an auxiliary variable 
+will simulated in ``prior_fractions.txt``. Parameter ``priorR`` can be used to 
 customize correlations between the auxiliary variable and the simulation truth.
 
 
@@ -55,6 +55,13 @@ rate, but keep the similarity of the drop-out probability profile, as it
 achieved by add intercept to the drop-out probability in its logit space. There 
 might be slight difference between the setting drop-out rate and the final 
 output.
+
+Here, as the expression profile is set esemble to the real data, the sequence 
+features from the real data could be used to learn an informative prior.
+
+This simulator for drop-out is not limited to the exon-skipping events, but also
+can be used for the whole transcriptome in single cell, even one don't look into
+splicing.
 
 
 Installation
@@ -75,6 +82,8 @@ value in float format.
 
   * ``python setup.py install --user`` if you don't have root permission.
 
+  * check if installation is successful by typing ``spankisim_transcripts``
+
 - run the simulator wrap and see help (go to the simulator folder)
   
   * ``python simuPSI.py -h``
@@ -89,7 +98,7 @@ In the BRIE paper, the simulation is performed as following command lines:
 - PSI in LogitNormal for assessing quantification accuracy
   ::
 
-    python simuPSI.py -a $anno_file -f $ref_file -o $out_dir --rpk $rpk --seed 0 --theta=3.0 -m errorfree
+    python simuPSI.py -a $anno_file -f $ref_file -o $out_dir --rpk $rpk --seed 0 --mode LogitNormal --theta=3.0 -m errorfree
 
 - PSI in uniform for calling differential splicing
   ::
