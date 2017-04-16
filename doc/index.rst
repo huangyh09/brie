@@ -28,8 +28,8 @@ BRIE provides following functions through command line:
 1. ``brie``: Estimate isoform proportions and FPKM, and calculate weights for 
 regulatory features.
 
-2. ``brie-diff``: Calculate Bayes factor of differential splicing between two 
-cells or two conditions. 
+2. ``brie-diff``: Calculate Bayes factor of differential splicing between 
+multiple cells pair-wisely. 
 
 3. ``brie-event``: Extract the splicing events from gene annotation file in 
 gff3/gtf formate. 
@@ -64,6 +64,9 @@ in single cells <http://biorxiv.org/content/early/2017/01/05/098517>`_.
 
    Code: GitHub latest version
       https://github.com/huangyh09/brie
+
+   Simulation wraps on GitHub
+      https://github.com/huangyh09/brie/tree/master/simulator
 
    Data: splicing events annotations
       http://sourceforge.net/projects/brie-rna/files/annotation/

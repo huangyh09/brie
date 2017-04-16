@@ -287,7 +287,7 @@ def savegene(out_file, genes, atype="GFF3", tags="gene,mRNA,exon"):
             if atype.upper() == "GFF3":
                 aLine[8] = "ID=%s;Parent=%s" %(t.tranID, g.geneID)
             else:
-                aLine[8] = "gene_id \"%s\"; transcript_id\"%s\"" %(g.geneID, 
+                aLine[8] = "gene_id \"%s\"; transcript_id \"%s\"" %(g.geneID, 
                     t.tranID)
             fid.writelines("\t".join(aLine) + "\n")
 
@@ -301,7 +301,7 @@ def savegene(out_file, genes, atype="GFF3", tags="gene,mRNA,exon"):
                 if atype.upper() == "GFF3":
                     aLine[8] = "ID=%s.%d;Parent=%s" %(t.tranID, i+1, t.tranID)
                 else:
-                    aLine[8] = "gene_id \"%s\"; transcript_id\"%s\"" %(g.geneID, 
+                    aLine[8] = "gene_id \"%s\"; transcript_id \"%s\"" %(g.geneID, 
                         t.tranID)
                 fid.writelines("\t".join(aLine) + "\n")
 

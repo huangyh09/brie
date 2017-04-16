@@ -1,16 +1,16 @@
-# This file is to compute Bayes factor for Brie
+# This file is to compute Bayes factor for BRIE
 
 import os
 import sys
 import time
-# import h5py
+import gzip
 import numpy as np
 import multiprocessing
 from optparse import OptionParser, OptionGroup
 
+FID = None
 PROCESSED = 0
 TOTAL_GENE = 0
-TOTAL_READ = []
 START_TIME = time.time()
 
 def logistic(x):
@@ -26,10 +26,77 @@ def show_progress(RV=None):
         filled_len = int(bar_len * percents / 100)
         bar = '=' * filled_len + '-' * (bar_len - filled_len)
         
-        sys.stdout.write('\r[Brie] [%s] %.1f%% done in %.1f sec.' 
+        sys.stdout.write('\r[Brie-diff] [%s] %.1f%% done in %.1f sec.' 
             % (bar, percents, run_time))
         sys.stdout.flush()
+
+        FID.writelines(RV)
     return RV
+
+
+def get_prob(x1, x2, method="empirical"):
+    """
+    Calculate probability of the difference of two distributions.
+
+    method: empirical, GDE
+
+    """
+    if method == "empirical":
+        diff = x1 - x2
+        prob = np.mean(np.abs(diff) <= 0.05)
+
+    return prob
+
+def get_BF(data, cell_names, rand_idx, minBF=0):
+    """
+    Calculate Bayes factor for an event in multiple cells
+
+    Parameters
+    ----------
+    data: list of csv string
+        each element of the list is a line of csv file for a cell.
+    """
+    RV_line = ""
+    maxBF = rand_idx.shape[0] * 2
+    tran_id = data[0][0].split(",")[0]
+    gene_id = data[0][0].split(",")[1]
+    for i in range(len(data)):
+        data1 = data[i][0].split(",")
+        c11 = round(float(data1[2])) #counts
+        c12 = round(float(data[i][1])) #counts
+        u1 = float(data1[3]) #prior Y
+        s1 = float(data1[4]) #signma for Y
+        x1 = np.array(data1[5:], float)[rand_idx[:,0]] #posterior samples
+        y1 = np.random.normal(u1, s1, rand_idx.shape[0])
+
+        for j in range(i+1, len(data)):
+            data2 = data[j][0].split(",")
+            c21 = round(float(data2[2]))
+            c22 = round(float(data[j][1]))
+            u2 = float(data2[3])
+            s2 = float(data2[4])
+            x2 = np.array(data2[5:], float)[rand_idx[:,1]]
+            y2 = np.random.normal(u2, s2, rand_idx.shape[0])
+
+            post_prob = get_prob(x1, x2)
+            prior_prob = get_prob(logistic(y1), logistic(y2))
+            if post_prob == 0:
+                bf_val = maxBF
+            else:
+                bf_val = prior_prob / post_prob
+
+            if bf_val < minBF:
+                continue
+
+            RV_line += "%s\t%s\t" %(tran_id, gene_id)
+            RV_line += "%s\t%s\t" %(cell_names[i], cell_names[j])
+            RV_line += "%.3f\t%.3f\t" %(logistic(u1), logistic(u2))
+            RV_line += "%.3f\t%.3f\t" %(np.mean(x1), np.mean(x2))
+            RV_line += "%d\t%d\t%d\t%d\t" %(c11, c12, c21, c22)
+            RV_line += "%.1e\t%.1e\t%.1e\n" %(prior_prob, post_prob, bf_val)
+
+    return RV_line
+
 
 def main():
     # import warnings
@@ -37,127 +104,116 @@ def main():
 
     # parse command line options
     parser = OptionParser()
-    parser.add_option("--cell1_files", "-1", dest="cell1_files", default=None,
-        help="Brie output file for cell (group) 1")
-    parser.add_option("--cell2_files", "-2", dest="cell2_files", default=None,
-        help="Brie output file for cell group 2")
-    parser.add_option("--out_file", "-o", dest="out_file", default=None, 
-        help="Output files with full path")
-    parser.add_option("--bootstrap", "-n", type="int", dest="bootstrap", 
-        default=1000, help="Number of bootstrap [default: %default]")
-    parser.add_option("--maxBF", "-m", type="float", dest="maxBF", 
-        default=100000, help="maximum Bayes factor [default: %default]")
-    
 
+    parser.add_option("--inFiles", "-i", dest="in_files", default=None,
+        help="Input files of Brie samples for multiple cells, comma separated "
+        "for each cell, e.g., cell1,cell2,cell3")
+    parser.add_option("--outFile", "-o", dest="out_file", default=None, 
+        help="Output file with full path")
+
+    group = OptionGroup(parser, "Optional arguments")
+    group.add_option("--nproc", "-p", type="int", dest="nproc", default=4,
+        help="Number of subprocesses [default: %default]") 
+    group.add_option("--bootstrap", "-n", type="int", dest="bootstrap", 
+        default=1000, help="Number of bootstrap [default: %default]")
+    group.add_option("--minBF", dest="minBF", type="float", default=10, 
+        help="Minimum BF for saving out, e.g., 3 or 10. If it is 0, save all "
+        "events [default: %default]")
+    parser.add_option_group(group)
+    
     (options, args) = parser.parse_args()
     if len(sys.argv[1:]) == 0:
         print("Welcome to Brie-diff!\n")
         print("use -h or --help for help on argument.")
         sys.exit(1)
 
+    # Load input files
+    if options.in_files is None:
+        print("[Brie-diff] Error: need BRIE sample files.")
+        sys.exit(1)
+    else:
+        cell_names = []
+        samp_files = []
+        samp_files_raw = options.in_files.split(",")
+        for i in range(len(samp_files_raw)):
+            _file = os.path.abspath(samp_files_raw[i])
+            if os.path.isdir(_file):
+                if os.path.isfile(os.path.join(_file, "samples.csv.gz")):
+                    _file = os.path.join(_file, "samples.csv.gz")
+            if os.path.basename(_file) != "samples.csv.gz":
+                continue
+            samp_files.append(_file)
+            cell_names.append(os.path.basename(os.path.split(_file)[0]))
+
+        if len(samp_files) < 2:
+            print("[Brie-diff] Error: only %d sample file" %(len(samp_files)))
+            sys.exit(1)
+        else:
+            print("[Brie-diff] detecting differential splicing for %d cells "
+                  %(len(samp_files)))
+
+    # Check output file
+    global FID, TOTAL_GENE
     if options.out_file is None:
-        out_file = os.path.dirname(os.path.abspath(cell1_file)) + "/brie_BF.tsv"
+        out_file = os.path.dirname(samp_files[0]) + "/../brie_BF.tsv"
     else:
         out_file = options.out_file
     try:
-        fid = open(out_file, 'w')
+        FID = open(out_file, 'w')
     except IOError:
         sys.exit("[Brie-diff] Unable to write: " + out_file)
+    items = ["tran_id", "gene_id", "cell1", "cell2", "prior1", "prior2", 
+             "pis1", "psi2", "C1in", "C1out", "C2in", "C2out", "prior_prob", 
+             "post_prob", "Bayes_factor"]
+    FID.writelines("\t".join(items) + "\n")
 
-    if options.cell1_files is None or options.cell2_files is None:
-        print("[Brie-diff] Error: need file on both conditions.")
-        sys.exit(1)
+    data = np.genfromtxt(samp_files[0], delimiter=",", dtype="str")
+    tran_ids = data[:,0]
+    samp_num = data.shape[1] - 5
+    TOTAL_GENE = int(len(tran_ids) / 2)
+
+    minBF = options.minBF
+    rand_idx = np.random.randint(samp_num, size=(options.bootstrap, 2))
+
+    # process many files.
+    fid_in = []
+    for i in range(len(samp_files)):
+        fin = gzip.open(samp_files[i], 'rb')
+        tmp = fin.readline()
+        fid_in.append(fin)
+
+    # get Bayes factor
+    results = []
+    if options.nproc <= 1:
+        for k in range(TOTAL_GENE):
+            line_all = []
+            for i in range(len(fid_in)):
+                line1 = fid_in[i].readline()
+                line2 = fid_in[i].readline()
+                line1 = line1.decode('utf8').strip()
+                line2 = line2.decode('utf8').strip()
+                line_all.append([line1, line2.split(",")[2]])
+
+            result = get_BF(line_all, cell_names, rand_idx, minBF)
+            show_progress(result)
     else:
-        print("[Brie-diff] detecting differential splicing from files:")
-        print("    - %s" %options.cell1_files)
-        print("    - %s" %options.cell2_files)
+        pool = multiprocessing.Pool(processes=options.nproc)
+        for k in range(TOTAL_GENE):
+            line_all = []
+            for i in range(len(fid_in)):
+                line1 = fid_in[i].readline()
+                line2 = fid_in[i].readline()
+                line1 = line1.decode('utf8').strip()
+                line2 = line2.decode('utf8').strip()
+                line_all.append([line1, line2.split(",")[2]])
 
-    #######
-    cell1_files = options.cell1_files.split(",")
-    cell2_files = options.cell2_files.split(",")
-
-    data1 = np.genfromtxt(cell1_files[0], delimiter=",", dtype="str")
-    data2 = np.genfromtxt(cell2_files[0], delimiter=",", dtype="str")
-    idx = np.arange(0, data1.shape[0], 2)
-    tran_ids1 = data1[idx, 0]
-    tran_ids2 = data2[idx, 0]
+            pool.apply_async(get_BF, (line_all, cell_names, rand_idx, minBF),
+                callback=show_progress)
+        pool.close()
+        pool.join()
     
-    y1 = np.zeros((len(idx), len(cell1_files)))
-    y2 = np.zeros((len(idx), len(cell2_files)))
-    sigma1 = np.zeros(len(cell1_files))
-    sigma2 = np.zeros(len(cell2_files))
-
-    y1[:,0] = data1[idx, 3].astype(float) #prior Y
-    y2[:,0] = data2[idx, 3].astype(float) #prior Y
-    sigma1[0] = data1[idx, 4].astype(float).mean()
-    sigma2[0] = data2[idx, 4].astype(float).mean()
-
-    x1 = data1[idx, 5:].astype(float) #posterior samples
-    x2 = data2[idx, 5:].astype(float) #posterior samples
-    c11 = np.round(data1[idx, 2].astype(float))
-    c21 = np.round(data2[idx, 2].astype(float))
-    c12 = np.round(data1[idx+1, 2].astype(float))
-    c22 = np.round(data2[idx+1, 2].astype(float))
-
-    for i in range(1, len(cell1_files)):
-        data1 = np.genfromtxt(cell1_files[i], delimiter=",", dtype="str")
-        y1[:,i] = data1[idx, 3].astype(float)
-        sigma1[i] = data1[idx, 4].astype(float).mean()
-        x1 = np.append(x1, data1[idx, 5:].astype(float), axis=1)
-        c11 += np.round(data1[idx, 2].astype(float))
-        c12 += np.round(data1[idx+1, 2].astype(float))
-
-    for i in range(1, len(cell2_files)):
-        data2 = np.genfromtxt(cell2_files[i], delimiter=",", dtype="str")
-        y2[:,i] = data2[idx, 3].astype(float)
-        sigma2[i] = data2[idx, 4].astype(float).mean()
-        x2 = np.append(x2, data2[idx, 5:].astype(float), axis=1)
-        c21 += np.round(data2[idx, 2].astype(float))
-        c22 += np.round(data2[idx+1, 2].astype(float))
-
-
-    ########
-    data = np.zeros((len(idx), 11))
-    data[:,0] = logistic(y1).mean(axis=1)
-    data[:,1] = logistic(y2).mean(axis=1)
-    data[:,2] = x1.mean(axis=1)
-    data[:,3] = x2.mean(axis=1)
-    data[:,4] = c11
-    data[:,5] = c12
-    data[:,6] = c21
-    data[:,7] = c22
-
-    # Bayes factor #including GDE
-    maxBF = options.maxBF
-    bootstrap = options.bootstrap
-    for i in range(len(x1)):
-        a1, a2 = np.array([]), np.array([])
-        for j in range(y1.shape[1]):
-            a1 = np.append(a1, np.random.normal(y1[i,j], sigma1[j], 
-                int(bootstrap/len(cell1_files))))
-        for j in range(y2.shape[1]):
-            a2 = np.append(a2, np.random.normal(y2[i,j], sigma2[j], 
-                int(bootstrap/len(cell1_files))))
-        prior_diff = np.random.permutation(logistic(a1)) - logistic(a2)
-        data[i,8] = np.mean(np.abs(prior_diff) <= 0.05)
-        
-        idx1_perm = np.random.randint(x1.shape[1], size=bootstrap)
-        idx2_perm = np.random.randint(x2.shape[1], size=bootstrap)
-        post_diff = x1[i,idx1_perm] - x2[i,idx2_perm]
-        data[i,9] = np.mean(np.abs(post_diff) <= 0.05)
-        data[i,10] = data[i,8] / max(data[i,9], data[i,8]/maxBF)
-
-    labels = ["prior1", "prior2", "pis1", "psi2", "C11", "C12", "C21", "C22", 
-              "prior_prob", "post_prob", "Bayes_factor"]
-    fid.writelines("tran_id\t" + "\t".join(labels) + "\n")
-    for i in range(data.shape[0]):
-        aline = "\t".join(["%.2f" %x for x in data[i,:]])
-        # aline = "\t".join(["%.2f" %x for x in data[i,:-1]])
-        # aline += "\t%.2e" %(data[i,-1])
-        fid.writelines(tran_ids1[i] + "\t" + aline+"\n")
-    fid.close()
-
-    print("[Brie-diff] Finished for %d splicing events." %len(idx))
+    print("")
+    print("[Brie-diff] Finished for %d splicing events." %(TOTAL_GENE))
         
 
 if __name__ == "__main__":

@@ -36,7 +36,7 @@ Source code
   terminal:
 
   * GitHub: https://github.com/huangyh09/brie
-  * GitHub zip file: https://github.com/huangyh09/brie/archive/master.zip
+
   * Sourceforge: http://sourceforge.net/projects/brie-rna/
 
   ::

@@ -120,21 +120,36 @@ are using)
 2. Differential splicing
 ========================
 
-This command allows to detect differential splicing between two cells or two 
-conditions by calculating Bayes factor. You could run it like this:
+This command allows to detect differential splicing between many cells 
+pair-wisely, including just two cells, by calculating Bayes factor. You could 
+run it as follows:
+
+For two cells (``-p 1 --minBF 0`` gives all events in the same order. Speed: 
+10-20 second with 1 CPU)
 
 ::
 
-  brie-diff -1 cell1/samples.csv.gz -2 cell2/samples.csv.gz -o c1_c2.diff.tsv
+  brie-diff -i cell1/samples.csv.gz,cell2/samples.csv.gz -o c1_c2.diff.tsv -p 1 --minBF 0
 
-Then you will have an output file with 12 columns:
 
-* column1: transcript id, or splicing event id
-* column2-3: prior of exon inclusion fraction for cell 1 and cell 2
-* column4-5: posterior of exon inclusion fraction for cell 1 and cell 2
-* column6-9: counts for inclusion / exclusion for cell1, and then cell 2
-* column10-11: probability of prior and posterior diff<0.05
-* column 12: Bayes factor
+For many cells (gives events with ``BF>10``. Speed: 100 cells in ~10min with 30 
+CPUs)
+
+::
+
+  fileList=cell1/samples.csv.gz,cell2/samples.csv.gz,cell3/samples.csv.gz,cell4/samples.csv.gz
+
+  brie-diff -i $fileList -o c1_c4.diff.tsv
+
+Then you will have an output file with 15 columns:
+
+* column1-2: transcript id and gene id
+* column3-4: cell 1 and cell 2 names (the folder names)
+* column5-6: prior of exon inclusion fraction for cell 1 and cell 2
+* column7-8: posterior of exon inclusion fraction for cell 1 and cell 2
+* column9-12: counts for inclusion and exclusion for cell1, and then cell 2
+* column13-14: probability of prior and posterior diff<0.05
+* column 15: Bayes factor
 
 .. note::
   Bayes factor is different from p value in hypothesis test. A good threshold 
@@ -149,17 +164,20 @@ you are using):
   Usage: brie-diff [options]
 
   Options:
-    -h, --help            show this help message and exit
-    -1 COND1_FILE, --cond1_file=COND1_FILE
-                          Brie output file for condition 1
-    -2 COND2_FILE, --cond2_file=COND2_FILE
-                          Brie output file for condition 2
+  -h, --help            show this help message and exit
+  -i IN_FILES, --inFiles=IN_FILES
+                        Input files of Brie samples for multiple cells, comma
+                        separated for each cell, e.g., cell1,cell2,cell3
+  -o OUT_FILE, --outFile=OUT_FILE
+                        Output file with full path
+
+  Optional arguments:
+    -p NPROC, --nproc=NPROC
+                        Number of subprocesses [default: 4]
     -n BOOTSTRAP, --bootstrap=BOOTSTRAP
-                          Number of bootstrap [default: 1000]
-    -m MAXBF, --maxBF=MAXBF
-                          maximum Bayes factor [default: 100000]
-    -o OUT_FILE, --out_file=OUT_FILE
-                          Output files with full path
+                        Number of bootstrap [default: 1000]
+    --minBF=MINBF       Minimum BF for saving out, e.g., 3 or 10. If it is 0,
+                        save all events [default: 10]
 
 
 

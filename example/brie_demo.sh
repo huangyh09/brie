@@ -29,4 +29,5 @@ brie -a $anno_file -s $sam2 -f $feature_file -o $out_file -p 15
 
 
 # ### 1.2 BRIE differential splicing
-brie-diff -1 $DATA_DIR/out/E7.75_c1/samples.csv.gz -2 $DATA_DIR/out/E7.75_c2/samples.csv.gz -o $DATA_DIR/out/E7.75_c1_c2.diff.tsv
+fileList=$DATA_DIR/out/E7.75_c1/samples.csv.gz,$DATA_DIR/out/E7.75_c2/samples.csv.gz
+brie-diff -i $fileList -o $DATA_DIR/out/E7.75_c1_c2.diff.tsv
