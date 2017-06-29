@@ -58,12 +58,14 @@ def fetch_reads(samfile, chrom, start, end, rm_duplicate=True, inner_only=True,
             chrom = chrom_parts[0]
         else:
             chrom = chrom_parts[1]
+
     try:
         reads = samfile.fetch(chrom, start, end)
-
     except ValueError:
+        reads = []
         print("Cannot fetch reads in region: %s:%d-%d" %(chrom, start, end))
     except AssertionError:
+        reads = []
         print("AssertionError in region: %s:%d-%d" %(chrom, start, end))
         print(" - Check that your BAM file is indexed!")
 
