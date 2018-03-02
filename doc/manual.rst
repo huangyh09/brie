@@ -299,12 +299,12 @@ calculated by command line ``brie-factor``. Besides the annotation file,
 it also requires genome sequence file (the same as above), and a phast_ 
 conservation file in bigWig_ format. For human and mouse, you could 
 download it directly from UCSC browser: mm10.60way.phastCons.bw_ 
-and hg38.phyloP100way.bw_. 
+and hg38.phastCons100way.bw_. 
 
 .. _phast: http://compgen.cshl.edu/phast/
 .. _bigWig: https://genome.ucsc.edu/goldenpath/help/bigWig.html
 .. _mm10.60way.phastCons.bw: http://hgdownload.cse.ucsc.edu/goldenPath/mm10/phastCons60way/
-.. _hg38.phyloP100way.bw: http://hgdownload.cse.ucsc.edu/goldenPath/hg38/phyloP100way/
+.. _hg38.phastCons100way.bw: http://hgdownload.cse.ucsc.edu/goldenPath/hg38/phastCons100way/
 
 .. note::
   In order to fetch data from the bigWig file, we use a utility ``bigWigSummary``
