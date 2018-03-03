@@ -61,6 +61,5 @@ etc.
 References
 ----------
 
-Yuanhua Huang and Guido Sanguinetti. `Transcriptome-wide splicing quantification 
-in single cells <http://biorxiv.org/content/early/2017/01/05/098517>`_. 
-\ **bioRxiv**\, 2017, 0985172.
+Yuanhua Huang and Guido Sanguinetti. `BRIE: transcriptome-wide splicing quantification in single cells <https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1248-5>`_. 
+\ **Genome Biology**\, 2017; 18(1):123.
