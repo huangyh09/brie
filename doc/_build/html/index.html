@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Home &#8212; brie 0.1.3 documentation</title>
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.3',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="install.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="#">
+          BRIE</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.3</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"><ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="manual.html">Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release.html">History</a></li>
+</ul>
+</ul>
+</li>
+              
+                <li class="dropdown">
+  <a role="button"
+     id="dLabelLocalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"
+      role="menu"
+      aria-labelledby="dLabelLocalToc"><ul>
+<li><a class="reference internal" href="#">Home</a><ul>
+<li><a class="reference internal" href="#about-brie">About BRIE</a></li>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+<li><a class="reference internal" href="#references">References</a></li>
+</ul>
+</li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+                
+  <li>
+    <a href="install.html" title="Next Chapter: Installation"><span class="glyphicon glyphicon-chevron-right visible-sm"></span><span class="hidden-sm hidden-tablet">Installation &raquo;</span>
+    </a>
+  </li>
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/index.rst.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 content">
+      
+  <div class="section" id="home">
+<h1>Home<a class="headerlink" href="#home" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="about-brie">
+<h2>About BRIE<a class="headerlink" href="#about-brie" title="Permalink to this headline">¶</a></h2>
+<p>BRIE (Bayesian regression for isoform estimate) is a Bayesian method to
+estimate isoform proportions from RNA-seq data. Currently, BRIE could take
+sequence features to automatically learn informative prior of exon inclusion
+ratio in  exon-skippiing events. This informative prior is very important when
+limited data is available. In Bulk RNA-seq experiment, we could easily increase
+the amplification to get more sequencing reads to improve the accuracy of
+isoform estimate. However, in single cell RNA-seq (scRNA-seq) experiments, the
+initial molecular is very limited, which always results some genes with very
+low coverage or even drop-out. In scRNA-seq, the BRIE method, by integrating
+informative prior, e.g. learned from sequence feature, could provide accurate
+and reproducible estimates of splicing in single cells, as well as sensitive
+differential analyses.</p>
+<p>BRIE provides following functions through command line:</p>
+<p>1. <code class="docutils literal"><span class="pre">brie</span></code>: Estimate isoform proportions and FPKM, and calculate weights for
+regulatory features.</p>
+<p>2. <code class="docutils literal"><span class="pre">brie-diff</span></code>: Calculate Bayes factor of differential splicing between
+multiple cells pair-wisely.</p>
+<p>3. <code class="docutils literal"><span class="pre">brie-event</span></code>: Extract the splicing events from gene annotation file in
+gff3/gtf formate.</p>
+<p>4. <code class="docutils literal"><span class="pre">brie-factor</span></code>: Fetch genentic features from genome sequence reference file
+in fasta formate.</p>
+</div>
+<div class="section" id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="install.html#easy-install">Easy install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#source-code">Source code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#test">Test</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="manual.html">Manual</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="manual.html#brie-isoform-estimate">1. BRIE isoform estimate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="manual.html#differential-splicing">2. Differential splicing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="manual.html#splicing-events">3. Splicing events</a></li>
+<li class="toctree-l2"><a class="reference internal" href="manual.html#sequence-features">4. Sequence features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="manual.html#preprocess">5. Preprocess</a></li>
+<li class="toctree-l2"><a class="reference internal" href="manual.html#examples">6. Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">FAQ</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#contacts">Contacts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="faq.html#report-bugs">Report bugs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="release.html">History</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="release.html#release-v0-1-3-16-04-2017">Release v0.1.3 (16/04/2017)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="release.html#release-v0-1-2-13-01-2017">Release v0.1.2 (13/01/2017)</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline">¶</a></h2>
+<p>Yuanhua Huang and Guido Sanguinetti. <a class="reference external" href="https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1248-5">BRIE: transcriptome-wide splicing
+quantification in single cells</a>.
+<strong>Genome Biology</strong>, 2017; 18(1):123.</p>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<dl class="last docutils">
+<dt>Code: GitHub latest version</dt>
+<dd><a class="reference external" href="https://github.com/huangyh09/brie">https://github.com/huangyh09/brie</a></dd>
+<dt>Simulation wraps on GitHub</dt>
+<dd><a class="reference external" href="https://github.com/huangyh09/brie/tree/master/simulator">https://github.com/huangyh09/brie/tree/master/simulator</a></dd>
+<dt>Data: splicing events annotations</dt>
+<dd><a class="reference external" href="http://sourceforge.net/projects/brie-rna/files/annotation/">http://sourceforge.net/projects/brie-rna/files/annotation/</a></dd>
+<dt>Data: usage examples</dt>
+<dd><a class="reference external" href="http://sourceforge.net/projects/brie-rna/files/examples/">http://sourceforge.net/projects/brie-rna/files/examples/</a></dd>
+</dl>
+</div>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2018, Yuanhua Huang.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.6.3.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>
