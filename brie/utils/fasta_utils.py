@@ -20,15 +20,27 @@ class FastaFile:
 
 
 def rev_seq(seq):
-    _tmp = []
-    _tmp[:] = seq
-    for j in range(len(_tmp)):
-        if _tmp[j] == "A": _tmp[j] = "T"
-        elif _tmp[j] == "T": _tmp[j] = "A"
-        elif _tmp[j] == "G": _tmp[j] = "C"
-        elif _tmp[j] == "C": _tmp[j] = "G"
-    RV = "".join(_tmp[::-1])
-    return RV
+    """Reverse the sequence and use the complement bases.
+    This is for annotation on "-" strand.
+    
+    example: 
+        rev_seq("atgc") 
+        >>> 'gcat'
+        rev_seq("akgc")
+        >>> "k" is not valid base in:
+        >>> dict_keys(['A', 'C', 'G', 'T', 'N', 'a', 'c', 'g', 't', 'n'])
+    """
+    complement = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A', 'N': 'N',
+                  'a': 't', 'c': 'g', 'g': 'c', 't': 'a', 'n': 'n'}
+    return_seq = ""
+    for base in seq:
+        try:
+            return_seq = complement[base] + return_seq
+        except KeyError:
+            print('"%s" is not valid base in:' %(base))
+            print(complement.keys())
+            raise
+    return return_seq
 
 
 def get_motif(seq_full, motif, mode="counts"):
