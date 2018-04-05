@@ -27,11 +27,12 @@ regulatory features.
 multiple cells pair-wisely. 
 
 3. ``brie-event``: Extract the splicing events from gene annotation file in 
-gff3/gtf formate. 
+gff3/gtf formate. (**Only supported in Python2**, see this issue_)
 
 4. ``brie-factor``: Fetch genentic features from genome sequence reference file 
 in fasta formate.
 
+.. _issue: https://github.com/huangyh09/brie/issues/12
 
 Quick Start
 -----------
