@@ -186,6 +186,12 @@ you are using):
 
 **Splicing events generating from full annotation**
 
+.. note::
+  This function is not compatible for Python 3 at the moment. This is because 
+  the main scripts for this function are borrowed from Yarden's package 
+  rnaseqlib_, which is only supprted by Python 2. In order to use this function, 
+  please install `brie` in a Python 2 environment.
+
 This program is modified from Yarden Katz's Python package rnaseqlib_, with 
 supporting different input annotation formats, e.g., gtf, gff3 and ucsc table.
 For example, you could download a full annotation file for mouse from GENCODE_.
@@ -248,7 +254,7 @@ required, for example, mouse genome_ sequence here.
 
 ::
 
-  brie-event-filter -a AS_events/SE.gff3 -anno_ref gencode.vM12.annotation.gtf -r GRCm38.p5.genome.fa
+  brie-event-filter -a AS_events/SE.gff3 --anno_ref=gencode.vM12.annotation.gtf -r GRCm38.p5.genome.fa
 
 Then you will find an output file as ``AS_events/SE.gold.gff3``, which only 
 contains splicing events passing the following constrains:
