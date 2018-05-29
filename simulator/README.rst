@@ -90,6 +90,29 @@ value in float format.
 
   * ``python simuDropout.py -h``
 
+**Notes** The fasta file downloaded from GENCODE is not compatible with Spanki,
+because the pyfasta package used in Spanki require ``>chr1`` rather than 
+``>chr1 extra information``. Thus, the fasta file needs a bit change, which can
+be done with spanki_anno.py_. In addition, from our experience, we suggests 
+generating reads in a Python2 environment, and specifiy versions of 
+dependencies of Spanki, which you could do it as follows
+
+.. code-block:: bash
+
+  conda create --name brieSim python=2.7 numpy=1.13.0 
+  source activate brieSim
+
+  conda install -c bioconda cufflinks= 2.2.1
+  conda install -c bioconda samtools=1.2.0
+  conda install -c bioconda pysam=0.14.1
+
+  git clone https://github.com/huangyh09/Spanki.git
+  python Spanki/setup.py install
+  git clone https://github.com/huangyh09/brie.git
+  python brie/setup.py install
+
+  python Spanki/extra/spanki_anno.py -f GRCm38.p4.genome.fa
+
 
 Examples
 --------
@@ -114,7 +137,9 @@ In the BRIE paper, the simulation is performed as following command lines:
 
     python simuDropout.py -a $anno_file -f $ref_file -d $dice_file -o $out_dir --dropoutProb $prob_file --dropoutRate $rate -N 600000 -m errorfree
 
-- demo files with data can be found in the examples: 
+- demo files with data can be found in the examples: simulate.sh_
 
+.. _spanki_anno.py: https://github.com/huangyh09/Spanki/blob/master/extra/spanki_anno.py
 .. _Spanki: http://www.cbcb.umd.edu/software/spanki/
 .. _logitnormal: https://en.wikipedia.org/wiki/Logit-normal_distribution
+.. _simulate.sh: https://github.com/huangyh09/brie/tree/master/simulator/simulate.sh
