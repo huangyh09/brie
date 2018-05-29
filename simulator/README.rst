@@ -100,18 +100,22 @@ dependencies of Spanki, which you could do it as follows
 .. code-block:: bash
 
   conda create --name brieSim python=2.7 numpy=1.13.0 
-  source activate brieSim
+  conda activate brieSim
 
-  conda install -c bioconda cufflinks= 2.2.1
+  pip install pysam===0.14.1
+  conda install -c bioconda cufflinks=2.2.1
   conda install -c bioconda samtools=1.2.0
-  conda install -c bioconda pysam=0.14.1
 
   git clone https://github.com/huangyh09/Spanki.git
-  python Spanki/setup.py install
+  cd Spanki && python setup.py install && cd ..
   git clone https://github.com/huangyh09/brie.git
-  python brie/setup.py install
+  cd brie && python setup.py install && cd ..
 
   python Spanki/extra/spanki_anno.py -f GRCm38.p4.genome.fa
+
+Then you will have dependencies and ``GRCm38.p4.genome.spanki.fa``. 
+
+**Also, we usually use the fastq file rather than the aligned bam file from Spanki.**
 
 
 Examples
@@ -137,9 +141,9 @@ In the BRIE paper, the simulation is performed as following command lines:
 
     python simuDropout.py -a $anno_file -f $ref_file -d $dice_file -o $out_dir --dropoutProb $prob_file --dropoutRate $rate -N 600000 -m errorfree
 
-- demo files with data can be found in the examples: simulate.sh_
+- demo files with direct Spanki be found in the examples: spanki_demo.sh_
 
 .. _spanki_anno.py: https://github.com/huangyh09/Spanki/blob/master/extra/spanki_anno.py
 .. _Spanki: http://www.cbcb.umd.edu/software/spanki/
 .. _logitnormal: https://en.wikipedia.org/wiki/Logit-normal_distribution
-.. _simulate.sh: https://github.com/huangyh09/brie/tree/master/simulator/simulate.sh
+.. _spanki_demo.sh: https://github.com/huangyh09/brie/tree/master/simulator/spanki_demo.sh
