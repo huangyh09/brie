@@ -65,10 +65,12 @@ def loadSpanki(file_name, tran_ids, gene_ids=None,
     ignoreNan=False):
     frac = np.zeros(len(tran_ids))
     FPKM = np.zeros(len(tran_ids))
+    FPKM[:] = None
 
-    data = np.genfromtxt(file_name, skip_header=1, dtype="str")
+    data = np.genfromtxt(file_name, skip_header=1, dtype="S100")
     idxT = id_mapping(tran_ids, data[:,1])
-    FPKM = data[idxT, 3].astype(float)
+    idx_no_None = idxT >= 0
+    FPKM[idx_no_None] = data[idxT[idx_no_None].astype(int), 3].astype(float)
     frac = get_fraction(gene_ids, FPKM, ignoreNan)
     
     return frac, FPKM
