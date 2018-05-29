@@ -10,10 +10,9 @@ import scipy.stats as st
 from optparse import OptionParser, OptionGroup
 
 # import pyximport; pyximport.install()
-# from ..out_utils import id_mapping
-from diceseq import loadgene
-from diceseq.utils.out_utils import id_mapping
-from diceseq.utils.misc_utils import loadresult
+
+from brie import loadgene
+from utils import id_mapping, loadSpanki
 
 START_TIME = time.time()
 
@@ -176,8 +175,8 @@ def main():
     output = pro.communicate()[0]
 
     ## generate prior
-    simu_truth = loadresult(out_dir+"/transcript_sims.txt", np.array(tran_ids), 
-        np.array(gene_ids), method="spanki")[0][range(0, len(tran_ids), 2)]
+    simu_truth = loadSpanki(out_dir+"/transcript_sims.txt", np.array(tran_ids), 
+        np.array(gene_ids))[0][range(0, len(tran_ids), 2)]
     prior = generate_prior(simu_truth, corr=options.priorR, 
         min_sigma=0.1, max_sigma=5, steps=2000)
 
