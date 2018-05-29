@@ -1,6 +1,6 @@
 """
 Brie - Bayesian regression for isoform estimate
-See: http://brie.sourceforge.net
+See: http://brie-rna.sourceforge.net
 """
 
 # Always prefer setuptools over distutils
@@ -34,10 +34,10 @@ setup(
 
     # Author details
     author='Yuanhua Huang',
-    author_email='Y.Huang@ed.ac.uk',
+    author_email='yuanhua@ebi.ac.uk',
 
     # Choose your license
-    license='MIT',
+    license='Apache-2.0',
 
     # What does your project relate to?
     keywords=['splicing isoform estimate', 'Bayesian regression', 
