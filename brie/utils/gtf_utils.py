@@ -6,6 +6,7 @@
 # assumption is usually right for the gtf file downloaded from Ensembl database.
 
 import sys
+import subprocess
 import numpy as np
 
 class Transcript:
@@ -189,8 +190,11 @@ def loadgene(anno_file, comments="#,>", geneTag="gene",
         a list of loaded genes
     """
 
-    #TODO: load gzip file
-    fid = open(anno_file, "r")
+    if anno_file.endswith(".gz") or anno_file.endswith(".gzip"):
+        import gzip
+        fid = gzip.open(anno_file, "rb")
+    else:
+        fid = open(anno_file, "r")
     anno_in = fid.readlines()
     fid.close()
 
@@ -261,6 +265,10 @@ def savegene(out_file, genes, atype="GFF3", tags="gene,mRNA,exon"):
     tags: string
         tags for gene, mRNA, exon, respectively. Use comma for delimit
     """
+    if out_file.endswith(".gz"):
+        out_file = out_file[:-3]
+    elif out_file.endswith(".gzip"):
+        out_file = out_file[:-5]
     fid = open(out_file, "w")
     fid.writelines("#%s file produced by savegene.\n" %atype)
 
@@ -304,6 +312,9 @@ def savegene(out_file, genes, atype="GFF3", tags="gene,mRNA,exon"):
                     aLine[8] = "gene_id \"%s\"; transcript_id \"%s\"" %(g.geneID, 
                         t.tranID)
                 fid.writelines("\t".join(aLine) + "\n")
-
     fid.close()
-
+    
+    bashCommand = "gzip -f %s" %(out_file) 
+    pro = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+    output = pro.communicate()[0]
+        
