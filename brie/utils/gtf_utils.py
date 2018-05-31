@@ -281,9 +281,17 @@ def savegene(out_file, genes, atype="GFF3", tags="gene,mRNA,exon"):
         aLine[4] = str(g.stop)
         aLine[6] = g.strand
         if atype.upper() == "GFF3":
-            aLine[8] = "ID=%s" %g.geneID
+            aLine[8] = "ID=%s;gene_id=%s" %(g.geneID, g.geneID)
+            if g.geneName != "*" and  g.geneName != "#":
+                aLine[8] += ";gene_name=%s" %g.geneName
+            if g.biotype != "*" and  g.biotype != "#":
+                aLine[8] += ";gene_type=%s" %g.biotype
         else:
             aLine[8] = "gene_id \"%s\"" %g.geneID
+            if g.geneName != "*" and  g.geneName != "#":
+                aLine[8] += "; gene_name \"%s\"" %g.geneName
+            if g.biotype != "*" and  g.biotype != "#":
+                aLine[8] += "; gene_type \"%s\"" %g.biotype
         fid.writelines("\t".join(aLine) + "\n")
 
         for t in g.trans:
