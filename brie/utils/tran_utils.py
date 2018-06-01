@@ -11,7 +11,7 @@ def normal_pdf(x, mu, sigma):
     RV = 1 / (sigma*np.sqrt(2*np.pi)) * np.exp(-1.0/2*((x-mu)/sigma)**2)
     return RV
 
-class TranUnits:
+class TranUnits:# isoform or transcript
     """docstring for TranUnits"""
     def __init__(self, transcript):
         self.chrom  = transcript.chrom
@@ -160,12 +160,12 @@ class TranUnits:
             sys.exit(1)
 
         self.rcnt = max(len(reads1), len(reads2))
-        self.idx5 = np.ones(self.rcnt, "float")
+        self.idx5 = np.ones(self.rcnt, "float") # direction of matching the genonme
         self.idx3 = np.ones(self.rcnt, "float")
-        self.Rmat = np.ones(self.rcnt, "bool")
-        self.flen = np.ones(self.rcnt, "float")
-        self.proB = np.ones(self.rcnt, "float")
-        self.proU = np.ones(self.rcnt, "float")
+        self.Rmat = np.ones(self.rcnt, "bool") # binary matrix identity if it is possible
+        self.flen = np.ones(self.rcnt, "float") # fragment lenghth
+        self.proB = np.ones(self.rcnt, "float") # proba matrix Biased (biased correct)
+        self.proU = np.ones(self.rcnt, "float") # probability matrix Uniform --> brie
         self.bias_mode = bias_mode
         self.efflen_bias = 0
         self.efflen_unif = 0
@@ -236,7 +236,7 @@ class TranUnits:
             if self.bias_mode != "unif":
                 self.proB[i] *= (self.probs[fL-1] / self.biasLen[fL-1])
 
-class TranSplice:
+class TranSplice: #gene
     def __init__(self, Gene):
         self.gene = Gene
         self.stop = Gene.stop
@@ -245,9 +245,9 @@ class TranSplice:
         self.unitSet = []
         for i in range(len(self.gene.trans)):
             self.unitSet.append(TranUnits(self.gene.trans[i]))
-        self.read1p = []
+        self.read1p = []# rnaseq read paired
         self.read2p = []
-        self.read1u = []
+        self.read1u = []# unpaired 3to5 or 5to3
         self.read2u = []
 
     def set_sequence(self, fastafile):

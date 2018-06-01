@@ -12,16 +12,18 @@ class Transcript:
     def __init__(self, chrom, strand, start, stop, tran_id, tran_name="*", 
         biotype="*"):
         """a general purpose transcript object with the basic information.
+
+           An exon is stored as a list of two ints: [start, stop]
         """
         self.chrom  = chrom
         self.strand = strand
         self.start  = int(start)
         self.stop   = int(stop)
         self.tranID = tran_id
-        self.exons  = np.zeros((0,2), "int")
+        self.exons  = np.zeros((0,2), "int") # empty exon list
         self.seglen = None
         self.tranL  = 0
-        self.exonNum = 0
+        self.exonNum = 0 # number of exons
         self.biotype = biotype
         self.tranName = tran_name
         
@@ -105,6 +107,8 @@ def parse_attribute(attStr, default="*",
     ----------
     attStr: string
         String containing attributes either in GTF or GFF3 format.
+        example:
+        'gene_id "ENSMUSG00000026017.13"; transcript_id "ENSMUST00000187978.6"; gene_type "protein_coding"; gene_name "Carf"; transcript_type "protein_coding"; transcript_name "Carf-001"; level 2; protein_id "ENSMUSP00000141169.1"; transcript_support_level "1"; tag "basic"; tag "appris_principal_3"; tag "CCDS"; ccdsid "CCDS14989.1"; havana_gene "OTTMUSG00000022350.5"; havana_transcript "OTTMUST00000053331.3";\n'
     default: string
         default value for ID, Name, Type and Parent.
     ID_tags: string
@@ -124,6 +128,13 @@ def parse_attribute(attStr, default="*",
     -------
     RV: library of string
         Library of all tags, always including ID, Name, Type, Parenet.
+        example of returned RV with attStr example presented above:
+        {'ID':'ENSMUST00000187978.6',
+         'Name':'Carf-001',
+         'Type':'protein_coding',
+         'Parent':'*',
+         ... # non matched key-value pairs
+        }
     """
     RV = {}
     RV["ID"] = default
@@ -136,32 +147,38 @@ def parse_attribute(attStr, default="*",
     Parent_tags = Parent_tags.split(",")
 
     attList = attStr.rstrip().split(";")
-    for att in attList:
+    for att in attList: # for each semicolon separated value of attStr (see ex.)
+        
+        # remove " " from the beginning of attribute list:
         while len(att) > 0 and att[0] == " ": 
             att = att[1:]
-        if len(att) == 0: 
-            continue
+            
+        if len(att) == 0: # if attribute list is empty
+            continue # skip it
+
+        # cut attribute in a list of words:
         if att.find("=") > -1:
             _att = att.split("=") #GFF3
         else:
             _att = att.split(" ") #GTF
 
-        if len(_att) < 2:
-            print("Can't pase this attribute: %s" %att)
+        if len(_att) < 2: # if there is only 1 (or 0) word, ie no key value pair
+            print("Can't parse this attribute: %s" %att)
             continue
 
-        if _att[1][0] == '"':
-            _att[1] = _att[1].split('"')[1]
+        if _att[1][0] == '"':# if second item of _att begins with a double quote
+            _att[1] = _att[1].split('"')[1] # remove double quotes
 
-        if ID_tags.count(_att[0]) == 1:
-            RV["ID"] = _att[1]
-        elif Name_tags.count(_att[0]) == 1:
+        if ID_tags.count(_att[0]) == 1: # if first attribute (key) is in ID_tags
+            RV["ID"] = _att[1] # set ID to value --> overwrite previous value
+        elif Name_tags.count(_att[0]) == 1: # same for Name_tags
             RV["Name"] = _att[1]
-        elif Type_tags.count(_att[0]) == 1:
+        elif Type_tags.count(_att[0]) == 1: # same for Type_tags
             RV["Type"] = _att[1]
-        elif Parent_tags.count(_att[0]) == 1:
+        elif Parent_tags.count(_att[0]) == 1: # same for Parent_tags
             RV["Parent"] = _att[1]
-        else: RV[_att[0]] = _att[1]
+        else: RV[_att[0]] = _att[1] # if no mathing at all, set key and value as
+        #in the attribute line
 
     return RV
 
@@ -205,17 +222,19 @@ def loadgene(anno_file, comments="#,>", geneTag="gene",
         if comments.count(_line[0]):
             continue
             
-        aLine = _line.split("\t")
-        if len(aLine) < 8:
-            continue
-        elif geneTag.count(aLine[2]) == 1:
-            if _gene is not None: 
-                genes.append(_gene)
+        aLine = _line.split("\t") # split the 9 arguments of a line in a list
+        if len(aLine) < 8: # if there is not enough columns in current anno line
+            continue # skip comments and metadata
+        elif geneTag.count(aLine[2]) == 1: # if id tag (ex: gene) of current
+        #line matches a tag in geneTag (default: 'gene'):
+            if _gene is not None: # if current gene is defined
+                genes.append(_gene) # add it to list of genes
 
             RVatt = parse_attribute(aLine[8], ID_tags="ID,gene_id",
-                Name_tags="Name,gene_name")
+                Name_tags="Name,gene_name") # parse attribute as a gene
             _gene = Gene(aLine[0], aLine[6], aLine[3], aLine[4],
-                RVatt["ID"], RVatt["Name"], RVatt["Type"])
+                RVatt["ID"], RVatt["Name"], RVatt["Type"]) # pattern: Gene(self,
+            #chrom, strand, start, stop, gene_id, gene_name="*", biotype="*")
 
         elif tranTag.count(aLine[2]) == 1:
             RVatt = parse_attribute(aLine[8],ID_tags="ID,transcript_id,mRNA_id",
@@ -241,6 +260,7 @@ def loadgene(anno_file, comments="#,>", geneTag="gene",
             else:
                 print("Gene or transcript is not ready before exon.")
 
+    # add last gene:
     if _gene is not None: 
         genes.append(_gene)
 

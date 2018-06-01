@@ -4,13 +4,13 @@
 import os
 import sys
 import time
-import pysam
+import pysam # Working with BAM/CRAM/SAM-formatted files
 import numpy as np
 import multiprocessing
 from optparse import OptionParser, OptionGroup
 
 # import pyximport; pyximport.install()
-from .utils.gtf_utils import loadgene
+from .utils.gtf_utils import loadgene # get list of Gene objects from gff/gtf
 from .utils.run_utils import set_info, map_data, save_data
 from .models.model_brie import brie_MH_Heuristic
 
@@ -102,31 +102,32 @@ def main():
     else:
         sys.stdout.write("\r[Brie] loading annotation file... ")
         sys.stdout.flush()
-        # anno = load_annotation(options.anno_file, options.anno_source)
+        # list of genes (see Gene in .utils.gtf_utils):
         genes = loadgene(options.anno_file)
         sys.stdout.write("\r[Brie] loading annotation file... Done.\n")
         sys.stdout.flush()
-        # genes = anno["genes"]
-        tran_len = []
-        tran_ids = []
-        gene_ids = []
-        for g in genes:
+        tran_len = [] # lenths of transcripts
+        tran_ids = [] # ids of transcripts
+        gene_ids = [] # ids of the gene of each transcript
+        for g in genes: # for each gene, fill transcripts data
             for t in g.trans:
                 tran_len.append(t.tranL)
                 tran_ids.append(t.tranID)
                 gene_ids.append(g.geneID)
+        # convert transcripts data as numpy.arrays:
         gene_ids = np.array(gene_ids)
         tran_ids = np.array(tran_ids)
         tran_len = np.array(tran_len)
 
-        global TOTAL_GENE, TOTAL_TRAN
-        TOTAL_GENE = len(genes)
-        TOTAL_TRAN = len(tran_ids)
+        global TOTAL_GENE, TOTAL_TRAN # to modify TOTAL_GENE, TOTAL_TRAN
+        TOTAL_GENE = len(genes) # number of genes
+        TOTAL_TRAN = len(tran_ids) # number of transcripts
 
     if options.sam_file == None:
-        print("[Brie] Error: need --sam_file for indexed and aliged reads.")
+        print("[Brie] Error: need --sam_file for indexed and aligned reads.")
         sys.exit(1)
     else:
+        # count number of reads:
         global TOTAL_READ
         TOTAL_READ = 0
         sam_file = options.sam_file
@@ -142,8 +143,9 @@ def main():
                 if len(tmp) >= 3:
                     TOTAL_READ += float(tmp[2])
 
-    two_isoform = True
-    if options.factor_file == None:
+    two_isoform = True # currently, BRIE supports only the two isoforms scenario
+    if options.factor_file == None: # if there is no feature file (.csv.gz)
+        # create random features (BRIE.NULL):
         feature_all = np.ones((len(tran_ids), 6))
         feature_ids = ["random%d" %i for i in range(1,6)] + ["intercept"]
         if two_isoform: 
@@ -152,11 +154,12 @@ def main():
         else:
             idxF = np.arange(0, len(tran_ids))
         feature_all[idxF,:-1] = np.random.rand(len(idxF), 5)
-    else:
+    else: # if there is a feature file:
         feature_all, feature_ids, idxF = map_data(options.factor_file,
             tran_ids, False) #options.feature_log
 
-    if options.out_dir is None:
+    if options.out_dir is None: # if no output_directory is specified
+        # create default output directory:
         out_dir = os.path.dirname(os.path.abspath(ss)) + "/brie_out"
     else:
         out_dir = options.out_dir
@@ -203,7 +206,7 @@ def main():
     add_premRNA = False
     print_detail = False
 
-    nproc = options.nproc
+    nproc = options.nproc # number of subprocesses
     ftype = options.ftype
     FLmean, FLstd = options.frag_leng
     sample_num, M, initial, gap = options.mcmc_run
@@ -231,10 +234,10 @@ def main():
     print("[Brie] loading reads for %d genes with %d cores..." %(TOTAL_GENE, 
         nproc))
     global START_TIME
-    START_TIME = time.time()
+    START_TIME = time.time() # initialize time for BRIE analysis computing time
 
     R_all, len_iso_all, prob_iso_all = [], [], []
-    if nproc <= 1:
+    if nproc <= 1: # in case of only one process
         for g in genes:
             RV = set_info(g, sam_file, bias_mode, ref_file, bias_file, FLmean,
                 FLstd, mate_mode, auto_min)

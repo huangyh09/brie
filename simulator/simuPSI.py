@@ -42,7 +42,7 @@ def generate_prior(psi, corr=0.8,
     corr: float
         Pearson's correlation between psi and prior
         
-    Reterns
+    Returns
     -------
     prior: array like
         Generated prior
@@ -75,7 +75,7 @@ def main():
     parser.add_option("--theta", dest="theta", type="float", default=3.0, 
         help="std for logit normal distribution. [default: %default]")
     parser.add_option("--priorR", dest="priorR", type="float", default=0.8, 
-        help="Peason's R for generating priori. [default: %default]")
+        help="Peason's R for generating prior. [default: %default]")
     parser.add_option("--seed", dest="seed", type="float", default=None, 
         help="Seed for random number. [default: non-seed]")
 

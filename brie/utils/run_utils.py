@@ -12,7 +12,7 @@ from .tran_utils import TranUnits, TranSplice
 def set_info(g, sam_file, bias_mode, ref_file, bias_file, FLmean, FLstd,
     mate_mode, auto_min):
     RV = {}
-    g = TranSplice(g)
+    g = TranSplice(g) # change g in an object intended to do adequat computation
     for ss in sam_file.split(","):
         _sam = load_samfile(ss)
         g.set_reads(_sam)
@@ -56,21 +56,25 @@ def map_data(feature_file, tran_ids, log_out=False, add_intercept=True):
         # ids = np.array([x+".in" for x in f["gene_ids"]])
         ids = np.array([str(x.decode("utf-8"))+".in" for x in f["gene_ids"]])
         f.close()
-    else:
+    else: # if feature file is a csv file
+        # load csv data into a numpy array named data:
         data = np.genfromtxt(feature_file, delimiter=",", dtype="str")
-        ids = np.array([x+".in" for x in data[1:,0]])
+        ids = np.array([x+".in" for x in data[1:,0]]) # genes ids (1st column)
         feature = data[1:, 1:].astype("float")
         feature_ids = data[0, 1:]
 
     feature_all = np.ones((len(tran_ids), feature.shape[1]))
-    feature_all[:,:] = None
+    # array of [number of transcripts] lines and [number of features] columns
+    feature_all[:,:] = None # set all values of feature_all to None
 
     idxF = []
     i, j = 0, 0
+    # np.argsort returns the indices that would sort an array
     idx1 = np.argsort(ids)
     idx2 = np.argsort(tran_ids)
-    while j < len(idx2):
-        if i >= len(idx1) or ids[idx1[i]] > tran_ids[idx2[j]]:
+    while j < len(idx2): # while j is less than the number of transcripts
+        if i >= len(idx1) or ids[idx1[i]] > tran_ids[idx2[j]]:# if i >= gene
+        #number or ith gene id is after jth transcript id in lexicographic order
             feature_all[idx2[j], :] = None
             j += 1
         elif ids[idx1[i]] == tran_ids[idx2[j]]:
@@ -82,7 +86,7 @@ def map_data(feature_file, tran_ids, log_out=False, add_intercept=True):
             i += 1
 
     if log_out is True:
-        feature_all = np.log(feature_all)
+        feature_all = np.log(feature_all) # natural logarithm of feature_all
 
     if add_intercept is True:
         feature_ids = np.append(feature_ids, "intercept")

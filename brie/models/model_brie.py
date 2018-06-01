@@ -436,7 +436,7 @@ def brie_MH_Heuristic(R_mat, len_isos, prob_isos, feature_all, idxF,
         bar = '=' * filled_len + '-' * (bar_len - filled_len)
         # sys.stdout.write('\r[%s] %.2f%% converged in %d run %.1f sec.' 
         #     % (bar, np.mean(CONVERG)*100, (m+1)*gap, run_time))
-        sys.stdout.write('\r[Brie] [%s] %.1f%% converged in %d run %.1f sec. %.2f' 
+        sys.stdout.write('\r[Brie] [%s] %.1f%% converged in %d run %.1f sec. %.2f'
             % (bar, np.mean(CONVERG)*100, (m+1)*gap, run_time, sigma_in))
         sys.stdout.flush()
 
