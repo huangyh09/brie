@@ -192,11 +192,9 @@ def loadgene(anno_file, comments="#,>", geneTag="gene",
 
     if anno_file.endswith(".gz") or anno_file.endswith(".gzip"):
         import gzip
-        fid = gzip.open(anno_file, "rb")
+        anno_in = gzip.open(anno_file, "rb")
     else:
-        fid = open(anno_file, "r")
-    anno_in = fid.readlines()
-    fid.close()
+        anno_in = open(anno_file, "r")
 
     geneTag = geneTag.split(",")
     tranTag = tranTag.split(",")
@@ -206,6 +204,10 @@ def loadgene(anno_file, comments="#,>", geneTag="gene",
     genes = []
     _gene = None
     for _line in anno_in:
+        try:
+            _line = _line.decode('utf-8')
+        except AttributeError:
+            pass
         if comments.count(_line[0]):
             continue
             
@@ -244,7 +246,8 @@ def loadgene(anno_file, comments="#,>", geneTag="gene",
                 # _gene.gene_ends_update()
             else:
                 print("Gene or transcript is not ready before exon.")
-
+    
+    anno_in.close()
     if _gene is not None: 
         genes.append(_gene)
 
