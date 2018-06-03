@@ -1,0 +1,81 @@
+[data]
+# directory where BAM files are
+bam_prefix = ~/splicing/germ/sam/
+# directory where MISO output is
+miso_prefix = ~/splicing/germ/brie/
+
+bam_files = [
+    "E6.5_c40.sorted.bam",
+    "E6.5_c28.sorted.bam",
+    "E6.5_c39.sorted.bam",
+    "E7.75_c60.sorted.bam",
+    "E7.75_c59.sorted.bam",
+    "E7.75_c66.sorted.bam"]
+
+miso_files = [
+    "E6.5_c40/samples.csv.gz",
+    "E6.5_c28/samples.csv.gz",
+    "E6.5_c39/samples.csv.gz",
+    "E7.75_c60/samples.csv.gz",
+    "E7.75_c59/samples.csv.gz",
+    "E7.75_c66/samples.csv.gz"]
+
+sample_labels = [
+    "6.5day cell 1",
+    "6.5day cell 2",
+    "6.5day cell 3",
+    "7.75day cell 1",
+    "7.75day cell 2",
+    "7.75day cell 3"]
+
+[plotting]
+# Dimensions of figure to be plotted (in inches)
+fig_width = 9.5
+fig_height = 5
+# Factor to scale down introns and exons by
+intron_scale = 20
+exon_scale = 4
+# Whether to use a log scale or not when plotting
+logged = False
+font_size = 8
+
+# Max y-axis
+ymax = 360
+
+# Whether to plot posterior distributions inferred by MISO
+show_posteriors = True
+
+# Whether to show posterior distributions as bar summaries
+bar_posteriors = False
+
+# Whether to plot the number of reads in each junction
+number_junctions = True
+
+resolution = .5
+posterior_bins = 40
+gene_posterior_ratio = 5
+
+# List of colors for read denisites of each sample
+colors = [
+    "#32cd32",
+    "#1e90ff",
+    "#ffa500",
+    "#9932cc",
+    "hotpink",
+    "chocolate"]
+
+# Number of mapped reads in each sample
+# (Used to normalize the read density for RPKM calculation)
+#coverages = [
+#    981918,
+#    1070234,
+#    1263041,
+#    1053301]
+
+# Bar color for Bayes factor distribution
+# plots (--plot-bf-dist)
+# Paint them blue
+bar_color = "b"
+
+# Bayes factors thresholds to use for --plot-bf-dist
+bf_thresholds = [0, 1, 2, 5, 10, 20]
