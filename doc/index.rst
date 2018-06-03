@@ -3,7 +3,7 @@ Home
 ====
 
 .. :Author: Yuanhua Huang
-.. :Version: 0.1.5
+.. :Version: 0.2.0
 .. :Last viewed: Jun 3, 2018
 
 About BRIE
@@ -44,6 +44,31 @@ Contents
 
 
 
+
+
+Quick Resources
+===============
+
+**Code: GitHub latest version**
+https://github.com/huangyh09/brie
+
+**Simulation wraps on GitHub**
+https://github.com/huangyh09/brie/tree/master/simulator
+
+**Data: splicing events annotations**
+http://sourceforge.net/projects/brie-rna/files/annotation/
+
+**Data: usage examples**
+http://sourceforge.net/projects/brie-rna/files/examples/
+
+**All releases**
+https://pypi.org/project/brie/#history
+
+**Issue reports**
+https://github.com/huangyh09/brie/issues
+
+
+
 References
 ==========
 
@@ -51,28 +76,4 @@ Yuanhua Huang and Guido Sanguinetti. `BRIE: transcriptome-wide splicing
 quantification in single cells 
 <https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1248-5>`_. 
 \ **Genome Biology**\, 2017; 18(1):123.
-
-
-
-.. seealso::
-
-   Code: GitHub latest version
-      https://github.com/huangyh09/brie
-
-   Simulation wraps on GitHub
-      https://github.com/huangyh09/brie/tree/master/simulator
-
-   Data: splicing events annotations
-      http://sourceforge.net/projects/brie-rna/files/annotation/
-
-   Data: usage examples
-      http://sourceforge.net/projects/brie-rna/files/examples/
-
-   All releases
-      https://pypi.org/project/brie/#history
-
-   Issue reports
-      https://github.com/huangyh09/brie/issues
-
-
 
