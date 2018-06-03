@@ -16,7 +16,7 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
     
-reqs = ['numpy', 'pysam']
+reqs = ['numpy>=1.9.0', 'pysam>=0.9.0']
 
 setup(
     name='brie',
