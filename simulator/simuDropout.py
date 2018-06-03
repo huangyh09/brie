@@ -9,8 +9,7 @@ import numpy as np
 from optparse import OptionParser, OptionGroup
 
 # import pyximport; pyximport.install()
-# from ..out_utils import id_mapping
-from diceseq.utils.out_utils import id_mapping
+from utils import id_mapping
 
 START_TIME = time.time()
 

@@ -141,7 +141,8 @@ CPUs)
 
   brie-diff -i $fileList -o c1_c4.diff.tsv
 
-Then you will have an output file with 15 columns:
+Then you will have two output files. The first one (in the format of xxx.diff.tsv) 
+contains all Bayes factor passing the threshold, and it has with 15 columns:
 
 * column1-2: transcript id and gene id
 * column3-4: cell 1 and cell 2 names (the folder names)
@@ -155,6 +156,10 @@ Then you will have an output file with 15 columns:
   Bayes factor is different from p value in hypothesis test. A good threshold 
   could be ``Bayes factor > 10`` as differential splicing event between two 
   cells.
+
+Also another file ranks these splicing events by the number of cell paris with
+differential splicing. It has 4 columns: ``gene_id``, ``cell_pairs``, 
+``mean_BF``, ``median_BF``.
 
 There are more parameters for setting (``brie-diff -h`` always give the version 
 you are using):
@@ -181,210 +186,40 @@ you are using):
 
 
 
-3. Splicing events
-==================
 
-**Splicing events generating from full annotation**
 
-.. note::
-  This function is not compatible for Python 3 at the moment. This is because 
-  the main scripts for this function are borrowed from Yarden's package 
-  rnaseqlib_, which is only supprted by Python 2. In order to use this function, 
-  please install `brie` in a Python 2 environment.
+3. Preprocessing
+================
 
-This program is modified from Yarden Katz's Python package rnaseqlib_, with 
-supporting different input annotation formats, e.g., gtf, gff3 and ucsc table.
-For example, you could download a full annotation file for mouse from GENCODE_.
-Then, you can generate the splicing event by the following command:
+3.1. Splicing events and sequence features
+------------------------------------------
 
-::
+Now, you can use BRIE-kit_ to prepare the splicing events annotation, filtering
+and fetch sequence features for them.
 
-  brie-event -a gencode.vM12.annotation.gtf
-
-.. _rnaseqlib: https://github.com/yarden/rnaseqlib
-.. _GENCODE: ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_mouse/release_M12/gencode.vM12.annotation.gtf.gz
-
-Then in the same folder of the annotation file, there will a new folder 
-``AS_events``, where the file for skipping-exon events, i.e., ``SE.gff3``
-is located.
-
-There are more parameters for setting (``brie-event -h`` always give 
-the version you are using):
-
-.. code-block:: html
-
-  Usage: brie-event [options]
-
-  Options:
-    -h, --help            show this help message and exit
-    -a ANNO_FILE, --anno_file=ANNO_FILE
-                          The annotation files used in making the annotation.
-                          You could input multiple files; use comma',' as
-                          delimiter.
-    --anno_type=ANNO_TYPE
-                          The type of each annotation file. Use one for all
-                          files or set for each file. Use comma ',' as
-                          delimiter. You could choose 'ucsc', 'gtf', 'gff3'.
-                          [default: gtf]
-    -o OUTPUT_DIR, --output_dir=OUTPUT_DIR
-                          Output directory.
-    --flanking-rule=FLANKING_RULE
-                          Rule to use when defining exon trios. E.g.
-                          'commonshortest' to use the most common and shortest
-                          regions are flanking exons to an alternative trio.
-                          [default: commonshortest]
-    --multi-iso           If passed, generates multi-isoform annotations. Off by
-                          default.
-    --genome-label=GENOME_LABEL
-                          If given, used as label for genome in output files.
-    --sanitize            If passed, sanitize the annotation. Off by default.
+See manual and examples here.
 
 
 
-**Splicing events quality check**
-
-As the annotation file is not perfect, there may be false splicing events 
-generated from above command line. Therefore, we provide another function 
-``brie-event-filter`` to only keep high-quality events, and use informative 
-ids. Based on above ``SE.gff3``, we could select the gold-quality splicing 
-event by following command line. Note, the reference genome sequence is also 
-required, for example, mouse genome_ sequence here.
-
-.. _genome : ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_mouse/release_M12/GRCm38.p5.genome.fa.gz
-
-::
-
-  brie-event-filter -a AS_events/SE.gff3 --anno_ref=gencode.vM12.annotation.gtf -r GRCm38.p5.genome.fa
-
-Then you will find an output file as ``AS_events/SE.gold.gff3``, which only 
-contains splicing events passing the following constrains:
-
-* located on autosome and input chromosome
-* not overlapped by any other AS-exon
-* surrounding introns are no shorter than a fixed length, e.g., 100bp
-* length of alternative exon regions, say, between 50 and 450bp
-* with a minimum distance, say 500bp, from TSS or TTS
-* surrounded by AG-GT, i.e., AG-AS.exon-GT
-
-There are more parameters for setting (``brie-event-filter -h`` always give 
-the version you are using):
-
-.. code-block:: html
-
-  Usage: brie-event-filter [options]
-
-  Options:
-    -h, --help            show this help message and exit
-    -a ANNO_FILE, --anno_file=ANNO_FILE
-                          The annotation file of SE events in gff3 format from
-                          rnaseqlib.
-    --anno_ref=ANNO_REF   The reference annotation file in gtf format.
-    -r REFERENCE, --reference=REFERENCE
-                          The genome reference sequence file in fasta format.
-    -o OUT_FILE, --out_file=OUT_FILE
-                          The prefix of out files.
-    --as_exon_min=AS_EXON_MIN
-                          the minimum length for the alternative splicing exon.
-    --as_exon_max=AS_EXON_MAX
-                          the maximum length for the alternative splicing exon.
-    --as_exon_tss=AS_EXON_TSS
-                          the minimum length for the alternative exon to TSS.
-    --as_exon_tts=AS_EXON_TTS
-                          the minimum length for the alternative exon to TTS.
-    --add_chrom=ADD_CHROM
-                          the extra chromosomes besides autosome, e.g.,
-                          chrX,chrY,chrM
-
-
-
-4. Sequence features
-====================
-
-With the splicing annotation file, a set of short sequence feature can be 
-calculated by command line ``brie-factor``. Besides the annotation file, 
-it also requires genome sequence file (the same as above), and a phast_ 
-conservation file in bigWig_ format. For human and mouse, you could 
-download it directly from UCSC browser: mm10.60way.phastCons.bw_ 
-and hg38.phastCons100way.bw_. 
-
-.. _phast: http://compgen.cshl.edu/phast/
-.. _bigWig: https://genome.ucsc.edu/goldenpath/help/bigWig.html
-.. _mm10.60way.phastCons.bw: http://hgdownload.cse.ucsc.edu/goldenPath/mm10/phastCons60way/
-.. _hg38.phastCons100way.bw: http://hgdownload.cse.ucsc.edu/goldenPath/hg38/phastCons100way/
-
-.. note::
-  In order to fetch data from the bigWig file, we use a utility ``bigWigSummary``
-  that is provided from UCSC. You could download the binary file for linux from 
-  here: http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigSummary
-
-Besides, we require that ``bigWigSummary`` can be access in the PATH environment. 
-You can do it by the following command lines, and put into the ``.profile`` or 
-``.bashrc`` file.
-
-::
-
-  chmod +x ~/ucsc/bigWigSummary
-  export PATH="~/ucsc:$PATH"
-
-Then, you could get the sequence features by ``brie-factor``, for example, 
-
-::
-
-  brie-factor -a AS_events/SE.gold.gtf -r GRCm38.p5.genome.fa -c mm10.60way.phastCons.bw -o mouse_features.csv -p 10
-
-Then you will have the features stored in a ``mouse_features.csv.gz`` file, 
-where #`factors` * #`gene_ids` features values are saved.
- 
-There are more parameters for setting (``brie-factor -h`` always give the 
-version you are using):
-
-.. code-block:: html
-
-  Usage: brie-factor [options]
-
-  Options:
-    -h, --help            show this help message and exit
-    -a ANNO_FILE, --anno_file=ANNO_FILE
-                          Annotation file for genes and transcripts in GTF or
-                          GFF3
-    -r REF_SEQ, --ref_seq=REF_SEQ
-                          Genome sequence reference in fasta file.
-    -c PHAST_FILE, --phastCons=PHAST_FILE
-                          PhastCons conservation scores in bigWig file.
-    -o OUT_FILE, --out_file=OUT_FILE
-                          Output in csv file, [default: brieFactor.cvs]
-
-    Optional arguments:
-      -p NPROC, --nproc=NPROC
-                          Number of subprocesses [default: 4]
-      --MSA5ss=MSA_5SS    Mutiple sequence alignment file for 5'splice-site. It
-                          is from -4 to 7. As default, MSA is based on input 5
-                          splice sites.
-      --MSA3ss=MSA_3SS    Mutiple sequence alignment file for 3'splice-site. It
-                          is from -16 to 4. As default, MSA is based on input 3
-                          splice sites.
-
-
-
-5. Preprocess
-=============
-
-5.1 reads alignment
+3.2 Reads alignment
 -------------------
 
-Usually, the initial RNA-seq reads is in fastq_ format, without information of 
-where it comes from the genome location. BRIE, similar as DICEseq and MISO, it 
-requires RNA-seq reads aligned to genome sequence. It should be in sam/bam 
-format, after sorting and indexing.
+Reads alignment is a general step for analysing sequencing data for both bulk- 
+and single-cell RNA-seq data. Here, we require each cell has a separate bam/sam
+file. For multiplexed examples, you need to demultiplex the cells into 
+individual files. Cardelino_, that Davis and I are currently working on will 
+solve this problem, and gives a good pipeline soon.
 
-There are quite a fewer aligner that allows mapping reads to genome reference 
-with big gaps, mainly caused by splicing. For example, you could use STAR_ and 
-HISAT_, which usually return good alignment quality.
+Here, we start as standard RNA-seq data in fastq_ format, and BRIE requires an
+alignment of the reads to genome, with allowing spliced junction reads 
+detection, i.e., a read mapped to genome with a big gap, mainly caused by 
+splicing. There are quite a fewer aligners that do a good job,for example STAR_ 
+and HISAT_, which usually return good alignment quality.
 
-You could run it like this (based on HISAT 0.1.5), which including alignment, 
-sort and index:
+Here, we provide example to align reads with HISAT (based on HISAT 0.1.5), and
+sort and index the bam file. 
 
-::
+.. code-block:: bash
 
   ($hisatDir/hisat -x $hisatRef -1 $fq_dir/"$file"_1.fq.gz -2 $fq_dir/"$file"_2.fq.gz --no-unal | samtools view -bS -> $out_dir/$file.bam) 2> $out_dir/$file.err
   samtools sort $out_dir/$file.bam $out_dir/$file.sorted
@@ -393,6 +228,8 @@ sort and index:
 .. _fastq: https://en.wikipedia.org/wiki/FASTQ_format
 .. _STAR: https://code.google.com/p/rna-star/
 .. _HISAT: https://ccb.jhu.edu/software/hisat/index.shtml
+
+Now, these sorted and indexed bam files are input files for BRIE.
 
 
 6. Examples

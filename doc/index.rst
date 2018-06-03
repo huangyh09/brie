@@ -3,8 +3,8 @@ Home
 ====
 
 .. :Author: Yuanhua Huang
-.. :Version: 0.2.4
-.. :Last viewed: Dec 17, 2016
+.. :Version: 0.1.5
+.. :Last viewed: Jun 3, 2018
 
 About BRIE
 ==========

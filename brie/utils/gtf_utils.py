@@ -6,6 +6,7 @@
 # assumption is usually right for the gtf file downloaded from Ensembl database.
 
 import sys
+import subprocess
 import numpy as np
 
 class Transcript:
@@ -189,10 +190,11 @@ def loadgene(anno_file, comments="#,>", geneTag="gene",
         a list of loaded genes
     """
 
-    #TODO: load gzip file
-    fid = open(anno_file, "r")
-    anno_in = fid.readlines()
-    fid.close()
+    if anno_file.endswith(".gz") or anno_file.endswith(".gzip"):
+        import gzip
+        anno_in = gzip.open(anno_file, "rb")
+    else:
+        anno_in = open(anno_file, "r")
 
     geneTag = geneTag.split(",")
     tranTag = tranTag.split(",")
@@ -202,6 +204,10 @@ def loadgene(anno_file, comments="#,>", geneTag="gene",
     genes = []
     _gene = None
     for _line in anno_in:
+        try:
+            _line = _line.decode('utf-8')
+        except AttributeError:
+            pass
         if comments.count(_line[0]):
             continue
             
@@ -240,7 +246,8 @@ def loadgene(anno_file, comments="#,>", geneTag="gene",
                 # _gene.gene_ends_update()
             else:
                 print("Gene or transcript is not ready before exon.")
-
+    
+    anno_in.close()
     if _gene is not None: 
         genes.append(_gene)
 
@@ -261,6 +268,10 @@ def savegene(out_file, genes, atype="GFF3", tags="gene,mRNA,exon"):
     tags: string
         tags for gene, mRNA, exon, respectively. Use comma for delimit
     """
+    if out_file.endswith(".gz"):
+        out_file = out_file[:-3]
+    elif out_file.endswith(".gzip"):
+        out_file = out_file[:-5]
     fid = open(out_file, "w")
     fid.writelines("#%s file produced by savegene.\n" %atype)
 
@@ -273,9 +284,17 @@ def savegene(out_file, genes, atype="GFF3", tags="gene,mRNA,exon"):
         aLine[4] = str(g.stop)
         aLine[6] = g.strand
         if atype.upper() == "GFF3":
-            aLine[8] = "ID=%s" %g.geneID
+            aLine[8] = "ID=%s;gene_id=%s" %(g.geneID, g.geneID)
+            if g.geneName != "*" and  g.geneName != "#":
+                aLine[8] += ";gene_name=%s" %g.geneName
+            if g.biotype != "*" and  g.biotype != "#":
+                aLine[8] += ";gene_type=%s" %g.biotype
         else:
             aLine[8] = "gene_id \"%s\"" %g.geneID
+            if g.geneName != "*" and  g.geneName != "#":
+                aLine[8] += "; gene_name \"%s\"" %g.geneName
+            if g.biotype != "*" and  g.biotype != "#":
+                aLine[8] += "; gene_type \"%s\"" %g.biotype
         fid.writelines("\t".join(aLine) + "\n")
 
         for t in g.trans:
@@ -304,6 +323,9 @@ def savegene(out_file, genes, atype="GFF3", tags="gene,mRNA,exon"):
                     aLine[8] = "gene_id \"%s\"; transcript_id \"%s\"" %(g.geneID, 
                         t.tranID)
                 fid.writelines("\t".join(aLine) + "\n")
-
     fid.close()
-
+    
+    bashCommand = "gzip -f %s" %(out_file) 
+    pro = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+    output = pro.communicate()[0]
+        

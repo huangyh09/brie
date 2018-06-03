@@ -5,7 +5,7 @@ FAQ
 Contacts
 ========
 If you have any question about using BRIE, you are welcome to discuss with 
-the developer. Email: Yuanhua Huang <Y.Huang@ed.ac.uk>
+the developer. Email: Yuanhua Huang <yuanhua [at] ebi.ac.uk>
 
 Alternatively, you could discuss at the Google group. The developer(s) will try 
 to reply as soon as possible.
