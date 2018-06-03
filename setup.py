@@ -51,9 +51,6 @@ setup(
           'console_scripts': [
               'brie = brie.brie:main',
               'brie-diff = brie.brie_diff:main',
-              'brie-factor = brie.brie_factor:main',
-              'brie-event = brie.events.event_maker:main',
-              'brie-event-filter = brie.events.event_filter:main',
               ],
           }, 
 
