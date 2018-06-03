@@ -32,19 +32,6 @@ regulatory features.
 multiple cells pair-wisely. 
 
 
-Contents
-========
-
-.. toctree::
-   :maxdepth: 2
-
-   install.rst
-   manual.rst
-   briekit.rst
-
-
-
-
 
 Quick Resources
 ===============
