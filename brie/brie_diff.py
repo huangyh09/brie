@@ -97,6 +97,45 @@ def get_BF(data, cell_names, rand_idx, minBF=0):
 
     return RV_line
 
+def count_BF(BF_file):
+    """ Count the number of cell pairs with BF passing the threshold.
+    """
+    
+    # data = np.genfromtxt(out_file+".tsv", dtype="str", delimiter="\t",
+    #                      skip_header=1)
+    # gene_unique, gene_counts = np.unique(data[:, 1], return_counts=True)
+    
+    gene_ids = []
+    pair_BFs = []
+    headers = 1
+    with open(BF_file, "r") as f:
+        for line in f:
+            if headers > 0:
+                headers = headers - 1
+            else:
+                line_val = line.rstrip().split("\t")
+                gene_ids.append(line_val[1])
+                pair_BFs.append(float(line_val[-1]))
+    idx_sorted = np.argsort(gene_ids)
+    gene_ids = np.array(gene_ids)[idx_sorted]
+    pair_BFs = np.array(pair_BFs)[idx_sorted]
+    
+    gene_unique, gene_counts, mean_BF, median_BF = [], [], [], []
+    for g in range(len(gene_ids)):
+        if g == 0:
+            last_g = g
+            gene_tmp = gene_ids[g]
+            continue
+        if (g == len(gene_ids)-1) or (gene_ids[g] != gene_tmp):
+            gene_unique.append(gene_ids[last_g])
+            gene_counts.append(g - last_g)
+            mean_BF.append(np.mean(pair_BFs[last_g:g]))
+            median_BF.append(np.median(pair_BFs[last_g:g]))
+            last_g = g
+            gene_tmp = gene_ids[g]
+            
+    return gene_unique, gene_counts, mean_BF, median_BF
+
 
 def main():
     # import warnings
@@ -155,11 +194,14 @@ def main():
     # Check output file
     global FID, TOTAL_GENE
     if options.out_file is None:
-        out_file = os.path.dirname(samp_files[0]) + "/../brie_BF.tsv"
+        out_file = os.path.dirname(samp_files[0]) + "/../brie_BF"
     else:
-        out_file = options.out_file
+        if options.out_file.endswith(".tsv"):
+            out_file = options.out_file[:-4]
+        else:
+            out_file = options.out_file
     try:
-        FID = open(out_file, 'w')
+        FID = open(out_file + ".tsv", 'w')
     except IOError:
         sys.exit("[Brie-diff] Unable to write: " + out_file)
     items = ["tran_id", "gene_id", "cell1", "cell2", "prior1", "prior2", 
@@ -212,9 +254,22 @@ def main():
         pool.close()
         pool.join()
     
+    FID.close()
     print("")
     print("[Brie-diff] Finished for %d splicing events." %(TOTAL_GENE))
-        
+    
+    
+    #rank genes by the number of cell pairs with differential splicing
+    gene_unique, gene_counts, mean_BF, median_BF = count_BF(out_file + ".tsv")
+                        
+    idx_sorted = np.argsort(gene_counts)[::-1]
+    fid = open(out_file + ".rank.tsv", "w")
+    fid.writelines("gene_id\tcell_pairs\tmean_BF\tmedian_BF\n")
+    for i in idx_sorted:
+        fid.writelines("%s\t%d\t%.2f\t%.2f\n" %(gene_unique[i], gene_counts[i], 
+                       mean_BF[i], median_BF[i]))
+    fid.close()
+    
 
 if __name__ == "__main__":
     main()
