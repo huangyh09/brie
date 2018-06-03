@@ -31,12 +31,6 @@ regulatory features.
 2. ``brie-diff``: Calculate Bayes factor of differential splicing between 
 multiple cells pair-wisely. 
 
-3. ``brie-event``: Extract the splicing events from gene annotation file in 
-gff3/gtf formate. 
-
-4. ``brie-factor``: Fetch genentic features from genome sequence reference file 
-in fasta formate.
-
 
 Contents
 ========
@@ -46,8 +40,7 @@ Contents
 
    install.rst
    manual.rst
-   faq.rst
-   release.rst
+   briekit.rst
 
 
 
@@ -74,6 +67,12 @@ quantification in single cells
 
    Data: usage examples
       http://sourceforge.net/projects/brie-rna/files/examples/
+
+   All releases
+      https://pypi.org/project/brie/#history
+
+   Issue reports
+      https://github.com/huangyh09/brie/issues
 
 
 
