@@ -21,10 +21,26 @@ def logistic(x):
     return np.exp(x)/(1+np.exp(x))
     
 def logit(x, minval=0.001):
-    if isinstance(x,  (list, tuple, np.ndarray)):
-        x[1-x<minval] = 1-minval
-        x[x<minval] = minval
-    else:
+    """Generating prior with correlated to original psi.
+    
+    Parameters
+    ----------
+    x: numpy.array or float
+        each element of x ranges in [0,1]
+    minval: float
+        restrict extreme values of x to avoid dealing with infinity or
+        meaningless float precision
+        
+    Returns
+    -------
+    val: numpy.array or float
+        logit(x)
+    """
+    if isinstance(x,  (list, tuple, np.ndarray)): # if x is a list, a tuple...
+        #? seems it does not work on lists/tuples->only on np.arrays in my tests
+        x[1-x<minval] = 1-minval # when x is closer to 1 than minval,
+        x[x<minval] = minval # or less than minval, set it to 1-minval | minval
+    else: # if x is a number, use minval to set it out of more extrem values
         x = max(minval, x)
         x = min(1-minval, x)
     val = np.log(x/(1-x))
@@ -47,14 +63,23 @@ def generate_prior(psi, corr=0.8,
     prior: array like
         Generated prior
     """
-    sigma_all = np.linspace(min_sigma, max_sigma, steps)
-    corr_all  = np.zeros(len(sigma_all))
+    #discretised interval of sigmas from min_sigma to max_sigma with steps steps
+    sigma_all = np.linspace(min_sigma, max_sigma, steps) #[0.1,..(2000steps)..,5.]
+    
+    corr_all  = np.zeros(len(sigma_all)) # Pearson's correlation coefficients r
+    
     psi_logit = logit(psi, minval=0.0001)
-    for i in range(len(sigma_all)):
+    
+    for i in range(len(sigma_all)): # for each value of sigma in sigma_all
+         # generate prior with a sigma equal to sigma_all[i]:
         _prior_logit = psi_logit + np.random.normal(0, sigma_all[i], size=len(psi))
-        corr_all[i]  = st.pearsonr(logistic(_prior_logit), psi)[0]
-    idx = np.argmin(np.abs(corr_all-corr))
+        corr_all[i]  = st.pearsonr(logistic(_prior_logit), psi)[0] # r at round i
+        
+    idx = np.argmin(np.abs(corr_all-corr)) # index of r closest to target (corr)
+    
+    # generate prior with a sigma that gives a prior with target cor. coef. r:
     prior_logit = psi_logit + np.random.normal(0, sigma_all[idx], size=len(psi))
+    
     return logistic(prior_logit)
 
 
@@ -101,9 +126,11 @@ def main():
     if options.anno_file == None:
         print("[dice-simu] Error: need --anno_file for annotation.")
         sys.exit(1)
-    else: 
+    else: # extract genes and isoforms transcrits from annotation file
         anno_file = options.anno_file
         genes = loadgene(anno_file)
+        # gene_ids[i] store the gene id of transcript given by tran_ids[i]
+        # hence, in 2 isoforms per gene scenario, genes[i].geneID==gene_ids[2*i]
         gene_ids, tran_ids = [], []
         for g in genes:
             for t in g.trans:
@@ -158,6 +185,7 @@ def main():
         fid.writelines("%s\t%.4f\n" %(tran_ids[i*2+1], rpk*(1-psi[i])))
     fid.close()
 
+    # generation of transcripts:
     bashCommand = "spankisim_transcripts -o %s -g %s -f %s -t %s " %(out_dir, 
         anno_file, ref_file, rpk_file)
     bashCommand += "-bp %d -frag %d -ends %d -m %s" %(options.read_len, 
@@ -176,8 +204,13 @@ def main():
     output = pro.communicate()[0]
 
     ## generate prior
+    
     simu_truth = loadresult(out_dir+"/transcript_sims.txt", np.array(tran_ids), 
         np.array(gene_ids), method="spanki")[0][range(0, len(tran_ids), 2)]
+    # loadreselt(...)[0] is a numpy.array of fractions of reads per isoform
+    # here we consider one over two isoforms, since we have only two isoforms
+
+    # compute prior that is likely to have lead to simu_truth reads in our model
     prior = generate_prior(simu_truth, corr=options.priorR, 
         min_sigma=0.1, max_sigma=5, steps=2000)
 
@@ -185,8 +218,13 @@ def main():
     fid.writelines("gene_id,feature1\n")
     for i in range(len(prior)):
         fid.writelines("%s,%.3f\n" %(gene_ids[i*2], logit(prior[i])))
+        # ith gene id is gene_ids[2*i] because genes[i].geneID==gene_ids[2*i]
+        # in 2 isoforms per gene scenario (only supported currently)
+        
         # fid.writelines("%s\t%s\t%.3f\n" %(tran_ids[i*2+1], gene_ids[i*2+1], 
         # 1-prior[i]))
+        ## when we consider the second isoform as reference isoform
+        
     fid.close()
 
 

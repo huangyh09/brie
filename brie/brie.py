@@ -147,6 +147,7 @@ def main():
     if options.factor_file == None: # if there is no feature file (.csv.gz)
         # create random features (BRIE.NULL):
         feature_all = np.ones((len(tran_ids), 6))
+        # range(1,6) to generate five uniformly distributed random features:
         feature_ids = ["random%d" %i for i in range(1,6)] + ["intercept"]
         if two_isoform: 
             idxF = np.arange(0, len(tran_ids), 2)

@@ -167,7 +167,7 @@ def MH_propose(Y_now, Y_cov, prob_isos, len_isos, gene_Cnt=None,
     """
     A Matroplis-Hasting sampler with multivariate Gaussian proposal.
     """
-    cnt = 0.0
+    cnt = 0.0 # counter
     Y_try = np.zeros(Y_now.shape[0])
     Y_all = np.zeros((Y_now.shape[0], M))
     Psi_all = np.zeros((Y_now.shape[0], M))
@@ -179,6 +179,7 @@ def MH_propose(Y_now, Y_cov, prob_isos, len_isos, gene_Cnt=None,
 
     if ["RPK", "RPKM", "FPKM", "rpk", "rpkm", "fpkm"].count(ftype) == 1:
         # F_now = np.log2(Cnt_now* 10**9 / total_count +0.00001)
+        # convert reads into a log of normalized reads to look like a Gaussian:
         F_now = Cnt_now / len_isos / total_count * 10**9
         F_now = np.log10(F_now +0.01)
     elif ftype == "Y" or ftype == "y":
@@ -186,7 +187,7 @@ def MH_propose(Y_now, Y_cov, prob_isos, len_isos, gene_Cnt=None,
     else:
         F_now = Psi_now
 
-    P_now = np.log(np.dot(prob_isos, Fsi_now)).sum()
+    P_now = np.log(np.dot(prob_isos, Fsi_now)).sum() # P(y*|R)
     for k in range(F_now.shape[0]):
         if F_pre[k] is None or  F_pre[k] != F_pre[k]:
             continue
@@ -197,7 +198,7 @@ def MH_propose(Y_now, Y_cov, prob_isos, len_isos, gene_Cnt=None,
         Y_try[:-1] = np.random.multivariate_normal(Y_now[:-1], Y_cov)
         Y_try[Y_try < -700] = -700
         Y_try[Y_try > 700 ] = 700
-        Q_now = normal_pdf(Y_now[:-1], Y_try[:-1], Y_cov)
+        Q_now = normal_pdf(Y_now[:-1], Y_try[:-1], Y_cov) # conditionnal
         Q_try = normal_pdf(Y_try[:-1], Y_now[:-1], Y_cov)
 
         Psi_try = np.exp(Y_try) / np.sum(np.exp(Y_try))
@@ -223,7 +224,7 @@ def MH_propose(Y_now, Y_cov, prob_isos, len_isos, gene_Cnt=None,
                 P_try += normal_pdf(F_try[k], F_pre[k], F_sigma**2)
 
         # step 2: accept or reject the proposal
-        alpha = np.exp(min(P_try+Q_now-P_now-Q_try, 0))
+        alpha = np.exp(min(P_try+Q_now-P_now-Q_try, 0)) # 0=log(1)
         if alpha is None:
             print("alpha is none!")
         elif np.random.rand(1) < alpha:
@@ -261,7 +262,7 @@ def brie_MH_Heuristic(R_mat, len_isos, prob_isos, feature_all, idxF,
         each element in the list is a gene matrix (N*m) for isoforms specific
         probability
     feature_all: an array 
-        size (tranNum * K) for multiple isoforms or (tranNum/2, K) splicing 
+        size (tranNum, K) for multiple isoforms or (tranNum/2, K) splicing 
         events
     weights_in: array, (K+1)
         input weights for Bayesian regression, which may be learned from 
