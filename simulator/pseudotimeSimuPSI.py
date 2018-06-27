@@ -22,7 +22,8 @@ import numpy as np # required for pseudotime analysis
 import pandas as pd # required for pseudotime analysis
 import scanpy.api as sc # to perform pseudotime analysis
 import scipy.stats as st # to compute Pearson's r correlation coefficient
-from simuPSI import logistic, logit, generate_prior # simulation script for simple BRIE
+from simuPSI import logistic, logit, generate_prior # simulation for simple BRIE
+import subprocess
 
 from diceseq import loadgene # to read and load data from annotation file
 from diceseq.utils.out_utils import id_mapping
@@ -141,10 +142,10 @@ def generate_psi(cell_nb, gene_nb, pseudotimes, theta, std_alpha):
         for each gene for each cell.
     """
     logit_psi = np.zeros((cell_nb, gene_nb))
-    for g in gene_nb: # for each gene, create pseudotime contribution
+    for g in range(gene_nb): # for each gene, create pseudotime contribution
         # ~N(0, std_alpha)
         pseudotime_contribution = np.random.normal(0, std_alpha) * pseudotimes[g]
-        for c in cell_nb:#for each cell, add non pseudotime related random noise
+        for c in range(cell_nb):#for each cell, add non pseudotime related random noise
             logit_psi[c,g] = np.random.normal(0,theta) + pseudotime_contribution
             
     psi = logistic(logit_psi)
@@ -247,22 +248,25 @@ def main():
     # hence, in 2 isoforms per gene scenario, genes[i].geneID==gene_ids[2*i]
 
     # control number of genes:
-    if args.max_gene_number is not None:
-        gene_nb = min(args.max_gene_number, len(genes))
+    if args.max_gene_nb is not None:
+        gene_nb = min(args.max_gene_nb, len(genes))
     else:
         gene_nb = len(genes) # numbers of genes
     
     gene_ids, tran_ids = [], []
     for g in genes[:gene_nb]: # for each gene among the gene_nb first ones
+        #tr_nb = 0#
         for t in g.trans:
             tran_ids.append(t.tranID)
             gene_ids.append(g.geneID)
+            #tr_nb += 1#
+        #print("nb of transcripts for this gene: %s" %(tr_nb))#
 
     cell_nb = args.nb_cells # number of cells to simulate
 
     ref_file = args.reference_genome_file
 
-    out_dir = args.output_directory
+    out_dir = args.output_dir
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
@@ -286,6 +290,9 @@ def main():
 
         rpk_file = os.path.join(cell_dir, "tran_rpk.txt")
 
+        #########################################################
+        #print("psi: %s\ntran_ids: %s" %(len(psi), len(tran_ids)))
+
         with open(rpk_file, "w") as fid:
             fid.writelines("txid\trpk\n")
             for i in range(len(psi)):
@@ -295,8 +302,8 @@ def main():
         # generation of transcripts:
         bashCommand = "spankisim_transcripts -o %s -g %s -f %s -t %s" %(cell_dir,
                                                    anno_file, ref_file, rpk_file)
-        bashCommand += " -bp %d -frag %d -ends %d -m %s" %(options.read_len,
-                  options.frag_len, options.ends_num, options.mismatch_mode) 
+        bashCommand += " -bp %d -frag %d -ends %d -m %s" %(args.read_len,
+                  args.frag_len, args.ends_num, args.mismatch_mode) 
         print(bashCommand)
         pro = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
         output = pro.communicate()[0]
@@ -311,7 +318,7 @@ def main():
 
         ## generate prior
     
-        simu_truth = loadresult(out_dir+"/transcript_sims.txt",
+        simu_truth = loadresult(cell_dir+"/transcript_sims.txt",
                                 np.array(tran_ids), np.array(gene_ids),
                                 method="spanki")[0][range(0, len(tran_ids), 2)]
         # loadresult(...)[0] is a numpy.array of fractions of reads per isoform
@@ -325,8 +332,8 @@ def main():
             fid.writelines("gene_id,feature1\n")
             for i in range(len(prior)):
                 fid.writelines("%s,%.3f\n" %(gene_ids[i*2], logit(prior[i])))
-                # ith gene id is gene_ids[2*i] because genes[i].geneID==gene_ids[2*i]
-                # in 2 isoforms per gene scenario (only supported currently)
+                # ith gene id is gene_ids[2*i] because
+                # genes[i].geneID==gene_ids[2*i] in 2 isoforms per gene scenario
     
 if __name__ == "__main__":
     main()
