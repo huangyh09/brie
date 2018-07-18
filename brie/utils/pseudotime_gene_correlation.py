@@ -10,16 +10,32 @@ BRIE paper can be consulted here:
 https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1248-5
 
 ex:
-annotation_file :
+on tom :
 /disk/scratch/milan/data/gencode.vM12.annotation.gtf
 /disk/scratch/milan/data/downloaded_cells/matrix_of_counts.csv
 /disk/scratch/milan/data/downloaded_cells/BAM/sorted/
-/afs/inf.ed.ac.uk/user/v/v1mmarto/mouse_features.csv.gz
+/afs/inf.ed.ac.uk/user/v/v1mmarto/data/mouse_features.csv.gz
 /disk/scratch/milan/data/AS_events/SE.gold.gtf
 
-#######
-brie -a AS_events/SE.gold.gtf -s /disk/scratch/milan/data/SAM/mouse.sorted.bam -f mouse_features.csv.gz -o /disk/scratch/milan/data/brie_result -p 15
+on my computer:
+/home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/gencode.vM12.annotation.gtf
+/home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/matrix_of_counts.csv
+/home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/BAM/sorted/
+/home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/mouse_features.csv.gz
+/home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/AS_events/SE.gold.4.gtf
 
+####### to run:
+## on tom
+rmdir /disk/scratch/milan/data/downloaded_cells/BAM/sorted/ERR1147* 2>/dev/null ;rm /disk/scratch/milan/data/pseudotime_correlation_results/brie_outputs -r; longjob -28day -c "python3 pseudotime_gene_correlation.py /disk/scratch/milan/data/pseudotime_correlation_results/ /disk/scratch/milan/data/downloaded_cells/BAM/sorted/ /disk/scratch/milan/data/AS_events/SE.gold.gtf /afs/inf.ed.ac.uk/user/v/v1mmarto/data/mouse_features.csv.gz --matrix-of-counts /disk/scratch/milan/data/downloaded_cells/matrix_of_counts.csv --brie-arguments '-p 15'"
+
+python3 pseudotime_gene_correlation.py /disk/scratch/milan/data/pseudotime_correlation_results/ /disk/scratch/milan/data/downloaded_cells/BAM/sorted/ /disk/scratch/milan/data/AS_events/SE.gold.gtf /afs/inf.ed.ac.uk/user/v/v1mmarto/data/mouse_features.csv.gz --matrix-of-counts /disk/scratch/milan/data/downloaded_cells/matrix_of_counts.csv --brie-arguments '-p 15'
+
+## on my computer
+cd /home/milan/prog/cours/internship/brie/brie/utils
+
+python3 pseudotime_gene_correlation.py /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/pseudotime_correlation_results/ /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/BAM/sorted/ /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/AS_events/SE.gold.4.gtf /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/mouse_features.csv.gz --counts-dir /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/counts --brie-arguments '-p 15'
+
+rm /disk/scratch/milan/data/pseudotime_correlation_results/brie_outputs -r; longjob -28day -c "python3 pseudotime_gene_correlation.py /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/pseudotime_correlation_results/ /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/BAM/sorted/ /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/AS_events/SE.gold.4.gtf /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/mouse_features.csv.gz --counts-dir /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/counts --brie-arguments '-p 15'"
 """
 
 import os # to navigate and create directories
@@ -30,10 +46,12 @@ import scanpy.api as sc # to perform pseudotime analysis
 import scipy.stats as st # to compute Pearson's r correlation coefficient
 import subprocess as sub # to run external programs
 import csv # to write and read csv files
+from gtf_utils import loadgene # get list of Gene objects from gff/gtf
+from math import exp
 #from brie.simulator.simuPSI import logistic, logit
 
-def logistic(x):
-    return np.exp(x)/(1+np.exp(x))
+def logistic(x): # np. ?
+    return exp(x)/(1+exp(x))
 
 def parse_arguments():
     """ parse arguments of this script
@@ -53,6 +71,12 @@ def parse_arguments():
     parser.add_argument('output_dir',
                         help='output directory.')
     
+    parser.add_argument("sam_dir",
+                        help="Directory where are stored each sorted and "
+                        "indexed bam/sam files. Files are assumed to be unique,"
+                        ", sorted and with name exact name "
+                        "'$(cell_id).sorted.[b|s]am'")
+
     parser.add_argument('annotation_file',
                         help='annotation gtf or gff3 file (where genes and '
                         'transcripts to consider are stored).')
@@ -64,12 +88,7 @@ def parse_arguments():
                         help='Features in csv.gz file to predict isoform '
                         'expression.')
 
-    parser.add_argument("sam_dir",
-                        help="Directory where are stored each sorted and "
-                        "indexed bam/sam files. Files are assumed to be unique,"
-                        ", sorted and with name exact name "
-                        "'$(cell_id).sorted.[b|s]am'")
-    
+        
     # optionnal arguments
     parser.add_argument('--brie-arguments',
                         help='Other BRIE arguments given inside a string '
@@ -77,6 +96,11 @@ def parse_arguments():
                         'forget to surround string arguments with quotes.'
                         '[beware: possible issue with long arguments, use short'
                         ' ones to be sure, or put spaces surrounding "=" sign]')
+
+    parser.add_argument('--overwrite-brie', action='store_true',
+                        help='If this argument is present, already computed '
+                        'brie results in output_dir will be erased, else brie '
+                        'computation will not be performed.')
 
     parser.add_argument('--counts-dir',
                         help="Directory where are stored precomputed counts' "
@@ -207,9 +231,11 @@ def extract_brie_psi_matrix(dict_of_cells, matrix_file):
                 with open(fractions_file, 'r') as f:
                     reader = csv.reader(f, delimiter='\t', lineterminator='\n')
                     ## create csv header
-                    # we start from 1 to skip header in "reader[1::2]"
-                    for row in reader[1::2]: # every one over two transcript
-                        header += [row[0]] # add transcript id
+                    # every one over two transcripts:
+                    for row in reader: # for each transcript
+                        # if that transcript is exon-included:
+                        if row[0][-3:] == ".in":
+                            header += [row[0]] # add transcript id
                     #header += 'pseudotime'
                     writer = csv.DictWriter(matrix, delimiter=',',
                                         lineterminator='\n', fieldnames=header)
@@ -218,9 +244,12 @@ def extract_brie_psi_matrix(dict_of_cells, matrix_file):
 
             # extract psi from current cell
             with open(fractions_file, 'r') as f:
+                reader = csv.reader(f, delimiter='\t', lineterminator='\n')
                 d = { 'cell': cell } # dict that describes current cell row
-                for row in reader[1::2]: # every one over two transcript
-                    d[row[0]] = row[5] # d[transcript_id] = corresponding psi
+                # every one over two transcripts:
+                for row in reader:
+                    if row[0][-3:] == ".in": # exon inclusion transcript
+                        d[row[0]] = row[5]#d[transcript_id] = corresponding psi
                 writer.writerow(d) # write the row of current cell
                 #writer.writerow({'cells': cell, gene_row[0]: gene_row[5]})
                             
@@ -254,7 +283,7 @@ def compute_correlation(matrix_file, pseudotimes):
         with open(matrix_file, 'r') as f:
             reader = csv.DictReader(f, delimiter=',', lineterminator='\n')
             for row in reader:
-                WX.append(logistic(row[gene])) # because row[gene] == psi
+                WX.append(logistic(float(row[gene]))) # because row[gene] == psi
                 pseudotime.append(pseudotimes[row['cell']])
                 # p['dpt_pseudotime']['ERR1147410']
         correlation = st.pearsonr(pseudotime, WX)[0]
@@ -303,12 +332,12 @@ def main():
     # hence, in 2 isoforms per gene scenario, genes[i].geneID==gene_ids[2*i]
 
     gene_ids, tran_ids = [], []
-    for g in genes[:gene_nb]: # for each gene among the gene_nb first ones
+    for g in genes: # for each gene among the gene_nb first ones
         for t in g.trans:
             tran_ids.append(t.tranID)
             gene_ids.append(g.geneID)
 
-    ref_file = args.reference_genome_file
+    #############ref_file = args.reference_genome_file
 
     out_dir = args.output_dir
     if not os.path.exists(out_dir):
@@ -332,11 +361,13 @@ def main():
                 
             # compute counts
             for sam_file in os.listdir(args.sam_dir): # for each file in sam_dir
-                # compute counts from this file
-                counts_from_sam(sam_file , counts_dir, args.annotation_file)
+                if sam_file[-11:] == ".sorted.bam": # if it is a sorted sam file
+                    sam_file = os.path.join(args.sam_dir, sam_file)
+                    # compute counts from this file
+                    counts_from_sam(sam_file , counts_dir, args.annotation_file)
 
         # compute matrix of counts:
-        matrix_of_counts = os.path.join(args.output_dir, "matrix_of_counts")
+        matrix_of_counts = os.path.join(args.output_dir, "matrix_of_counts.csv")
         create_matrix_of_counts(matrix_of_counts, counts_dir)
         
     ## compute pseudotimes
@@ -344,22 +375,34 @@ def main():
 
     ## compute BRIE and get psi from fraction.tsv
     output_dir = os.path.join(args.output_dir, "brie_outputs")
-    os.makedirs(output_dir) # create directory for brie outputs
-    output_dict = [] # dict { cell ids: brie output directory }
+    if not os.path.exists(output_dir): # if brie output_dir does not exist yet
+        os.makedirs(output_dir) # create directory for brie outputs
+    output_dict = {} # dict { cell ids: brie output directory }
     for sam_file in os.listdir(args.sam_dir): # for each file in sam_dir
-        # create output directory for each single brie analysis
-        cell_id = sam_file[:-11]
-        output = os.path.join(output_dir, cell_id)
-        os.makedirs(output) # create directory for brie outputs
-        # run brie analysis
-        sub.run(["brie",
-                 "-o", output,
-                 "-s", sam_file,
-                 "-a", args.annotation_file,
-                 "-f", args.factor_file]
-                + args.brie_arguments.split())
+        if (sam_file[-11:] == ".sorted.bam" # if it is a sorted bam file
+            or sam_file[-11:] == ".sorted.sam"): # if it is a sorted sam file
+            sam_file_location = os.path.join(args.sam_dir, sam_file)
+            # create output directory for each single brie analysis
+            cell_id = sam_file[:-11]
+            output = os.path.join(output_dir, cell_id)
+
+            # remove brie results directory if --overwrite-brie is provided:
+            if os.path.exists(output) and args.overwrite_brie:
+                sub.run(['rm', '-r', output])
+                
+            # create directory for brie outputs if needed
+            if not os.path.exists(output):
+                os.makedirs(output)
+                # run brie analysis if output did not exist before
+                sub.run(["brie",
+                         "-o", output,
+                         "-s", sam_file_location,
+                         "-a", args.annotation_file,
+                         "-f", args.factor_file]
+                        + args.brie_arguments.split())
+            # else, brie results will be taken from output directory
         
-        output_dict[cell_id] = output
+            output_dict[cell_id] = output
 
     ## compute correlation
     matrix_file = os.path.join(output_dir, 'WXmatrix.csv')
@@ -370,7 +413,7 @@ def main():
     correlation_file = os.path.join(out_dir, 'pseudotime-WX_correlation.tsv')
     with open(correlation_file, 'w') as f:
         for gene in gene_corr_dict: # for each exon inclusion transcript
-            f.write(gene + '\t' + gene_corr_dict[gene] + '\n') # write result
+            f.write(gene + '\t' + str(gene_corr_dict[gene]) + '\n') # write result
 
     return 0
 
