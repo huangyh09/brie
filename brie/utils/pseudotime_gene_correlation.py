@@ -3,39 +3,13 @@
 This script computes pseudotime for each cell in given cells'directory, then
 runs BRIE analysis on each cell and compute the correlation coefficient
 (Pearson's r) between BRIE predictor WX (with W the average of learned weights
-and X corresponding cell's features) and pseudotime for each gene.
+and X corresponding cell's features) and pseudotime for each gene. It also
+performs a pseudotime brie analysis if --brie-pseudotime-path is provided with
+the right path.
 This script only support the two isoforms per gene scenario.
 To see how to use this program, run `python3 pseudotime_gene_correlation.py -h`
 BRIE paper can be consulted here:
 https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1248-5
-
-ex:
-on tom :
-/disk/scratch/milan/data/gencode.vM12.annotation.gtf
-/disk/scratch/milan/data/downloaded_cells/matrix_of_counts.csv
-/disk/scratch/milan/data/downloaded_cells/BAM/sorted/
-/afs/inf.ed.ac.uk/user/v/v1mmarto/data/mouse_features.csv.gz
-/disk/scratch/milan/data/AS_events/SE.gold.gtf
-
-on my computer:
-/home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/gencode.vM12.annotation.gtf
-/home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/matrix_of_counts.csv
-/home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/BAM/sorted/
-/home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/mouse_features.csv.gz
-/home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/AS_events/SE.gold.4.gtf
-
-####### to run:
-## on tom
-rmdir /disk/scratch/milan/data/downloaded_cells/BAM/sorted/ERR1147* 2>/dev/null ;rm /disk/scratch/milan/data/pseudotime_correlation_results/brie_outputs -r; longjob -28day -c "python3 pseudotime_gene_correlation.py /disk/scratch/milan/data/pseudotime_correlation_results/ /disk/scratch/milan/data/downloaded_cells/BAM/sorted/ /disk/scratch/milan/data/AS_events/SE.gold.gtf /afs/inf.ed.ac.uk/user/v/v1mmarto/data/mouse_features.csv.gz --matrix-of-counts /disk/scratch/milan/data/downloaded_cells/matrix_of_counts.csv --brie-arguments '-p 15'"
-
-python3 pseudotime_gene_correlation.py /disk/scratch/milan/data/pseudotime_correlation_results/ /disk/scratch/milan/data/downloaded_cells/BAM/sorted/ /disk/scratch/milan/data/AS_events/SE.gold.gtf /afs/inf.ed.ac.uk/user/v/v1mmarto/data/mouse_features.csv.gz --matrix-of-counts /disk/scratch/milan/data/downloaded_cells/matrix_of_counts.csv --brie-arguments '-p 15'
-
-## on my computer
-cd /home/milan/prog/cours/internship/brie/brie/utils
-
-python3 pseudotime_gene_correlation.py /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/pseudotime_correlation_results/ /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/BAM/sorted/ /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/AS_events/SE.gold.4.gtf /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/mouse_features.csv.gz --counts-dir /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/counts --brie-arguments '-p 15'
-
-rm /disk/scratch/milan/data/pseudotime_correlation_results/brie_outputs -r; longjob -28day -c "python3 pseudotime_gene_correlation.py /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/pseudotime_correlation_results/ /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/BAM/sorted/ /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/AS_events/SE.gold.4.gtf /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/mouse_features.csv.gz --counts-dir /home/milan/prog/cours/internship/brie-examples/test/psedotime_WX_correlation/do_cells/counts --brie-arguments '-p 15'"
 """
 
 import os # to navigate and create directories
@@ -47,10 +21,9 @@ import scipy.stats as st # to compute Pearson's r correlation coefficient
 import subprocess as sub # to run external programs
 import csv # to write and read csv files
 from gtf_utils import loadgene # get list of Gene objects from gff/gtf
-from math import exp
-#from brie.simulator.simuPSI import logistic, logit
+from math import exp # for logistic
 
-def logistic(x): # np. ?
+def logistic(x):
     return exp(x)/(1+exp(x))
 
 def parse_arguments():
@@ -80,9 +53,6 @@ def parse_arguments():
     parser.add_argument('annotation_file',
                         help='annotation gtf or gff3 file (where genes and '
                         'transcripts to consider are stored).')
-
-    #parser.add_argument('reference_genome_file',
-    #                    help='reference genome in fasta format.')
 
     parser.add_argument('factor_file',
                         help='Features in csv.gz file to predict isoform '
@@ -116,6 +86,9 @@ def parse_arguments():
     parser.add_argument('--matrix-of-counts',
                         help="matrix of counts (gene expression level) csv "
                         "file.")
+
+    parser.add_argument('--brie-pseudotime-path',
+                        help="path to brie_pseudotime.py script.")
 
     return parser.parse_args()
 
@@ -291,6 +264,34 @@ def compute_correlation(matrix_file, pseudotimes):
         
     return gene_corr_dict
 
+def store_pseudotime(storage_file, pseudotimes):
+    """store pseudotimes for each cell in a tsv file
+
+    structure of file:
+    cell_id    pseudotime_value
+
+    Parameters
+    ----------
+    storage_file (string): file where to store pseudotime values for each cell.
+
+    pseudotimes (panda.DataFrame): array where first column store cells'ids and
+        second column stores corresponding pseudotimes (floats between 0 and 1).
+
+    Returns
+    -------
+    """
+    with open(storage_file, 'w') as f:
+        header = ['cell', 'pseudotime']
+        writer = csv.DictWriter(f, delimiter='\t', fieldnames=header)
+        writer.writeheader()
+        # for each cell and corresponding pseudotime t
+        for cell, t in pseudotimes.items():
+            writer.writerow({"cell": cell, "pseudotime": t})
+            # print("cell: ", cell)
+            # print("t: ", t)
+        
+    return
+
 def pseudotime(matrix_of_counts):
     """Compute pseudotimes of each cell of file of name matrix_of_counts
 
@@ -336,9 +337,7 @@ def main():
         for t in g.trans:
             tran_ids.append(t.tranID)
             gene_ids.append(g.geneID)
-
-    #############ref_file = args.reference_genome_file
-
+    
     out_dir = args.output_dir
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -413,9 +412,26 @@ def main():
     correlation_file = os.path.join(out_dir, 'pseudotime-WX_correlation.tsv')
     with open(correlation_file, 'w') as f:
         for gene in gene_corr_dict: # for each exon inclusion transcript
-            f.write(gene + '\t' + str(gene_corr_dict[gene]) + '\n') # write result
+            f.write(gene + '\t' + str(gene_corr_dict[gene]) + '\n')#write result
 
+    # write pseudotime results in a file:
+    pseudotime_file = os.path.join(out_dir,"pseudotimes.tsv")
+    store_pseudotime(pseudotime_file, pseudotimes)
+
+
+    ## run pseudotime brie analysis:
+    if args.brie_pseudotime_path is not None:
+        sub.run(["python3", args.brie_pseudotime_path,
+                 "-o", output,
+                 "-s", sam_file_location,
+                 "-a", args.annotation_file,
+                 "-f", args.factor_file,
+                 "--pseudotimes", pseudotime_file,
+                 "--WX_matrix", matrix_file]
+                + args.brie_arguments.split())
+            
     return 0
 
 if __name__ == "__main__":
+    #store_pseudotime("/home/milan/prog/cours/internship/pseudotime/data/save/pseudotime_30.tsv", pseudotime("/home/milan/prog/cours/internship/pseudotime/data/save/matrix_of_counts_30.csv"))
     main()

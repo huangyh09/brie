@@ -164,14 +164,15 @@ def Iso_read_check(R_mat, len_isos, prob_isos):
 
 def MH_propose(Y_now, Y_cov, prob_isos, len_isos, gene_Cnt=None, 
     total_count=10**6, F_pre=None, F_sigma=None, M=1, ftype="RPK"):
-    """
-    A Matroplis-Hasting sampler with multivariate Gaussian proposal.
+    """A Matroplis-Hasting sampler with multivariate Gaussian proposal.
+
+
     """
     cnt = 0.0 # counter
     Y_try = np.zeros(Y_now.shape[0])
-    Y_all = np.zeros((Y_now.shape[0], M))
-    Psi_all = np.zeros((Y_now.shape[0], M))
-    Cnt_all = np.zeros((Y_now.shape[0], M))
+    Y_all = np.zeros((Y_now.shape[0], M)) # will contain all instances of Y for this round
+    Psi_all = np.zeros((Y_now.shape[0], M)) # idem for psi
+    Cnt_all = np.zeros((Y_now.shape[0], M)) # idem for counts ?
 
     Psi_now = np.exp(Y_now) / np.sum(np.exp(Y_now))
     Fsi_now = len_isos*Psi_now / np.sum(len_isos*Psi_now)
@@ -193,11 +194,11 @@ def MH_propose(Y_now, Y_cov, prob_isos, len_isos, gene_Cnt=None,
             continue
         P_now += normal_pdf(F_now[k], F_pre[k], F_sigma**2)
 
-    for m in range(M):
+    for m in range(M): # for each baby step
         # propose
         Y_try[:-1] = np.random.multivariate_normal(Y_now[:-1], Y_cov)
-        Y_try[Y_try < -700] = -700
-        Y_try[Y_try > 700 ] = 700
+        Y_try[Y_try < -700] = -700 # min values treshold
+        Y_try[Y_try > 700 ] = 700 # max values treshold
         Q_now = normal_pdf(Y_now[:-1], Y_try[:-1], Y_cov) # conditionnal
         Q_try = normal_pdf(Y_try[:-1], Y_now[:-1], Y_cov)
 
@@ -264,6 +265,8 @@ def brie_MH_Heuristic(R_mat, len_isos, prob_isos, feature_all, idxF,
     feature_all: an array 
         size (tranNum, K) for multiple isoforms or (tranNum/2, K) splicing 
         events
+    idxF: list of int
+        range of features or genes/transcripts
     weights_in: array, (K+1)
         input weights for Bayesian regression, which may be learned from 
         better data sets.
@@ -303,7 +306,7 @@ def brie_MH_Heuristic(R_mat, len_isos, prob_isos, feature_all, idxF,
         tranLen = np.append(tranLen, len_isos[t])
     tranNum = len(tranLen)
 
-    if _sigma is None or _sigma != _sigma:
+    if _sigma is None or _sigma != _sigma: #?
         sigma_in = 1.5
     else:
         sigma_in = _sigma
@@ -321,7 +324,7 @@ def brie_MH_Heuristic(R_mat, len_isos, prob_isos, feature_all, idxF,
     Cnt_now = np.zeros(tranNum)
     Cnt_all = np.zeros((tranNum, M))
     gCounts = np.zeros(geneNum)
-    Idx_all = np.zeros(geneNum+1, "int")
+    Idx_all = np.zeros(geneNum+1, "int") #?
     for g in range(len(len_isos)):
         Idx_all[g+1] = Idx_all[g] + len(len_isos[g])
         idxG = range(Idx_all[g], Idx_all[g+1])
@@ -348,11 +351,11 @@ def brie_MH_Heuristic(R_mat, len_isos, prob_isos, feature_all, idxF,
 
     # nproc = 1 #!!!
     CONVERG = np.zeros(tranNum, "bool")
-    for m in range(int(M/gap)):
-        idxT = range(m*gap, (m+1)*gap)
+    for m in range(int(M/gap)): # for each giant step (i from 1 to n)
+        idxT = range(m*gap, (m+1)*gap) # idxt = range of next baby steps
         # step 1: propose a value (original)
-        if nproc == 1:
-            for g in range(len(len_isos)):
+        if nproc == 1: # one process case
+            for g in range(len(len_isos)): # for each gene (k from 1 to K)
                 idxG = range(Idx_all[g], Idx_all[g+1])
                 # adaptive MCMC
                 if m*gap >= 11:
@@ -365,7 +368,7 @@ def brie_MH_Heuristic(R_mat, len_isos, prob_isos, feature_all, idxF,
                 _Y, _Psi, _Cnt = MH_propose(Y_now[idxG], Y_cov, prob_isos[g], 
                     len_isos[g], gCounts[g], total_count, F_pre[idxG], 
                     sigma_in, gap, ftype)
-                for k in idxG:
+                for k in idxG: # corrections
                     Y_all[k, idxT] = _Y[k-idxG[0], :]
                     Psi_all[k, idxT] = _Psi[k-idxG[0], :]
                     Cnt_all[k, idxT] = _Cnt[k-idxG[0], :]

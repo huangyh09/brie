@@ -10,9 +10,9 @@ import multiprocessing
 from optparse import OptionParser, OptionGroup
 
 # import pyximport; pyximport.install()
-from .utils.gtf_utils import loadgene # get list of Gene objects from gff/gtf
-from .utils.run_utils import set_info, map_data, save_data
-from .models.model_brie import brie_MH_Heuristic
+from utils.gtf_utils import loadgene # get list of Gene objects from gff/gtf
+from utils.run_utils import set_info, map_data, save_data
+from models.model_brie import brie_MH_Heuristic
 
 PROCESSED = 0
 TOTAL_GENE = 0
@@ -37,7 +37,7 @@ def show_progress(RV=None):
 
 def main():
     import warnings
-    warnings.filterwarnings('error')
+    warnings.filterwarnings('error') # turn warnings into exceptions
 
     # parse command line options
     parser = OptionParser()
@@ -110,7 +110,7 @@ def main():
         tran_ids = [] # ids of transcripts
         gene_ids = [] # ids of the gene of each transcript
         for g in genes: # for each gene, fill transcripts data
-            for t in g.trans:
+            for t in g.trans: # for each transcript (isoform)
                 tran_len.append(t.tranL)
                 tran_ids.append(t.tranID)
                 gene_ids.append(g.geneID)
