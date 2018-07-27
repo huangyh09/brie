@@ -12,6 +12,7 @@ import time
 import pysam # Working with BAM/CRAM/SAM-formatted files
 import numpy as np
 import multiprocessing
+import csv # working with csv files
 from optparse import OptionParser, OptionGroup
 
 from utils.gtf_utils import loadgene # get list of Gene objects from gff/gtf
@@ -241,7 +242,7 @@ def main():
                 for g in genes:
                     RV = set_info(g, sam_file, bias_mode, ref_file, bias_file, FLmean,
                         FLstd, mate_mode, auto_min)
-                    show_progress(RV)
+                    show_progress(RV, total_gene=TOTAL_GENE)
                     R_all.append(RV["Rmat"]) # R_mat: 2-D array_like, (N, K)
                     # N reads identities of belonging to K isoforms.
                     len_iso_all.append(RV["len_iso"])# prob_isos: 2-D array_like, (N, K)

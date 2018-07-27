@@ -421,9 +421,9 @@ def main():
 
     ## run pseudotime brie analysis:
     if args.brie_pseudotime_path is not None:
-        sub.run(["python3", args.brie_pseudotime_path,
+        sub.run(["python3.4", args.brie_pseudotime_path,
                  "-o", output,
-                 "-s", sam_file_location,
+                 "-s", args.sam_dir,
                  "-a", args.annotation_file,
                  "-f", args.factor_file,
                  "--pseudotimes", pseudotime_file,

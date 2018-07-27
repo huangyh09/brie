@@ -377,8 +377,10 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
             prob_isos[t] = R_mat[t] * prob_isos[t]
             tranLen = np.append(tranLen, len_isos[t])
         tranNum = len(tranLen)
-        
-        Y_now = Y_NOW[i,:] # both monodimentional line vectors
+
+        Y_now = np.zeros(tranNum)
+        Y_now[::2] = Y_NOW[i,:] # 1 transcript over 2
+        # (both monodimentional line vectors)
         Y_all = np.zeros((tranNum, M))
         Psi_now = np.zeros(tranNum)
         Psi_all = np.zeros((tranNum, M))
@@ -391,7 +393,8 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
             # precedent gene plus the number of transcripts that precedent gene
             # has (so that the first transcript has the same id has its gene) 
             idxG = range(Idx_all[g], Idx_all[g+1]) # current transcript id range
-
+            #print("Y_now: ", Y_now, "\nidxG: ", idxG)
+            #print("\nY_now.shape: ", Y_now.shape)
             _psi = np.exp(Y_now[idxG]) / np.sum(np.exp(Y_now[idxG]))# psi vector
             _fsi = (len_isos[g]*_psi) / np.sum(len_isos[g]*_psi)
 
