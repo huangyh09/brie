@@ -82,11 +82,14 @@ def extract_info(WX_matrix_file, pseudotime_file):
     cell = {}
     return cell
 
-def main():
+def main(arguments=None):
     import warnings
     warnings.filterwarnings('error') # turn warnings into exceptions
 
-    (options, args) = parse_arguments() # parse script's arguments
+    if arguments is None:
+        (options, args) = parse_arguments() # parse script's arguments
+    else: # if arguments are provided
+        (options, args) = parse_arguments(arguments) # parse script's arguments
 
     ###for each cell, run brie###
 
@@ -242,7 +245,8 @@ def main():
                 for g in genes:
                     RV = set_info(g, sam_file, bias_mode, ref_file, bias_file, FLmean,
                         FLstd, mate_mode, auto_min)
-                    show_progress(RV, total_gene=TOTAL_GENE)
+                    show_progress(RV, total_gene=TOTAL_GENE,
+                                  cell_number=len(cell_dict))
                     R_all.append(RV["Rmat"]) # R_mat: 2-D array_like, (N, K)
                     # N reads identities of belonging to K isoforms.
                     len_iso_all.append(RV["len_iso"])# prob_isos: 2-D array_like, (N, K)

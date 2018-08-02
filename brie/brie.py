@@ -19,16 +19,16 @@ TOTAL_GENE = 0
 TOTAL_READ = []
 START_TIME = time.time()
     
-def show_progress(RV=None, total_gene=10**7):
+def show_progress(RV=None, total_gene=10**7, cell_number=1):
     global PROCESSED, TOTAL_GENE, START_TIME
     if RV is not None: 
         PROCESSED += 1
         bar_len = 20
         run_time = time.time() - START_TIME
         try:
-            percents = 100.0 * PROCESSED / TOTAL_GENE
+            percents = 100.0 * PROCESSED / (TOTAL_GENE * cell_number)
         except ZeroDivisionError:
-            percents = 100.0 * PROCESSED / total_gene
+            percents = 100.0 * PROCESSED / (total_gene * cell_number)
         filled_len = int(bar_len * percents / 100)
         bar = '=' * filled_len + '-' * (bar_len - filled_len)
         

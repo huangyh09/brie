@@ -82,6 +82,7 @@ def normal_pdf(x, mu, cov, log=True):
         cov = np.array(cov).reshape(-1,1)
     if len(np.array(x).shape) < 1:
         x = np.array(x).reshape(-1)
+    #print("cov: ", cov)
     cov_inv = np.linalg.inv(cov)
     cov_det = np.linalg.det(cov)
     if cov_det < 0:
@@ -161,7 +162,6 @@ def Iso_read_check(R_mat, len_isos, prob_isos):
 
     return R_mat, prob_isos, len_isos
 
-
 def MH_propose(Y_now, Y_cov, prob_isos, len_isos, gene_Cnt=None, 
     total_count=10**6, F_pre=None, F_sigma=None, M=1, ftype="RPK"):
     """A Matroplis-Hasting sampler with multivariate Gaussian proposal.
@@ -189,6 +189,8 @@ def MH_propose(Y_now, Y_cov, prob_isos, len_isos, gene_Cnt=None,
         F_now = Psi_now
 
     P_now = np.log(np.dot(prob_isos, Fsi_now)).sum() # P(y*|R)
+    #print("F_sigma : ", F_sigma)
+    #print("F_sigma**2: ", F_sigma**2)
     for k in range(F_now.shape[0]):
         if F_pre[k] is None or  F_pre[k] != F_pre[k]:
             continue
@@ -344,9 +346,9 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
 
     # define sigma:
     if _sigma == None:
-        sigma_in = 0
+        sigma_in = 1 # do not make it equal to zero
     else:
-        sigma_in = _sigma
+        sigma_in = _sigma # do not make it equal to zero
         
     # part one of W_t:
     W_t_part1 = np.dot(np.linalg.inv(np.dot(T.T, T) + _lambda*sigma_in**2), T.T)
@@ -379,7 +381,7 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
         tranNum = len(tranLen)
 
         Y_now = np.zeros(tranNum)
-        Y_now[::2] = Y_NOW[i,:] # 1 transcript over 2
+        Y_now[idxF] = Y_NOW[i,:] # 1 transcript over 2 # before: [::2]
         # (both monodimentional line vectors)
         Y_all = np.zeros((tranNum, M))
         Psi_now = np.zeros(tranNum)
@@ -407,7 +409,9 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
             F_now = Cnt_now / tranLen / total_count * 10**9
             F_now = np.log10(F_now +0.01)
         elif ftype == "Y" or ftype == "y":
-            F_now = F_NOW[i,:] # both monodimentional line vectors
+            F_now = np.zeros(tranNum)
+            F_now[idxF] = F_NOW[i,:] # both monodimentional line vectors
+            # (F_now[idxF] do not work)
         else:
             F_now = Psi_now
 
@@ -504,7 +508,7 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
 
             Y_now = Y_all[:,idxT[-1]]
             # update Y_NOW:
-            Y_NOW[i,:] = Y_now # monodimentional line vectors
+            Y_NOW[i,:] = Y_now[idxF] # monodimentional line vectors ([::2])
 
             # update F_now
             if ["RPK", "RPKM", "FPKM", "rpk", "rpkm", "fpkm"].count(ftype) == 1:
@@ -516,7 +520,7 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
                 F_now = Psi_all[:,idxT[-1]]
 
             # upgrade F_NOW:
-            F_NOW[i,:] = F_now # monodimentional line vectors
+            F_NOW[i,:] = F_now[idxF] # monodimentional line vectors
 
             #step 2. convergence diagnostics
             for k in range(Psi_all.shape[0]):

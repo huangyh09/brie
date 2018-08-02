@@ -60,7 +60,7 @@ def parse_arguments():
 
         
     # optionnal arguments
-    parser.add_argument('--brie-arguments',
+    parser.add_argument('--brie-arguments', default="",
                         help='Other BRIE arguments given inside a string '
                         '(written as you would do calling BRIE script). Do not '
                         'forget to surround string arguments with quotes.'
@@ -429,7 +429,22 @@ def main():
                  "--pseudotimes", pseudotime_file,
                  "--WX_matrix", matrix_file]
                 + args.brie_arguments.split())
-            
+        
+        # os.system('longjob -28day -c "'
+        #           + ' '.join(["python3.4", args.brie_pseudotime_path,
+        #                       "-o", output,
+        #                       "-s", args.sam_dir,
+        #                       "-a", args.annotation_file,
+        #                       "-f", args.factor_file,
+        #                       "--pseudotimes", pseudotime_file,
+        #                       "--WX_matrix", matrix_file]
+        #                      + args.brie_arguments.split())
+        #           + '"')
+
+        # TODO: fix path (path must be accessible from this file)
+        # >> inverse utils and main, fix path with args.brie_pseudotime_path
+        # fix in script_pseudo
+        
     return 0
 
 if __name__ == "__main__":
