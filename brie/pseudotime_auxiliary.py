@@ -80,10 +80,9 @@ def parse_arguments(arguments=None):
     else:
         return parser.parse_args(arguments)
 
-def extract_info(WX_matrix_file, pseudotime_file):
-    
-    cell = {}
-    return cell
+# def extract_info(WX_matrix_file, pseudotime_file):  
+#     cell = {}
+#     return cell
 
 def main(arguments=None):
     import warnings
@@ -94,9 +93,7 @@ def main(arguments=None):
     # else: # if arguments are provided
     #     (options, args) = parse_arguments(arguments) # parse script's arguments
     (options, args) = parse_arguments(arguments) # parse script's arguments
-
-    ###for each cell, run brie###
-
+    
     ###appel de function generate data from brie_output_directory###
 
     if len(sys.argv[1:]) == 0:
@@ -104,14 +101,14 @@ def main(arguments=None):
         print("use -h or --help for help on argument.")
         sys.exit(1)
     if options.anno_file == None:
-        print("[Brie] Error: need --anno_file for annotation.")
+        print("[Brie_pseudotime] Error: need --anno_file for annotation.")
         sys.exit(1)
     else:
-        sys.stdout.write("\r[Brie] loading annotation file... ")
+        sys.stdout.write("\r[Brie_pseudotime] loading annotation file... ")
         sys.stdout.flush()
         # list of genes (see Gene in .utils.gtf_utils):
         genes = loadgene(options.anno_file)
-        sys.stdout.write("\r[Brie] loading annotation file... Done.\n")
+        sys.stdout.write("\r[Brie_pseudotime] loading annotation file... Done.\n")
         sys.stdout.flush()
         tran_len = [] # lenths of transcripts
         tran_ids = [] # ids of transcripts
@@ -239,7 +236,7 @@ def main(arguments=None):
             cell_dict[cell_id]["out_dir"] = out_dir
     
             # load reads
-            print("[Brie] loading reads for %d genes with %d cores..." %(TOTAL_GENE, 
+            print("[Brie_pseudotime] loading reads for %d genes with %d cores..." %(TOTAL_GENE, 
                 nproc))
             global START_TIME
             START_TIME = time.time() # initialize time for BRIE analysis computing time
@@ -293,8 +290,8 @@ def main(arguments=None):
                 cell_dict[row[0]]['t'] = row[1] # add corresponding WX
         
 
-    print("\n[Brie] running Brie for %d isoforms on %d genes with %d cores..." 
-          %(TOTAL_TRAN, TOTAL_GENE, nproc))
+    print("\n[Brie_pseudotime] running Brie_pseudotime for %d cells %d isoforms on %d genes with %d cores..." 
+          %(len(cell_dict), TOTAL_TRAN, TOTAL_GENE, nproc))
     
     results, W_all, sigma_ = brie_MH_Heuristic(cell_dict, feature_all, idxF,
                   weights_in=weights_in, _sigma=_sigma, _lambda=_lambda,
@@ -311,13 +308,10 @@ def main(arguments=None):
         Cnt_all = cell_dict[cell_id]["Cnt_all"]
         ###out_dir = os.path.join(, "pseudotimes_fractions.tsv")
         save_data(out_dir, sample_num, gene_ids, tran_ids, tran_len, feature_all,
-                  feature_ids, Psi_all, RPK_all, Cnt_all, W_all, sigma_) # checked
+                  feature_ids, Psi_all, RPK_all, Cnt_all, W_all, sigma_)
 
-
+        return
 
 if __name__ == "__main__":
     main()
-    
-# add missing data from brie in cell !!
-# check how will be stored output data
-# read again this file and launch it
+

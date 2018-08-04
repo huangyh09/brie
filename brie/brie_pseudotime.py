@@ -394,6 +394,7 @@ def main():
             if not os.path.exists(output):
                 os.makedirs(output)
                 # run brie analysis if output did not exist before
+                print("####### run single cell brie on cell %s #######" %cell_id)
                 sub.run(["brie",
                          "-o", output,
                          "-s", sam_file_location,
@@ -438,22 +439,7 @@ def main():
         #          "--pseudotimes", pseudotime_file,
         #          "--WX_matrix", matrix_file]
         #         + args.brie_arguments.split())
-        
-        # os.system('longjob -28day -c "'
-        #           + ' '.join(["python3.4", args.brie_pseudotime_path,
-        #                       "-o", output,
-        #                       "-s", args.sam_dir,
-        #                       "-a", args.annotation_file,
-        #                       "-f", args.factor_file,
-        #                       "--pseudotimes", pseudotime_file,
-        #                       "--WX_matrix", matrix_file]
-        #                      + args.brie_arguments.split())
-        #           + '"')
-
-        # TODO: fix path (path must be accessible from this file)
-        # >> inverse utils and main, fix path with args.brie_pseudotime_path
-        # fix in script_pseudo
-        
+                
     return 0
 
 if __name__ == "__main__":
