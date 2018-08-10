@@ -88,6 +88,10 @@ def parse_arguments():
                         help="matrix of counts (gene expression level) csv "
                         "file.")
 
+    parser.add_argument('--gene-uncertainty-filter', type=float, default=1,
+                        help="filter genes with average uncertainty gap less "
+                        "than given argument (must be between 0 and 1).")
+
     #parser.add_argument('--brie-pseudotime-path',
     #                    help="path to brie_pseudotime.py script.")
 
@@ -316,6 +320,48 @@ def pseudotime(matrix_of_counts):
     
     return pseudotimes
 
+def filter_correlation(gene_correlation_dict, brie_output_dir, filter_width):
+    """filter genes according to confidence interval width
+
+    Return a new filtered gene-correlation dict
+
+    Parameters
+    ----------
+    gene_correlation_dict: dict
+        keys are gene names as strings, values are correlation Pearson's r
+    brie_output_dir: string
+        path to the directory that contains a directory of name cell_id (for
+        each cell) that contains single cell brie output (with a fractions.tsv
+        file).
+    filter_width: float
+        between 0 and 1
+    """
+    ### compute mean of confidence for each gene
+    gene_means = {} # dict with genes as key & list of uncertainty gap as value
+    for gene in gene_correlation_dict: # for each gene
+        gene_means[gene] = [] # initialize
+        
+    for gene in os.listdir(brie_output_dir): # for each file in brie_output_dir
+        directory = os.path.join(brie_output_dir, gene)
+        if (os.path.isdir(directory) # if it is a directory
+            and gene in gene_correlation_dict): # if it has a cell name
+            brie_results = os.path.join(directory, "fractions.tsv")
+            with open(brie_results, "r") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if row["tran_id"][-3:] == ".in":
+                        gene_means[gene].append(row["Psi_high"]-row["Psi_low"])
+
+    for gene in gene_means: # for each gene
+        gene_means[gene] = np.mean(gene_means[gene]) # compute mean
+        
+    ### filter
+    filtered_gene_correlation_dict = {}
+    for gene in gene_correlation_dict: # for each gene
+        if gene_means[gene] <= filter_width: # if mean of uncertainty gap is low
+            filtered_gene_correlation_dict[gene] = gene_correlation_dict[gene]
+        
+    return filtered_gene_correlation_dict
 
 def main():
     """compute correlation between pseudotime and BRIE psi prediction
@@ -394,7 +440,6 @@ def main():
             if not os.path.exists(output):
                 os.makedirs(output)
                 # run brie analysis if output did not exist before
-                print("####### run single cell brie on cell %s #######" %cell_id)
                 sub.run(["brie",
                          "-o", output,
                          "-s", sam_file_location,
@@ -410,11 +455,21 @@ def main():
     extract_brie_psi_matrix(output_dict, matrix_file) # compute matrix of WX
     gene_corr_dict = compute_correlation(matrix_file, pseudotimes)
 
+
     # write the results in a file:
     correlation_file = os.path.join(out_dir, 'pseudotime-WX_correlation.tsv')
     with open(correlation_file, 'w') as f:
         for gene in gene_corr_dict: # for each exon inclusion transcript
             f.write(gene + '\t' + str(gene_corr_dict[gene]) + '\n')#write result
+
+    # filter:
+    gene_corr_dict = filter_correlation(gene_corr_dict, output_dir,
+                                        args.gene_uncertainty_filter)
+    # write filtered results in a file:
+    correlation_file = os.path.join(out_dir, 'filtered_pseudotime-WX_correlation.tsv')
+    with open(correlation_file, 'w') as f:
+        for gene in gene_corr_dict: # for each exon inclusion transcript
+            f.write(gene + '\t' + str(gene_corr_dict[gene]) + '\n')
 
     # write pseudotime results in a file:
     pseudotime_file = os.path.join(out_dir,"pseudotimes.tsv")
@@ -422,13 +477,13 @@ def main():
 
 
     ## run pseudotime brie analysis:
-    pseudotime_auxiliary.main(["-o", output,
-                               "-s", args.sam_dir,
-                               "-a", args.annotation_file,
-                               "-f", args.factor_file,
-                               "--pseudotimes", pseudotime_file,
-                               "--WX_matrix", matrix_file]
-                              + args.brie_arguments.split())
+    # pseudotime_auxiliary.main(["-o", output,
+    #                            "-s", args.sam_dir,
+    #                            "-a", args.annotation_file,
+    #                            "-f", args.factor_file,
+    #                            "--pseudotimes", pseudotime_file,
+    #                            "--WX_matrix", matrix_file]
+    #                           + args.brie_arguments.split())
     
     # if args.brie_pseudotime_path is not None:
         # sub.run(["python3.4", args.brie_pseudotime_path,
