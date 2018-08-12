@@ -88,9 +88,10 @@ def parse_arguments():
                         help="matrix of counts (gene expression level) csv "
                         "file.")
 
-    parser.add_argument('--gene-uncertainty-filter', type=float, default=1,
+    parser.add_argument('--gene-uncertainty-filter', type=float, default=1.,
                         help="filter genes with average uncertainty gap less "
-                        "than given argument (must be between 0 and 1).")
+                        "than given argument (must be between 0 and 1)."
+                        "The less the more acurate.")
 
     #parser.add_argument('--brie-pseudotime-path',
     #                    help="path to brie_pseudotime.py script.")
@@ -334,11 +335,17 @@ def filter_correlation(gene_correlation_dict, brie_output_dir, filter_width):
         each cell) that contains single cell brie output (with a fractions.tsv
         file).
     filter_width: float
-        between 0 and 1
+        between 0 and 1. 1 keeps all results, the closer to 0 the more accurate.
     """
+    # check filter width:
+    if filter_width < 0 or filter_width > 1:
+        raise ValueError("filter_width must be between 0 and 1, a value of %d "
+                         "were given" %filter_width)
+    
     ### compute mean of confidence for each gene
     gene_means = {} # dict with genes as key & list of uncertainty gap as value
     for gene in gene_correlation_dict: # for each gene
+        print(gene)
         gene_means[gene] = [] # initialize
         
     for gene in os.listdir(brie_output_dir): # for each file in brie_output_dir
@@ -350,10 +357,12 @@ def filter_correlation(gene_correlation_dict, brie_output_dir, filter_width):
                 reader = csv.DictReader(f)
                 for row in reader:
                     if row["tran_id"][-3:] == ".in":
-                        gene_means[gene].append(row["Psi_high"]-row["Psi_low"])
+                        gene_means[gene].append(float(row["Psi_high"])
+                                                - float(row["Psi_low"]))
 
     for gene in gene_means: # for each gene
         gene_means[gene] = np.mean(gene_means[gene]) # compute mean
+        print(gene_means[gene])
         
     ### filter
     filtered_gene_correlation_dict = {}
@@ -362,6 +371,7 @@ def filter_correlation(gene_correlation_dict, brie_output_dir, filter_width):
             filtered_gene_correlation_dict[gene] = gene_correlation_dict[gene]
         
     return filtered_gene_correlation_dict
+# issue with ".in"
 
 def main():
     """compute correlation between pseudotime and BRIE psi prediction
