@@ -190,8 +190,8 @@ def extract_brie_psi_matrix(dict_of_cells, matrix_file):
     Parameters
     ---------
     dict_of_cells: dict
-    dictionnary with cells id as keys and according brie output directories as
-    values
+        dictionnary with cells id as keys and according brie output directories
+        as values
 
     Returns
     -------
@@ -214,7 +214,7 @@ def extract_brie_psi_matrix(dict_of_cells, matrix_file):
                     for row in reader: # for each transcript
                         # if that transcript is exon-included:
                         if row[0][-3:] == ".in":
-                            header += [row[0]] # add transcript id
+                            header += [row[1]] # add gene id
                     #header += 'pseudotime'
                     writer = csv.DictWriter(matrix, delimiter=',',
                                         lineterminator='\n', fieldnames=header)
@@ -228,7 +228,7 @@ def extract_brie_psi_matrix(dict_of_cells, matrix_file):
                 # every one over two transcripts:
                 for row in reader:
                     if row[0][-3:] == ".in": # exon inclusion transcript
-                        d[row[0]] = row[5]#d[transcript_id] = corresponding psi
+                        d[row[1]] = row[5] # d[gene_id] = corresponding psi
                 writer.writerow(d) # write the row of current cell
                 #writer.writerow({'cells': cell, gene_row[0]: gene_row[5]})
                             
@@ -345,7 +345,7 @@ def filter_correlation(gene_correlation_dict, brie_output_dir, filter_width):
     ### compute mean of confidence for each gene
     gene_means = {} # dict with genes as key & list of uncertainty gap as value
     for gene in gene_correlation_dict: # for each gene
-        print(gene)
+        # print(gene) # .in
         gene_means[gene] = [] # initialize
         
     for gene in os.listdir(brie_output_dir): # for each file in brie_output_dir
@@ -356,13 +356,15 @@ def filter_correlation(gene_correlation_dict, brie_output_dir, filter_width):
             with open(brie_results, "r") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
+                    print('\r', row)
                     if row["tran_id"][-3:] == ".in":
+                        # print(float(row["Psi_high"]))
                         gene_means[gene].append(float(row["Psi_high"])
                                                 - float(row["Psi_low"]))
 
     for gene in gene_means: # for each gene
         gene_means[gene] = np.mean(gene_means[gene]) # compute mean
-        print(gene_means[gene])
+        # print(gene_means[gene]) # --> nan
         
     ### filter
     filtered_gene_correlation_dict = {}
