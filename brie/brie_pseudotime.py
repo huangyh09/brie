@@ -348,16 +348,18 @@ def filter_correlation(gene_correlation_dict, brie_output_dir, filter_width):
         # print(gene) # .in
         gene_means[gene] = [] # initialize
         
-    for gene in os.listdir(brie_output_dir): # for each file in brie_output_dir
-        directory = os.path.join(brie_output_dir, gene)
-        if (os.path.isdir(directory) # if it is a directory
-            and gene in gene_correlation_dict): # if it has a cell name
+    for cell in os.listdir(brie_output_dir): # for each file in brie_output_dir
+        directory = os.path.join(brie_output_dir, cell)
+        if os.path.isdir(directory): # if it is a directory
             brie_results = os.path.join(directory, "fractions.tsv")
             with open(brie_results, "r") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    print('\r', row)
-                    if row["tran_id"][-3:] == ".in":
+                    print('\r', row) 
+                    gene = row["gene_id"]
+                    # only for exon inclusion transcripts of considered genes
+                    if (row["tran_id"][-3:] == ".in"
+                        and gene in gene_correlation_dict):
                         # print(float(row["Psi_high"]))
                         gene_means[gene].append(float(row["Psi_high"])
                                                 - float(row["Psi_low"]))
