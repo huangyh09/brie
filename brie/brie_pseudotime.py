@@ -485,16 +485,31 @@ def main():
     pseudotime_file = os.path.join(out_dir,"pseudotimes.tsv")
     store_pseudotime(pseudotime_file, pseudotimes)
 
-    # filter annotation_file !!
+    # filter annotation_file
+    # pb here (no extension .gtf or gff3 ?)
+    filtered_annotation_file = os.path.join(out_dir,"filtered_annotation_file")
+    
+    def contains_a_gene(string, gene_dict):
+        """return True if string contains a gene key in gene_dict, else False"""
+        for gene in gene_dict:
+            if gene in string:
+                return True
+        return False
+    
+    with open(args.annotation_file, 'r') as a:
+        with open(filtered_annotation_file, 'w') as f:
+            for line in a:
+                if contains_a_gene(line, gene_corr_dict):
+                    f.write(line) # pb removing metadata ?
 
-    ## run pseudotime brie analysis:
-    # pseudotime_auxiliary.main(["-o", output,
-    #                            "-s", args.sam_dir,
-    #                            "-a", args.annotation_file,
-    #                            "-f", args.factor_file,
-    #                            "--pseudotimes", pseudotime_file,
-    #                            "--WX_matrix", matrix_file]
-    #                           + args.brie_arguments.split())
+    run pseudotime brie analysis:
+    pseudotime_auxiliary.main(["-o", output,
+                               "-s", args.sam_dir,
+                               "-a", filtered_annotation_file,
+                               "-f", args.factor_file,
+                               "--pseudotimes", pseudotime_file,
+                               "--WX_matrix", matrix_file]
+                              + args.brie_arguments.split())
     
     # if args.brie_pseudotime_path is not None:
         # sub.run(["python3.4", args.brie_pseudotime_path,
