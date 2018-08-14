@@ -217,7 +217,9 @@ def extract_brie_psi_matrix(dict_of_cells, matrix_file, filtr=None):
                     # every one over two transcripts:
                     for row in reader: # for each transcript
                         # if that transcript is exon-included:
-                        if row[0][-3:] == ".in":
+                        if (row[0][-3:] == ".in" # exon inclusion transcript
+                            and (filtr is None # and no filter
+                                 or row[1] in filtr)): # or gene_id is in filter
                             header += [row[1]] # add gene id
                     #header += 'pseudotime'
                     writer = csv.DictWriter(matrix, delimiter=',',
@@ -511,6 +513,8 @@ def main():
     ## filter matrix_file:
     matrix_file = os.path.join(output_dir, 'filtered_WXmatrix.csv')
     extract_brie_psi_matrix(output_dict, matrix_file, filtr=gene_corr_dict)
+
+    ## filter cell dict in pseudotime_aux
 
     # run pseudotime brie analysis:
     pseudotime_auxiliary.main(["-o", output,
