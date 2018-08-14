@@ -502,7 +502,7 @@ def main():
                 if contains_a_gene(line, gene_corr_dict):
                     f.write(line) # pb removing metadata ?
 
-    run pseudotime brie analysis:
+    # run pseudotime brie analysis:
     pseudotime_auxiliary.main(["-o", output,
                                "-s", args.sam_dir,
                                "-a", filtered_annotation_file,
