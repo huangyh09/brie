@@ -94,8 +94,6 @@ def main(arguments=None):
     #     (options, args) = parse_arguments(arguments) # parse script's arguments
     (options, args) = parse_arguments(arguments) # parse script's arguments
     
-    ###appel de function generate data from brie_output_directory###
-
     if len(sys.argv[1:]) == 0:
         print("Welcome to pseudotime Brie!\n")
         print("use -h or --help for help on argument.")
@@ -127,13 +125,10 @@ def main(arguments=None):
         TOTAL_GENE = len(genes) # number of genes
         TOTAL_TRAN = len(tran_ids) # number of transcripts
 
-    # magical constants:
+    # constants:
     two_isoform = True # currently, BRIE supports only the two isoforms scenario
-    no_twice = False
     auto_min = 200
     mate_mode = "pair"
-    add_premRNA = False
-    print_detail = False
 
     nproc = options.nproc # number of subprocesses
     ftype = options.ftype

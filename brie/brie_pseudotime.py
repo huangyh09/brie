@@ -345,7 +345,6 @@ def filter_correlation(gene_correlation_dict, brie_output_dir, filter_width):
     ### compute mean of confidence for each gene
     gene_means = {} # dict with genes as key & list of uncertainty gap as value
     for gene in gene_correlation_dict: # for each gene
-        # print(gene) # .in
         gene_means[gene] = [] # initialize
         
     for cell in os.listdir(brie_output_dir): # for each file in brie_output_dir
@@ -353,20 +352,17 @@ def filter_correlation(gene_correlation_dict, brie_output_dir, filter_width):
         if os.path.isdir(directory): # if it is a directory
             brie_results = os.path.join(directory, "fractions.tsv")
             with open(brie_results, "r") as f:
-                reader = csv.DictReader(f)
+                reader = csv.DictReader(f, delimiter='\t')
                 for row in reader:
-                    print('\r', row) 
                     gene = row["gene_id"]
                     # only for exon inclusion transcripts of considered genes
                     if (row["tran_id"][-3:] == ".in"
                         and gene in gene_correlation_dict):
-                        # print(float(row["Psi_high"]))
                         gene_means[gene].append(float(row["Psi_high"])
                                                 - float(row["Psi_low"]))
 
     for gene in gene_means: # for each gene
         gene_means[gene] = np.mean(gene_means[gene]) # compute mean
-        # print(gene_means[gene]) # --> nan
         
     ### filter
     filtered_gene_correlation_dict = {}
@@ -375,7 +371,6 @@ def filter_correlation(gene_correlation_dict, brie_output_dir, filter_width):
             filtered_gene_correlation_dict[gene] = gene_correlation_dict[gene]
         
     return filtered_gene_correlation_dict
-# issue with ".in"
 
 def main():
     """compute correlation between pseudotime and BRIE psi prediction
@@ -480,7 +475,8 @@ def main():
     gene_corr_dict = filter_correlation(gene_corr_dict, output_dir,
                                         args.gene_uncertainty_filter)
     # write filtered results in a file:
-    correlation_file = os.path.join(out_dir, 'filtered_pseudotime-WX_correlation.tsv')
+    correlation_file = os.path.join(out_dir,'filtered_pseudotime-WX_correlation'
+                                    '%f.tsv' %args.gene_uncertainty_filter)
     with open(correlation_file, 'w') as f:
         for gene in gene_corr_dict: # for each exon inclusion transcript
             f.write(gene + '\t' + str(gene_corr_dict[gene]) + '\n')
@@ -489,6 +485,7 @@ def main():
     pseudotime_file = os.path.join(out_dir,"pseudotimes.tsv")
     store_pseudotime(pseudotime_file, pseudotimes)
 
+    # filter annotation_file !!
 
     ## run pseudotime brie analysis:
     # pseudotime_auxiliary.main(["-o", output,
