@@ -182,7 +182,7 @@ def create_matrix_of_counts(output_file, count_dir):
     
     return 0
 
-def extract_brie_psi_matrix(dict_of_cells, matrix_file):
+def extract_brie_psi_matrix(dict_of_cells, matrix_file, filtr=None):
     """extract psi from simple brie results and write results in a csv file.
 
     Psi is extracted from fractions.tsv.
@@ -192,6 +192,10 @@ def extract_brie_psi_matrix(dict_of_cells, matrix_file):
     dict_of_cells: dict
         dictionnary with cells id as keys and according brie output directories
         as values
+    matrix_file: string
+        path to file where to write output results
+    filtr: iterable
+        if not None, only genes in filtr will be stored
 
     Returns
     -------
@@ -227,7 +231,9 @@ def extract_brie_psi_matrix(dict_of_cells, matrix_file):
                 d = { 'cell': cell } # dict that describes current cell row
                 # every one over two transcripts:
                 for row in reader:
-                    if row[0][-3:] == ".in": # exon inclusion transcript
+                    if (row[0][-3:] == ".in" # exon inclusion transcript
+                        and (filtr is None # and no filter
+                             or row[1] in filtr)): # or gene_id is in filter
                         d[row[1]] = row[5] # d[gene_id] = corresponding psi
                 writer.writerow(d) # write the row of current cell
                 #writer.writerow({'cells': cell, gene_row[0]: gene_row[5]})
@@ -485,7 +491,7 @@ def main():
     pseudotime_file = os.path.join(out_dir,"pseudotimes.tsv")
     store_pseudotime(pseudotime_file, pseudotimes)
 
-    # filter annotation_file
+    ## filter annotation_file
     # pb here (no extension .gtf or gff3 ?)
     filtered_annotation_file = os.path.join(out_dir,"filtered_annotation_file")
     
@@ -501,6 +507,10 @@ def main():
             for line in a:
                 if contains_a_gene(line, gene_corr_dict):
                     f.write(line) # pb removing metadata ?
+
+    ## filter matrix_file:
+    matrix_file = os.path.join(output_dir, 'filtered_WXmatrix.csv')
+    extract_brie_psi_matrix(output_dict, matrix_file, filtr=gene_dict)
 
     # run pseudotime brie analysis:
     pseudotime_auxiliary.main(["-o", output,
