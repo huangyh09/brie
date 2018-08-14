@@ -510,7 +510,7 @@ def main():
 
     ## filter matrix_file:
     matrix_file = os.path.join(output_dir, 'filtered_WXmatrix.csv')
-    extract_brie_psi_matrix(output_dict, matrix_file, filtr=gene_dict)
+    extract_brie_psi_matrix(output_dict, matrix_file, filtr=gene_corr_dict)
 
     # run pseudotime brie analysis:
     pseudotime_auxiliary.main(["-o", output,
