@@ -316,11 +316,13 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
 
     tranLen = np.array([])
     geneNum = len(len_isos) # number of considered genes
+    print("geneNum:", geneNum)
     for t in range(geneNum):
         R_mat[t], prob_isos[t], len_isos[t] = Iso_read_check(R_mat[t], 
             len_isos[t], prob_isos[t])
         tranLen = np.append(tranLen, len_isos[t])
     tranNum = len(tranLen)
+    print("tranNum:", tranNum)
 
     ## initialise global (across all cells) variables:
     WX_brie_all = np.zeros((len(cell_id_list), geneNum))#brie prediction for psi
@@ -443,7 +445,7 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
     CONVERG = np.zeros(tranNum, "bool") # table of convergence
     for m in range(int(M/gap)): # for each giant step (i from 1 to n)
         print(f"\rbig step number {m}")
-        idxT = range(m*gap, (m+1)*gap) # idxt = range of next baby steps
+        idxT = range(m*gap, (m+1)*gap) # idxT = range of next baby steps
         # index for transcripts (T)
         # step 1: propose a value (original)
         for i in range(len(cell_id_list)): # for each cell
@@ -538,7 +540,7 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
             bar = '=' * filled_len + '-' * (bar_len - filled_len)
             # sys.stdout.write('\r[%s] %.2f%% converged in %d run %.1f sec.' 
             #     % (bar, np.mean(CONVERG)*100, (m+1)*gap, run_time))
-            sys.stdout.write('\r[Brie] [%s] %.1f%% converged in %d run %.1f sec. %.2f'
+            sys.stdout.write('\r[pseudoBrie] [%s] %.1f%% converged in %d run %.1f sec. %.2f'
                 % (bar, np.mean(CONVERG)*100, (m+1)*gap, run_time, sigma_in))
             sys.stdout.flush()
 
