@@ -171,6 +171,7 @@ def MH_propose(Y_now, Y_cov, prob_isos, len_isos, gene_Cnt=None,
     cnt = 0.0 # counter
     Y_try = np.zeros(Y_now.shape[0])
     Y_all = np.zeros((Y_now.shape[0], M)) # will contain all instances of Y for this round
+    print("Y_all.shape in MH_propose: {Y_all.shape}")
     Psi_all = np.zeros((Y_now.shape[0], M)) # idem for psi
     Cnt_all = np.zeros((Y_now.shape[0], M)) # idem for counts ?
 
@@ -447,7 +448,7 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
     CONVERG = np.zeros(tranNum, "bool") # table of convergence
     for m in range(int(M/gap)): # for each giant step (i from 1 to n)
         idxT = range(m*gap, (m+1)*gap) # idxT = range of next baby steps
-        print(f"\rbig step number {m}, idxT[-1]: {idxT[-1]}")
+        print(f"big step number {m}, idxT[-1]: {idxT[-1]}")
         # index for transcripts (T)
         # step 1: propose a value (original)
         for i in range(len(cell_id_list)): # for each cell
@@ -464,6 +465,8 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
             gCounts = cell[_id]['gCounts']
             Idx_all = cell[_id]['Idx_all']
             total_count = cell[_id]['total_count']
+
+            print("Y_all.shape n5:", Y_all.shape)
             
             if nproc == 1: # one process case
                 for g in range(len(len_isos)): # for each gene (k from 1 to K)
