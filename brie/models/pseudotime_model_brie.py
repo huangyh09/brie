@@ -323,6 +323,7 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
         tranLen = np.append(tranLen, len_isos[t])
     tranNum = len(tranLen)
     print("tranNum:", tranNum)
+    print("M:", M)
 
     ## initialise global (across all cells) variables:
     WX_brie_all = np.zeros((len(cell_id_list), geneNum))#brie prediction for psi
@@ -439,13 +440,14 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
             
         
     ### initialisation ends
+    print(f"Y_all.shape: {Y_all.shape}")
     print("End of initialisation\n")
 
     # phase of proposals
     CONVERG = np.zeros(tranNum, "bool") # table of convergence
     for m in range(int(M/gap)): # for each giant step (i from 1 to n)
-        print(f"\rbig step number {m}")
         idxT = range(m*gap, (m+1)*gap) # idxT = range of next baby steps
+        print(f"\rbig step number {m}, idxT[-1]: {idxT[-1]}")
         # index for transcripts (T)
         # step 1: propose a value (original)
         for i in range(len(cell_id_list)): # for each cell
