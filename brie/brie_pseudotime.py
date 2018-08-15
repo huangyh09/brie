@@ -500,7 +500,8 @@ def main():
     def contains_a_gene(string, gene_dict):
         """return True if string contains a gene key in gene_dict, else False"""
         for gene in gene_dict:
-            if gene in string:
+            if (gene in string
+                and gene +'.AS' not in string): # important !
                 return True
         return False
     
