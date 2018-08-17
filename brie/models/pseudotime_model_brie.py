@@ -171,7 +171,7 @@ def MH_propose(Y_now, Y_cov, prob_isos, len_isos, gene_Cnt=None,
     cnt = 0.0 # counter
     Y_try = np.zeros(Y_now.shape[0])
     Y_all = np.zeros((Y_now.shape[0], M)) # will contain all instances of Y for this round
-    print("Y_all.shape in MH_propose: {Y_all.shape}")
+    # print(f"Y_all.shape in MH_propose: {Y_all.shape}")
     Psi_all = np.zeros((Y_now.shape[0], M)) # idem for psi
     Cnt_all = np.zeros((Y_now.shape[0], M)) # idem for counts ?
 
@@ -317,14 +317,14 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
 
     tranLen = np.array([])
     geneNum = len(len_isos) # number of considered genes
-    print("geneNum:", geneNum)
+    #print("geneNum:", geneNum)
     for t in range(geneNum):
         R_mat[t], prob_isos[t], len_isos[t] = Iso_read_check(R_mat[t], 
             len_isos[t], prob_isos[t])
         tranLen = np.append(tranLen, len_isos[t])
     tranNum = len(tranLen)
-    print("tranNum:", tranNum)
-    print("M:", M)
+    #print("tranNum:", tranNum)
+    #print("M:", M)
 
     ## initialise global (across all cells) variables:
     WX_brie_all = np.zeros((len(cell_id_list), geneNum))#brie prediction for psi
@@ -441,14 +441,14 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
             
         
     ### initialisation ends
-    print(f"Y_all.shape: {Y_all.shape}")
-    print("End of initialisation\n")
+    #print(f"Y_all.shape: {Y_all.shape}")
+    #print("End of initialisation\n")
 
     # phase of proposals
-    CONVERG = np.zeros(tranNum, "bool") # table of convergence
+    CONVERG = np.zeros(tranNum * len(cell_id_list), "bool")#table of convergence
     for m in range(int(M/gap)): # for each giant step (i from 1 to n)
         idxT = range(m*gap, (m+1)*gap) # idxT = range of next baby steps
-        print(f"big step number {m}, idxT[-1]: {idxT[-1]}")
+        #print(f"big step number {m}, idxT[-1]: {idxT[-1]}")
         # index for transcripts (T)
         # step 1: propose a value (original)
         for i in range(len(cell_id_list)): # for each cell
@@ -466,7 +466,7 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
             Idx_all = cell[_id]['Idx_all']
             total_count = cell[_id]['total_count']
 
-            print("Y_all.shape n5:", Y_all.shape)
+            #print("Y_all.shape n5:", Y_all.shape)
             
             if nproc == 1: # one process case
                 for g in range(len(len_isos)): # for each gene (k from 1 to K)
@@ -535,7 +535,7 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
             for k in range(Psi_all.shape[0]):
                 Z = Geweke_Z(Psi_all[k, :(m+1)*gap])
                 if Z is not None and Z <= 2:
-                    CONVERG[k] = True
+                    CONVERG[k + i * tranNum] = True # convergence for ith cell
 
             # show progress
             bar_len = 20
@@ -558,16 +558,19 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
             cell[_id]['Idx_all'] = Idx_all
             cell[_id]['F_now'] = F_now
 
-            # wait for convergence and a minimum of steps
-            if sum(CONVERG) == len(CONVERG) and m*gap >= Mmin:
-                Y_all = Y_all[:, :(m+1)*gap]
-                Psi_all = Psi_all[:, :(m+1)*gap]
-                Cnt_all = Cnt_all[:, :(m+1)*gap]
+        # wait for convergence and a minimum of steps
+        if sum(CONVERG) == len(CONVERG) and m*gap >= Mmin:
+            # cut Y_all, Psi_all and Cnt_all for each cell
+            for i in range(len(cell_id_list)): # for each cell
+                _id = cell_id_list[i] # id of current cell
+                # Y_all = Y_all[:, :(m+1)*gap]
+                # Psi_all = Psi_all[:, :(m+1)*gap]
+                # Cnt_all = Cnt_all[:, :(m+1)*gap]
                 # store values
-                cell[_id]['Y_all'] = Y_all
-                cell[_id]['Cnt_all'] = Cnt_all
-                cell[_id]['Psi_all'] = Psi_all
-                break
+                cell[_id]['Y_all'] = cell[_id]['Y_all'][:, :(m+1)*gap]
+                cell[_id]['Cnt_all'] = cell[_id]['Cnt_all'][:, :(m+1)*gap]
+                cell[_id]['Psi_all'] = cell[_id]['Psi_all'][:, :(m+1)*gap]
+            break # end computation
 
         # update weights and Y bar:
         Y_t_NOW = Y_NOW - WX_brie_all # update pseudotemporal component of Y
