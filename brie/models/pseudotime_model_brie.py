@@ -609,7 +609,7 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
         total_count = cell[_id]['total_count']
 
         cell[_id]['FPKM_all'] = Cnt_all / tranLen.reshape(-1, 1) / total_count * 10**9
-        
-    return cell, W_t_all, sigma_in # Psi_all, Y_all, FPKM_all, Cnt_all, W_all, sigma_in
 
-        # cell[id]['fractions.tsv']
+    print(f"np.array(W_t_all).T.shape: {np.array(W_t_all).T.shape}")
+        
+    return cell, np.array(W_t_all).T, sigma_in # Psi_all, Y_all, FPKM_all, Cnt_all, W_all, sigma_in
