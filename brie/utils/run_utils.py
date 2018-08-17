@@ -179,3 +179,47 @@ def save_data(out_dir, sample_num, gene_ids, tran_ids, tran_len,
         pro = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
         output = pro.communicate()[0]
     
+def save_pseudotime_data(out_dir, sample_num, gene_ids, tran_ids, tran_len, 
+    feature_all, Psi_all, RPK_all, Cnt_all, W_all, sigma_):
+
+    m1 = int(Psi_all.shape[1]*3/4)
+    m2 = int(W_all.shape[1]*3/4)
+
+    # save psi
+    with open(os.path.join(out_dir, "fractions.tsv"), "w") as fid:
+        _line="tran_id\tgene_id\ttransLen\tcounts\tFPKM\tPsi\tPsi_low\tPsi_high"
+        fid.writelines(_line + "\n")
+        for i in range(len(tran_ids)):
+            psi_95 = get_CI(Psi_all[i,-m1:])[0,:]
+            _line = "%s\t%s\t%d\t%.3e\t%.3e\t%.3f\t%.3f\t%.3f" %(tran_ids[i], 
+                gene_ids[i], tran_len[i], Cnt_all[i,-m1:].mean(), 
+                RPK_all[i,-m1:].mean(), Psi_all[i,-m1:].mean(), 
+                psi_95[1], psi_95[0])
+            fid.writelines(_line + "\n")
+
+    # save samples for all Psi
+    if sample_num > 0:
+        
+        W = W_all[:,-m2:].mean(axis=1)
+        CNT = Cnt_all[:,-m1:].mean(axis=1)
+        idx = np.arange(0, len(tran_ids), 2)
+        priorY = np.zeros(len(tran_ids))
+        priorY[idx] = np.dot(feature_all[idx,:], W)
+        priorY[idx+1] = 0.0 - priorY[idx]
+        
+        samp_num = min(m1, sample_num)
+        sample_file = os.path.join(out_dir, "samples.csv")
+        with open(sample_file, "w") as fid:
+            comment_line="#tran_id,gene_id,count,prior_mean,prior_std,N_samples"
+            fid.writelines(comment_line + "\n")
+            for i in range(len(tran_ids)):
+                name_part = "%s,%s" %(tran_ids[i], gene_ids[i])
+                base_part = "%d,%.2e,%.2e" %(CNT[i], priorY[i], sigma_)
+                data_part = ",".join(["%.2e" %x for x in Psi_all[i,-samp_num:]])
+                fid.writelines(name_part + "," + base_part + ","
+                               + data_part + "\n")
+
+        bashCommand = "gzip -f %s" %(sample_file) 
+        pro = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+        output = pro.communicate()[0]
+    

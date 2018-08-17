@@ -518,7 +518,7 @@ def main():
     ## filter cell dict in pseudotime_aux
 
     # run pseudotime brie analysis:
-    pseudotime_auxiliary.main(["-o", output,
+    pseudotime_auxiliary.main(["-o", args.output_dir,
                                "-s", args.sam_dir,
                                "-a", filtered_annotation_file,
                                "-f", args.factor_file,

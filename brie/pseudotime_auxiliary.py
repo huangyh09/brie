@@ -1,7 +1,7 @@
 """compute pseudotime enhanced brie
 
    pseudotime and individual cell outputs of brie analysis are assumed to be
-   stored in precoputed_brie_dir, supposed to contain a directory for each cell
+   stored in precomputed_brie_dir, supposed to contain a directory for each cell
    with cell id as a name, which each contain fractions.tsv output.
    Peudotime and brie output (WX) for each cell are stored in.
 """
@@ -191,6 +191,14 @@ def main(arguments=None):
     else:
         sam_dir = options.sam_dir
 
+    # pseudotime_brie general output directory:
+    if options.out_dir is None: # if no output_directory is specified
+        # create default output directory:
+        pseudotime_brie_out_dir = os.path.dirname(os.path.abspath(sam_file)) + "/pseudotime_brie_out/"
+    else:
+        pseudotime_brie_out_dir = os.path.join(options.out_dir,
+                                               "/pseudotime_brie_out/")
+
     # this dictionary will store every required information for each cell:
     cell_dict = {} # cell_dict[cell_id] represents cell of id cell_id
     ### for each cell
@@ -218,11 +226,8 @@ def main(arguments=None):
             # store TOTAL_READ in cell_dict:
             cell_dict[cell_id]["total_count"] = TOTAL_READ
 
-            if options.out_dir is None: # if no output_directory is specified
-                # create default output directory:
-                out_dir = os.path.dirname(os.path.abspath(sam_file)) + "/pseudotime_brie_out/" + cell_id
-            else:
-                out_dir = os.path.join(options.out_dir, cell_id)
+            # output directory for current cell:
+            out_dir = os.path.join(pseudotime_brie_out_dir, cell_id)
             try: # create output_dir if needed
                 os.stat(os.path.abspath(out_dir))
             except:
@@ -301,11 +306,19 @@ def main(arguments=None):
         Y_all = cell_dict[cell_id]["Y_all"]
         RPK_all = cell_dict[cell_id]["FPKM_all"]
         Cnt_all = cell_dict[cell_id]["Cnt_all"]
-        ###out_dir = os.path.join(, "pseudotimes_fractions.tsv")
-        save_data(out_dir, sample_num, gene_ids, tran_ids, tran_len, feature_all,
-                  feature_ids, Psi_all, RPK_all, Cnt_all, W_all, sigma_)
+        
+        save_pseudotime_data(out_dir, sample_num, gene_ids, tran_ids, tran_len,
+                             feature_all, Psi_all, RPK_all, Cnt_all, W_all,
+                             sigma_)
 
-        return
+    # save weights
+    with open(os.path.join(pseudotime_brie_out_dir, "weights.tsv"), "w") as fid:
+        fid.writelines("feature_ids\tfeature_weights\n")
+        for i in range(len(gene_ids)):
+            fid.writelines("%s\t%.3e\n" %(gene_ids[i], W_all[i,-m2:].mean()))
+        fid.writelines("#sigma\t%.3e\n" %sigma_)
+
+    return
 
 if __name__ == "__main__":
     main()
