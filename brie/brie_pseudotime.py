@@ -93,9 +93,6 @@ def parse_arguments():
                         "than given argument (must be between 0 and 1)."
                         "The less the more acurate.")
 
-    #parser.add_argument('--brie-pseudotime-path',
-    #                    help="path to brie_pseudotime.py script.")
-
     return parser.parse_args()
 
 def counts_from_sam(sam_file, output_dir, annotation_file):
@@ -202,10 +199,7 @@ def extract_brie_psi_matrix(dict_of_cells, matrix_file, filtr=None):
     numpy.array: matrix of predicted psi for each cell and genes
     """
     #build matrix of psis file in csv format:
-    with open(matrix_file, 'w') as matrix:
-        #writer = csv.DictWriter(matrix, delimiter=',', lineterminator='\n', fieldnames=fieldnames)
-        #writer = csv.writer(matrix, delimiter=',', lineterminator='\n')
-        
+    with open(matrix_file, 'w') as matrix:                
         header = ['cell'] # header for csv file
         for cell in dict_of_cells: # for each cell
             fractions_file = os.path.join(dict_of_cells[cell], 'fractions.tsv')
@@ -225,8 +219,7 @@ def extract_brie_psi_matrix(dict_of_cells, matrix_file, filtr=None):
                     writer = csv.DictWriter(matrix, delimiter=',',
                                         lineterminator='\n', fieldnames=header)
                     writer.writeheader()
-                    #writer.writerow(header) # write header
-
+                    
             # extract psi from current cell
             with open(fractions_file, 'r') as f:
                 reader = csv.reader(f, delimiter='\t', lineterminator='\n')
@@ -301,9 +294,6 @@ def store_pseudotime(storage_file, pseudotimes):
         # for each cell and corresponding pseudotime t
         for cell, t in pseudotimes.items():
             writer.writerow({"cell": cell, "pseudotime": t})
-            # print("cell: ", cell)
-            # print("t: ", t)
-        
     return
 
 def pseudotime(matrix_of_counts):
@@ -509,7 +499,7 @@ def main():
         with open(filtered_annotation_file, 'w') as f:
             for line in a:
                 if contains_a_gene(line, gene_corr_dict):
-                    f.write(line) # pb removing metadata ?
+                    f.write(line)
 
     ## filter matrix_file:
     matrix_file = os.path.join(output_dir, 'filtered_WXmatrix.csv')
@@ -526,18 +516,8 @@ def main():
                                "--WX_matrix", matrix_file]
                               + args.brie_arguments.split())
     
-    # if args.brie_pseudotime_path is not None:
-        # sub.run(["python3.4", args.brie_pseudotime_path,
-        #          "-o", output,
-        #          "-s", args.sam_dir,
-        #          "-a", args.annotation_file,
-        #          "-f", args.factor_file,
-        #          "--pseudotimes", pseudotime_file,
-        #          "--WX_matrix", matrix_file]
-        #         + args.brie_arguments.split())
-                
+                    
     return 0
 
-if __name__ == "__main__":
-    #store_pseudotime("/home/milan/prog/cours/internship/pseudotime/data/save/pseudotime_30.tsv", pseudotime("/home/milan/prog/cours/internship/pseudotime/data/save/matrix_of_counts_30.csv"))
+if __name__ == "__main__":    
     main()

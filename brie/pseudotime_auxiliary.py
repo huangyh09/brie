@@ -15,11 +15,10 @@ import multiprocessing
 import csv # working with csv files
 from optparse import OptionParser, OptionGroup
 
-from utils.gtf_utils import loadgene # get list of Gene objects from gff/gtf
-from utils.run_utils import set_info, map_data, save_data
-from models.pseudotime_model_brie import brie_MH_Heuristic
-
 # brie imports:
+from utils.gtf_utils import loadgene # get list of Gene objects from gff/gtf
+from utils.run_utils import set_info, map_data, save_pseudotime_data
+from models.pseudotime_model_brie import brie_MH_Heuristic
 from brie import show_progress
 
 PROCESSED = 0
@@ -46,7 +45,7 @@ def parse_arguments(arguments=None):
     group = OptionGroup(parser, "Optional arguments")
     group.add_option("--nproc", "-p", type="int", dest="nproc", default="4",
         help="Number of subprocesses [default: %default]")
-    group.add_option("--weight_file", "-w", dest="weight_file", default=None, #! weights_dir
+    group.add_option("--weight_file", "-w", dest="weight_file", default=None, #TODO weights_dir
         help=("File with weights, an output of Brie."))
     group.add_option("--ftype", "-y", dest="ftype", default="Y",
         help="Type of function target: FPKM, Y, Psi [default: %default].")
@@ -80,18 +79,11 @@ def parse_arguments(arguments=None):
     else:
         return parser.parse_args(arguments)
 
-# def extract_info(WX_matrix_file, pseudotime_file):  
-#     cell = {}
-#     return cell
 
 def main(arguments=None):
     import warnings
     warnings.filterwarnings('error') # turn warnings into exceptions
 
-    # if arguments is None:
-    #     (options, args) = parse_arguments() # parse script's arguments
-    # else: # if arguments are provided
-    #     (options, args) = parse_arguments(arguments) # parse script's arguments
     (options, args) = parse_arguments(arguments) # parse script's arguments
     
     if len(sys.argv[1:]) == 0:
@@ -117,9 +109,10 @@ def main(arguments=None):
                 tran_ids.append(t.tranID)
                 gene_ids.append(g.geneID)
         # convert transcripts data as numpy.arrays:
-        gene_ids = np.array(gene_ids)
+        gene_ids = np.array(gene_ids) # beware : length == number of transcripts
         tran_ids = np.array(tran_ids)
-        tran_len = np.array(tran_len)
+        tran_len = np.array(tran_len) # tran_len[i] == length of transcript tran_ids[i]
+        # len(gene_ids) == len(tran_ids) == len(tran_len)
 
         global TOTAL_GENE, TOTAL_TRAN # to modify TOTAL_GENE, TOTAL_TRAN
         TOTAL_GENE = len(genes) # number of genes
@@ -175,18 +168,18 @@ def main(arguments=None):
         ref_file = None
         bias_file = None
         bias_mode = "unif"
-        print("[Brie] No reference sequence, change to uniform mode.")
+        print("[Brie_pseudotime] No reference sequence, change to uniform mode.")
     elif bias_file is "None":
         ref_file = None
         bias_file = None
         bias_mode = "unif"
-        print("[Brie] No bias parameter file, change to uniform mode.")
+        print("[Brie_pseudotime] No bias parameter file, change to uniform mode.")
     else:
         bias_file = bias_file.split("---")
 
     # define sam_dir
     if options.sam_dir == None:
-        print("[Brie] Error: need --sam_dir for indexed and aligned reads.")
+        print("[Brie_pseudotime] Error: need --sam_dir for indexed and aligned reads.")
         sys.exit(1)
     else:
         sam_dir = options.sam_dir
@@ -195,10 +188,10 @@ def main(arguments=None):
     if options.out_dir is None: # if no output_directory is specified
         # create default output directory:
         pseudotime_brie_out_dir = os.path.dirname(os.path.abspath(sam_file)) + "/pseudotime_brie_out/"
-    else:
+    else:        
         pseudotime_brie_out_dir = os.path.join(options.out_dir,
-                                               "/pseudotime_brie_out/")
-
+                                               "pseudotime_brie_out")
+        
     # this dictionary will store every required information for each cell:
     cell_dict = {} # cell_dict[cell_id] represents cell of id cell_id
     ### for each cell
@@ -231,7 +224,7 @@ def main(arguments=None):
             try: # create output_dir if needed
                 os.stat(os.path.abspath(out_dir))
             except:
-                os.mkdir(os.path.abspath(out_dir))
+                os.makedirs(os.path.abspath(out_dir))
             # store out_dir name in cell_dict:
             cell_dict[cell_id]["out_dir"] = out_dir
     
@@ -287,35 +280,41 @@ def main(arguments=None):
         reader = csv.reader(f, delimiter='\t')
         for row in reader:
             if row[0] in cell_dict: # if cell_id is in cell_dict (avoid header)
-                cell_dict[row[0]]['t'] = row[1] # add corresponding WX
+                cell_dict[row[0]]['t'] = float(row[1]) # add corresponding WX
         
 
     print("\n[Brie_pseudotime] running Brie_pseudotime for %d cells %d isoforms on %d genes with %d cores..." 
           %(len(cell_dict), TOTAL_TRAN, TOTAL_GENE, nproc))
     
-    results, W_all, sigma_ = brie_MH_Heuristic(cell_dict, feature_all, idxF,
-                  weights_in=weights_in, _sigma=_sigma, _lambda=_lambda,
-                  ftype=ftype, M=M, Mmin=initial, gap=gap, nproc=nproc)
-    #brie_MH_Heuristic gives back an object like result["cell_id"]["Psi_all"]
+    results, WX_brie, W_t_all, sigma_ = brie_MH_Heuristic(cell_dict,
+                feature_all, idxF,weights_in=weights_in, _sigma=_sigma,
+                _lambda=_lambda, ftype=ftype, M=M, Mmin=initial, gap=gap,
+                                                           nproc=nproc)
+    #brie_MH_Heuristic gives back an object like results["cell_id"]["Psi_all"]
 
-    
-    for _id in results: #for cell_id in results:
+    # save results for each cell
+    for cell_id in results: #for cell_id in results:
         # extract relevant variables
         out_dir = cell_dict[cell_id]["out_dir"]
         Psi_all = cell_dict[cell_id]["Psi_all"]
         Y_all = cell_dict[cell_id]["Y_all"]
         RPK_all = cell_dict[cell_id]["FPKM_all"]
         Cnt_all = cell_dict[cell_id]["Cnt_all"]
-        
-        save_pseudotime_data(out_dir, sample_num, gene_ids, tran_ids, tran_len,
-                             feature_all, Psi_all, RPK_all, Cnt_all, W_all,
-                             sigma_)
+        t = cell_dict[cell_id]["t"]
+        i = cell_dict[cell_id]["i"] # cell index
+                
+        save_pseudotime_data(out_dir, sample_num, gene_ids, tran_ids,
+                             tran_len, feature_all, Psi_all, RPK_all,
+                             Cnt_all, WX_brie[i], W_t_all, t, sigma_)
 
     # save weights
-    with open(os.path.join(pseudotime_brie_out_dir, "weights.tsv"), "w") as fid:
-        fid.writelines("feature_ids\tfeature_weights\n")
-        for i in range(len(gene_ids)):
-            fid.writelines("%s\t%.3e\n" %(gene_ids[i], W_all[i,-m2:].mean()))
+    m2 = int(W_t_all.shape[1]*3/4)
+    with open(os.path.join(pseudotime_brie_out_dir, "weights.tsv"),"w") as fid:
+        fid.writelines("gene_ids\tfeature_weights\n")
+        for i in range(0, len(gene_ids), 2): # for each gene
+            fid.writelines("%s\t%.3e\n" %(gene_ids[i],
+                                          W_t_all[i//2,-m2:].mean()))
+            print(f"W_t for gene {gene_ids[i]}: W_t_all[i//2,-m2:].mean()")
         fid.writelines("#sigma\t%.3e\n" %sigma_)
 
     return

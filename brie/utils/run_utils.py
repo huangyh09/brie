@@ -180,10 +180,20 @@ def save_data(out_dir, sample_num, gene_ids, tran_ids, tran_len,
         output = pro.communicate()[0]
     
 def save_pseudotime_data(out_dir, sample_num, gene_ids, tran_ids, tran_len, 
-    feature_all, Psi_all, RPK_all, Cnt_all, W_all, sigma_):
+                         feature_all, Psi_all, RPK_all, Cnt_all, WX_brie,
+                         W_t_all, t, sigma_):
+    """Save pseudotime data for a cell of WX WX_brie
+
+    Parameters:
+    -----------
+    W_brie: numpy.array
+        W matrix for single cell brie
+    t: float
+        pseudotime
+    """
 
     m1 = int(Psi_all.shape[1]*3/4)
-    m2 = int(W_all.shape[1]*3/4)
+    m2 = int(W_t_all.shape[1]*3/4)
 
     # save psi
     with open(os.path.join(out_dir, "fractions.tsv"), "w") as fid:
@@ -200,11 +210,22 @@ def save_pseudotime_data(out_dir, sample_num, gene_ids, tran_ids, tran_len,
     # save samples for all Psi
     if sample_num > 0:
         
-        W = W_all[:,-m2:].mean(axis=1)
+        #W = W_brie
+        W_t = W_t_all[:,-m2:].mean(axis=1)
         CNT = Cnt_all[:,-m1:].mean(axis=1)
         idx = np.arange(0, len(tran_ids), 2)
         priorY = np.zeros(len(tran_ids))
-        priorY[idx] = np.dot(feature_all[idx,:], W)
+        # print(f"W_t.shape: {W_t.shape}")
+        # print(f"WX_brie.shape: {WX_brie.shape}")
+        # print(f"t: {t}")
+        # print(f"WX_brie[(idx//2)]: {WX_brie[(idx//2)]}")
+        # print(f"W_t[(idx//2)]: {W_t[(idx//2)]}")
+        # W_t = np.array(W_t)
+        # print(f"W_t (np.array): {W_t}")
+        # W_t = np.asarray(W_t, dtype='float64') # important, else dtype('<U32')
+        # # cannot be multiplied by float t
+        # print(f"W_t (np.asarray): {W_t}")
+        priorY[idx] = WX_brie[(idx//2)] + t * W_t[(idx//2)]
         priorY[idx+1] = 0.0 - priorY[idx]
         
         samp_num = min(m1, sample_num)

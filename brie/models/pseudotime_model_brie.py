@@ -327,16 +327,16 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
     #print("M:", M)
 
     ## initialise global (across all cells) variables:
-    WX_brie_all = np.zeros((len(cell_id_list), geneNum))#brie prediction for psi
+    WX_brie = np.zeros((len(cell_id_list), geneNum))#brie prediction for psi
     # collection of Ys for all cells (pseudotime component only):
     Y_t_NOW = np.zeros((len(cell_id_list), geneNum)) # each line is a cell
     T = np.zeros((len(cell_id_list), 1)) # column vector of pseudotimes
     for i in range(len(cell_id_list)): # for each cell
         _id = cell_id_list[i] # id of current cell
-        WX_brie_all[i] = cell[_id]['WX']
+        WX_brie[i] = cell[_id]['WX']
         T[i,0] = cell[_id]['t']
 
-    Y_NOW = WX_brie_all # complete collection of Y_now for all cells
+    Y_NOW = WX_brie # complete collection of Y_now for all cells
     #if ftype == "Y" or ftype == "y":
     F_NOW = Y_NOW
     #else:
@@ -362,9 +362,10 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
         W_t = W_t_part1.dot(Y_t_NOW) # weights are equal to zero at this stage
 
     W_t_all = [W_t] # list that store every W_t at the end of each iteration
+    # notice that W_t is an array of dim (1,gene_num) [important for return]
 
     # compute new "Y bar":
-    F_PRE = WX_brie_all + T.dot(W_t)
+    F_PRE = WX_brie + T.dot(W_t)
 
     for i in range(len(cell_id_list)): # for each cell
         _id = cell_id_list[i] # id of current cell
@@ -438,6 +439,7 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
         cell[_id]['gCounts'] = gCounts
         cell[_id]['Idx_all'] = Idx_all
         cell[_id]['F_now'] = F_now
+        cell[_id]['i'] = i # save the ordered index (important)
             
         
     ### initialisation ends
@@ -573,10 +575,10 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
             break # end computation
 
         # update weights and Y bar:
-        Y_t_NOW = Y_NOW - WX_brie_all # update pseudotemporal component of Y
+        Y_t_NOW = Y_NOW - WX_brie # update pseudotemporal component of Y
         W_t = W_t_part1.dot(Y_t_NOW) # weights are equal to zero at this stage
         W_t_all.append(W_t) # store W_t
-        F_PRE = WX_brie_all + T.dot(W_t)
+        F_PRE = WX_brie + T.dot(W_t)
         
         # update F_pre for each cell
         for i in range(len(cell_id_list)): # for each cell
@@ -610,6 +612,9 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
 
         cell[_id]['FPKM_all'] = Cnt_all / tranLen.reshape(-1, 1) / total_count * 10**9
 
+    print(W_t_all)
+    print(f"np.array(W_t_all).shape: {np.array(W_t_all).shape}")
     print(f"np.array(W_t_all).T.shape: {np.array(W_t_all).T.shape}")
         
-    return cell, np.array(W_t_all).T, sigma_in # Psi_all, Y_all, FPKM_all, Cnt_all, W_all, sigma_in
+    return cell, WX_brie, np.array(W_t_all)[:,0,:].T, sigma_in # Psi_all, Y_all, FPKM_all, Cnt_all, W_all, sigma_in
+# W_t_all is converted from an array of shape (cell_num,1,gene_num) to one of shape (cell_num, gene_num)
