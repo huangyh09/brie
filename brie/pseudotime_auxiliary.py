@@ -314,7 +314,8 @@ def main(arguments=None):
         for i in range(0, len(gene_ids), 2): # for each gene
             fid.writelines("%s\t%.3e\n" %(gene_ids[i],
                                           W_t_all[i//2,-m2:].mean()))
-            print(f"W_t for gene {gene_ids[i]}: W_t_all[i//2,-m2:].mean()")
+            W = W_t_all[i//2,-m2:].mean()
+            print(f"W_t for gene {gene_ids[i]}: {W}")
         fid.writelines("#sigma\t%.3e\n" %sigma_)
 
     return
