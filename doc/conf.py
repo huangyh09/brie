@@ -56,6 +56,7 @@ copyright = u'2018, Yuanhua Huang'
 # built documents.
 #
 # The short X.Y version.
+import brie
 version = brie.__version__ #'0.1.3' #
 # The full version, including alpha/beta/rc tags.
 release = version
@@ -133,9 +134,9 @@ html_theme_options = {
     'navbar_links': [
         ("Install", "install"),
         ("Manual", "manual"),
+        ("Preprocess", "briekit"),
         # ("Tutorial", "manual"),
         # ("API", "manual"),
-        # ("Preprocess", "briekit"),
         # ("Link", "http://example.com", True),
     ],
 

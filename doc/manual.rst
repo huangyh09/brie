@@ -2,15 +2,12 @@
 Manual
 ======
 
-.. contents:: Table of Contents
-   :depth: 1
-   :local:
+After properly installed BRIE Python package, two excutable binary files could 
+be run from command line directly: ``brie``, ``brie-diff``. From version 0.2.0, 
+all preprocessing are divided and moved into BRIE-kit_ package, which is aimed
+to be used in Python2 only. 
 
-After properly installed BRIE Python package, five excutable binary files could 
-be run from command line directly: ``brie``, ``brie-diff``, ``brie-factor``, 
-``brie-event``, and ``brie-event-filter``. Details about these utilities are 
-shown below.
-
+.. _BRIE-kit: https://github.com/huangyh09/briekit/wiki
 
 1. BRIE isoform estimate
 ========================
@@ -188,54 +185,16 @@ you are using):
 
 
 
-3. Preprocessing
-================
-
-3.1. Splicing events and sequence features
-------------------------------------------
-
-Now, you can use BRIE-kit_ to prepare the splicing events annotation, filtering
-and fetch sequence features for them.
-
-See manual and examples here.
-
-
-
-3.2 Reads alignment
--------------------
-
-Reads alignment is a general step for analysing sequencing data for both bulk- 
-and single-cell RNA-seq data. Here, we require each cell has a separate bam/sam
-file. For multiplexed examples, you need to demultiplex the cells into 
-individual files. Cardelino_, that Davis and I are currently working on will 
-solve this problem, and gives a good pipeline soon.
-
-Here, we start as standard RNA-seq data in fastq_ format, and BRIE requires an
-alignment of the reads to genome, with allowing spliced junction reads 
-detection, i.e., a read mapped to genome with a big gap, mainly caused by 
-splicing. There are quite a fewer aligners that do a good job,for example STAR_ 
-and HISAT_, which usually return good alignment quality.
-
-Here, we provide example to align reads with HISAT (based on HISAT 0.1.5), and
-sort and index the bam file. 
-
-.. code-block:: bash
-
-  ($hisatDir/hisat -x $hisatRef -1 $fq_dir/"$file"_1.fq.gz -2 $fq_dir/"$file"_2.fq.gz --no-unal | samtools view -bS -> $out_dir/$file.bam) 2> $out_dir/$file.err
-  samtools sort $out_dir/$file.bam $out_dir/$file.sorted
-  samtools index $out_dir/$file.sorted.bam
-
-.. _fastq: https://en.wikipedia.org/wiki/FASTQ_format
-.. _STAR: https://code.google.com/p/rna-star/
-.. _HISAT: https://ccb.jhu.edu/software/hisat/index.shtml
-
-Now, these sorted and indexed bam files are input files for BRIE.
-
-
-6. Examples
+3. Examples
 ===========
 
-There are some examples available here: 
+One typical example on 130 mouse cells during gastrulation is in this folder, 
+from which you will quantify the splicing with BRIE, identify the highly 
+variable splicing events and visualise them with sashimi plot.
+https://github.com/huangyh09/brie/tree/master/example/gastrulation
+
+
+There are some earlier examples: 
 https://sourceforge.net/projects/brie-rna/files/examples/
 
 - Example to quantify splicing with provided annotation (bash code and data): 

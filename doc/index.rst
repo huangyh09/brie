@@ -3,7 +3,7 @@ Home
 ====
 
 .. :Author: Yuanhua Huang
-.. :Version: 0.1.5
+.. :Version: 0.2.0
 .. :Last viewed: Jun 3, 2018
 
 About BRIE
@@ -31,23 +31,28 @@ regulatory features.
 2. ``brie-diff``: Calculate Bayes factor of differential splicing between 
 multiple cells pair-wisely. 
 
-3. ``brie-event``: Extract the splicing events from gene annotation file in 
-gff3/gtf formate. 
-
-4. ``brie-factor``: Fetch genentic features from genome sequence reference file 
-in fasta formate.
 
 
-Contents
-========
+Quick Resources
+===============
 
-.. toctree::
-   :maxdepth: 2
+**Code: GitHub latest version**
+https://github.com/huangyh09/brie
 
-   install.rst
-   manual.rst
-   faq.rst
-   release.rst
+**Simulation wraps on GitHub**
+https://github.com/huangyh09/brie/tree/master/simulator
+
+**Data: splicing events annotations**
+http://sourceforge.net/projects/brie-rna/files/annotation/
+
+**Data: usage examples**
+http://sourceforge.net/projects/brie-rna/files/examples/
+
+**All releases**
+https://pypi.org/project/brie/#history
+
+**Issue reports**
+https://github.com/huangyh09/brie/issues
 
 
 
@@ -58,22 +63,4 @@ Yuanhua Huang and Guido Sanguinetti. `BRIE: transcriptome-wide splicing
 quantification in single cells 
 <https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1248-5>`_. 
 \ **Genome Biology**\, 2017; 18(1):123.
-
-
-
-.. seealso::
-
-   Code: GitHub latest version
-      https://github.com/huangyh09/brie
-
-   Simulation wraps on GitHub
-      https://github.com/huangyh09/brie/tree/master/simulator
-
-   Data: splicing events annotations
-      http://sourceforge.net/projects/brie-rna/files/annotation/
-
-   Data: usage examples
-      http://sourceforge.net/projects/brie-rna/files/examples/
-
-
 
