@@ -65,6 +65,11 @@ setup(
 
     install_requires=reqs,
 
+    extras_require={
+        'docs': [
+            'sphinx >= 1.4',
+            'sphinx_bootstrap_theme']},
+
     py_modules=['brie']
 
     # buid the distribution: python setup.py sdist
