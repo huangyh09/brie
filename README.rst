@@ -1,3 +1,13 @@
+|PyPI| |Docs| |Build Status|
+
+.. |PyPI| image:: https://img.shields.io/pypi/v/brie.svg
+    :target: https://pypi.org/project/brie
+.. |Docs| image:: https://readthedocs.org/projects/brie/badge/?version=latest
+   :target: https://brie.readthedocs.io
+.. |Build Status| image:: https://travis-ci.org/huangyh09/brie.svg?branch=master
+   :target: https://travis-ci.org/huangyh09/brie
+
+
 BRIE: Bayesian Regression for Isoform Estimate
 ==============================================
 
@@ -48,7 +58,7 @@ Detailed manual
 See the documentation_ on how to install, to use, to find the annotation data 
 etc.
 
-.. _documentation: http://brie-rna.sourceforge.net
+.. _documentation: https://brie.readthedocs.io
 
 
 References
