@@ -1,0 +1,6 @@
+sphinx:
+  configuration: doc/conf.py
+build:
+  image: latest
+python:
+  version: 3.5
