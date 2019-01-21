@@ -269,6 +269,8 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
             specific probability
         "total_count": int
             the total number of reads in the whole bam file(s)
+        "t": float
+            pseudotime for corresponding cell
     feature_all: an array 
         size (tranNum, K) for multiple isoforms or (tranNum/2, K) splicing 
         events
@@ -336,7 +338,10 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
         WX_brie[i] = cell[_id]['WX']
         T[i,0] = cell[_id]['t']
 
+    print("T : ", T) #!
+    
     Y_NOW = WX_brie # complete collection of Y_now for all cells
+    print("Y_NOW : ", Y_NOW) #!
     #if ftype == "Y" or ftype == "y":
     F_NOW = Y_NOW
     #else:
@@ -468,6 +473,17 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
             Idx_all = cell[_id]['Idx_all']
             total_count = cell[_id]['total_count']
 
+            if i < 3 and m < 3:
+                print("*******************************************************")
+                print("Looking at cell " + str(i) + " at step " + str(m) + " :")
+                print("variables begin at")
+                print("F_pre :" )
+                print(F_pre)
+                print("Y_now :" )
+                print(Y_now)
+                print("Y_all :" )
+                print(Y_all)
+
             #print("Y_all.shape n5:", Y_all.shape)
             
             if nproc == 1: # one process case
@@ -560,6 +576,16 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
             cell[_id]['Idx_all'] = Idx_all
             cell[_id]['F_now'] = F_now
 
+            if i < 3 and m < 3:
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                print("variables END at")
+                print("F_pre :" )
+                print(F_pre)
+                print("Y_now :" )
+                print(Y_now)
+                print("Y_all :" )
+                print(Y_all)
+
         # wait for convergence and a minimum of steps
         if sum(CONVERG) == len(CONVERG) and m*gap >= Mmin:
             # cut Y_all, Psi_all and Cnt_all for each cell
@@ -574,11 +600,19 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
                 cell[_id]['Psi_all'] = cell[_id]['Psi_all'][:, :(m+1)*gap]
             break # end computation
 
+        if m < 3:
+            print("#################")
+            print("W_t before update at step" + str(m) + " :")
+            print(W_t)
+            
         # update weights and Y bar:
         Y_t_NOW = Y_NOW - WX_brie # update pseudotemporal component of Y
         W_t = W_t_part1.dot(Y_t_NOW) # weights are equal to zero at this stage
         W_t_all.append(W_t) # store W_t
         F_PRE = WX_brie + T.dot(W_t)
+        if m < 3:
+            print("W_t AFTER update at step" + str(m) + " :")
+            print(W_t)
         
         # update F_pre for each cell
         for i in range(len(cell_id_list)): # for each cell
@@ -612,9 +646,9 @@ def brie_MH_Heuristic(cell, feature_all, idxF, weights_in=None, _sigma=None,
 
         cell[_id]['FPKM_all'] = Cnt_all / tranLen.reshape(-1, 1) / total_count * 10**9
 
-    print(W_t_all)
-    print(f"np.array(W_t_all).shape: {np.array(W_t_all).shape}")
-    print(f"np.array(W_t_all).T.shape: {np.array(W_t_all).T.shape}")
+    #print(W_t_all)
+    #print(f"np.array(W_t_all).shape: {np.array(W_t_all).shape}")
+    #print(f"np.array(W_t_all).T.shape: {np.array(W_t_all).T.shape}")
         
     return cell, WX_brie, np.array(W_t_all)[:,0,:].T, sigma_in # Psi_all, Y_all, FPKM_all, Cnt_all, W_all, sigma_in
 # W_t_all is converted from an array of shape (cell_num,1,gene_num) to one of shape (cell_num, gene_num)
