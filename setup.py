@@ -1,6 +1,6 @@
 """
 Brie - Bayesian regression for isoform estimate
-See: http://brie-rna.sourceforge.net
+See: https://brie.readthedocs.io
 """
 
 # Always prefer setuptools over distutils
@@ -32,7 +32,7 @@ setup(
     long_description=long_description,
 
     # The project's main homepage.
-    url='http://brie-rna.sourceforge.net',
+    url='https://brie.readthedocs.io',
 
     # Author details
     author='Yuanhua Huang',
