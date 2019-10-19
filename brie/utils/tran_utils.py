@@ -209,6 +209,11 @@ class TranUnits:
             if sum(self.probs) > 0: self.probs /= sum(self.probs)
         else:
             for i in np.unique(flen): 
+                if i > len(self.probs):
+                    print("[brie] Warning: fragment len %d exceed transcript "
+                          "length %d for %d times" %(i, len(self.probs), 
+                          np.sum(flen==i)))
+                    continue
                 self.probs[int(i)-1] = np.mean(flen==i) #be careful here.
              
         # effective length
