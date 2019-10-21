@@ -235,6 +235,9 @@ class TranUnits:
 
         # reads probability
         for i in range(self.rcnt):
+            ## check when fL is longer than self.ulen, 
+            ## self.Rmat[i] should be False in this case.
+            if self.flen[i] > len(self.probs): continue # read will be ignored
             if self.Rmat[i] == False: continue
             fL = int(self.flen[i])
             self.proU[i] *= self.probs[fL-1] / (self.ulen - fL + 1)
