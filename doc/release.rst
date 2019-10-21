@@ -2,7 +2,7 @@
 History
 =======
 
-Release v0.2.3 (19/10/2019)
+Release v0.2.4 (21/10/2019)
 * fix a bug that fragment length longer than transcript length
 
 Release v0.2.2 (15/01/2019)
