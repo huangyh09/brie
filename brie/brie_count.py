@@ -8,17 +8,24 @@ import numpy as np
 import multiprocessing
 from optparse import OptionParser, OptionGroup
 
-# import pyximport; pyximport.install()
 from .utils.gtf_utils import loadgene
-from .utils.run_utils import set_info, map_data, save_data
+from .utils.run_utils import get_count_matrix
 
+FID = None
 PROCESSED = 0
 TOTAL_GENE = 0
-TOTAL_READ = []
 START_TIME = time.time()
+
+#TODO: something wrong as there is no reads for isoform 2. Please check!!
     
-def show_progress(RV=None):
-    global PROCESSED, TOTAL_GENE, START_TIME
+def show_progress(RV=None):    
+    global PROCESSED, TOTAL_GENE, START_TIME, FID
+    
+    if RV is None:
+        return RV
+    else:
+        FID.writelines(RV)
+    
     if RV is not None: 
         PROCESSED += 1
         bar_len = 20
@@ -27,10 +34,12 @@ def show_progress(RV=None):
         filled_len = int(bar_len * percents / 100)
         bar = '=' * filled_len + '-' * (bar_len - filled_len)
         
-        sys.stdout.write('\r[Brie] [%s] %.1f%% done in %.1f sec.' 
+        sys.stdout.write('\r[Brie] [%s] %.1f%% genes done in %.1f sec.' 
             % (bar, percents, run_time))
         sys.stdout.flush()
+        
     return RV
+
 
 
 def main():
@@ -39,16 +48,13 @@ def main():
 
     # parse command line options
     parser = OptionParser()
-    parser.add_option("--anno_file", "-a", dest="anno_file", default=None,
-        help="Annotation file for genes and transcripts in GTF or GFF3")
-    parser.add_option("--sam_file", "-s", dest="sam_file", default=None,
-        help=("Sorted and indexed bam/sam/cram files, use ',' for replicates "
-        "e.g., rep1.sorted.bam,sam1_rep2.sorted.bam"))
-    parser.add_option("--samList_file", "-S", dest="samList_file", default=None,
-        help=("A file containing sorted and indexed bam/sam/cram files. "
-        "No header line; one or two columns, the second column for cell names"))
-    parser.add_option("--out_dir", "-o", dest="out_dir", default="output", 
-        help="Full path of output directory")
+    parser.add_option("--gffFile", "-a", dest="gff_file", default=None,
+        help="GTF/GFF3 file for gene and transcript annotation")
+    parser.add_option("--samList", "-S", dest="samList_file", default=None,
+        help=("A tsv file containing sorted and indexed bam/sam/cram files. "
+              "No header line; file path and cell id (optional)"))
+    parser.add_option("--out_dir", "-o", dest="out_dir", default=None, 
+        help="Full path of output directory [default: $samList/brieOUT]")
 
     group = OptionGroup(parser, "Optional arguments")
     group.add_option("--nproc", "-p", type="int", dest="nproc", default="4",
@@ -64,72 +70,42 @@ def main():
         "files, [default: unif None None]"))
     group.add_option("--add_premRNA", action="store_true", dest="add_premRNA", 
         default=False, help="Add the pre-mRNA as a transcript")
-    # parser.add_option("--two_isoform",action="store_true",dest="two_isoform",
-    #     default=False, help=("Only two isoforms for all genes. This is mainly "
-    #     "for splicing events."))
 
     parser.add_option_group(group)
-
+    
     (options, args) = parser.parse_args()
     if len(sys.argv[1:]) == 0:
         print("Welcome to Brie!\n")
         print("use -h or --help for help on argument.")
         sys.exit(1)
-    if options.anno_file == None:
-        print("[Brie] Error: need --anno_file for annotation.")
+    if options.samList_file == None:
+        print("[Brie] Error: need --samList for indexed & aliged sam/bam/cram files.")
         sys.exit(1)
     else:
-        sys.stdout.write("\r[Brie] loading annotation file... ")
-        sys.stdout.flush()
-        # anno = load_annotation(options.anno_file, options.anno_source)
-        genes = loadgene(options.anno_file)
-        sys.stdout.write("\r[Brie] loading annotation file... Done.\n")
-        sys.stdout.flush()
-        # genes = anno["genes"]
-        tran_len = []
-        tran_ids = []
-        gene_ids = []
-        for g in genes:
-            for t in g.trans:
-                tran_len.append(t.tranL)
-                tran_ids.append(t.tranID)
-                gene_ids.append(g.geneID)
-        gene_ids = np.array(gene_ids)
-        tran_ids = np.array(tran_ids)
-        tran_len = np.array(tran_len)
-
-        global TOTAL_GENE, TOTAL_TRAN
-        TOTAL_GENE = len(genes)
-        TOTAL_TRAN = len(tran_ids)
-
-    if options.sam_file == None:
-        print("[Brie] Error: need --sam_file for indexed and aliged reads.")
-        sys.exit(1)
-    else:
-        global TOTAL_READ
-        TOTAL_READ = 0
-        sam_file = options.sam_file
-        for ss in sam_file.split(","):
-            if not os.path.isfile(ss):
-                print("Error: No such file\n    -- %s" %ss)
-                sys.exit(1)
-            pysam_stats = pysam.idxstats(ss)
-            if type(pysam_stats) is not list:
-                pysam_stats = pysam_stats.split("\n")
-            for tp in pysam_stats: 
-                tmp = tp.strip().split("\t")
-                if len(tmp) >= 3:
-                    TOTAL_READ += float(tmp[2])
-
+        sam_table = np.genfromtxt(options.samList_file, delimiter = None, dtype=str)
+        sam_table = sam_table.reshape(sam_table.shape[0], -1)
+        print(sam_table)
+        
     if options.out_dir is None:
-        out_dir = os.path.dirname(os.path.abspath(ss)) + "/brie_out"
+        sam_dir = os.path.abspath(samList_file)
+        out_dir = os.path.dirname(sam_dir) + "/brieOUT"
     else:
         out_dir = options.out_dir
     try:
         os.stat(os.path.abspath(out_dir))
     except:
         os.mkdir(os.path.abspath(out_dir))
-
+        
+    if options.gff_file == None:
+        print("[Brie] Error: need --gffFile for gene annotation.")
+        sys.exit(1)
+    else:
+        sys.stdout.write("\r[Brie] loading gene annotations ... ")
+        sys.stdout.flush()
+        genes = loadgene(options.gff_file)
+        sys.stdout.write("\r[Brie] loading gene annotations ... Done.\n")
+        sys.stdout.flush()
+    
     bias_mode, ref_file, bias_file = options.bias_args
     if bias_mode == "unif":
         ref_file = None
@@ -153,41 +129,69 @@ def main():
 
     nproc = options.nproc
     FLmean, FLstd = options.frag_leng
-
-    print("[Brie] loading reads for %d genes with %d cores..." %(TOTAL_GENE, 
-        nproc))
-    global START_TIME
+    
+    ## Output gene info
+    fid = open(out_dir + "/gene_note.tsv", "w")
+    fid.writelines("GeneID\tGeneName\tTranLens\tTranIDs\n")
+    for g in genes:
+        tran_ids, tran_lens = [], []
+        for t in g.trans:
+            tran_ids.append(t.tranID)
+            tran_lens.append(str(t.tranL))
+        out_list = [g.geneID, g.geneName, ",".join(tran_lens), 
+                    ",".join(tran_ids)]
+        fid.writelines("\t".join(out_list) + "\n")
+    fid.close()
+    global TOTAL_GENE
+    TOTAL_GENE = len(genes)
+        
+    ## Output sam total counts
+    reads_table = np.zeros(sam_table.shape[0])
+    for i in range(sam_table.shape[0]):
+        if not os.path.isfile(str(sam_table[i, 0])):
+            print("Error: No such file\n    -- %s" %sam_table[i, 0])
+            sys.exit(1)
+        pysam_stats = pysam.idxstats(sam_table[i, 0])
+        if type(pysam_stats) is not list:
+            pysam_stats = pysam_stats.split("\n")
+        for tp in pysam_stats: 
+            tmp = tp.strip().split("\t")
+            if len(tmp) >= 3:
+                reads_table[i] += float(tmp[2])
+                
+    fid = open(out_dir + "/cell_note.tsv", "w")
+    fid.writelines("samID\tsamCOUNT\n")
+    for i in range(len(reads_table)):
+        fid.writelines("%s\t%d\n" %(sam_table[i, 1], reads_table[i]))
+    fid.close()
+    
+    ## Load read counts
+    print("[Brie] loading reads for %d genes in %d sam files with %d cores..." 
+          %(TOTAL_GENE, sam_table.shape[0], nproc))
+    
+    global START_TIME, FID
     START_TIME = time.time()
-
-    R_all, len_iso_all, prob_iso_all = [], [], []
+    
+    FID = open(options.out_dir + "/read_count.mtx", "w")
+    
     if nproc <= 1:
-        for g in genes:
-            RV = set_info(g, sam_file, bias_mode, ref_file, bias_file, FLmean,
-                FLstd, mate_mode, auto_min)
+        for g in range(len(genes)):
+            RV = get_count_matrix(genes[g], g, gsam_table[:, 0], bias_mode, 
+                                  ref_file, bias_file, FLmean, FLstd, mate_mode, 
+                                  auto_min)
             show_progress(RV)
-            R_all.append(RV["Rmat"])
-            len_iso_all.append(RV["len_iso"])
-            prob_iso_all.append(RV["prob_iso"])
-
     else:
         pool = multiprocessing.Pool(processes=nproc)
         result = []
-        for g in genes:
-            result.append(pool.apply_async(set_info, (g, sam_file, bias_mode,
-                ref_file, bias_file, FLmean, FLstd, mate_mode, auto_min), 
-                callback=show_progress))
+        for g in range(len(genes)):
+            result.append(pool.apply_async(get_count_matrix, (genes[g], g, 
+                sam_table[:, 0], bias_mode, ref_file, bias_file, FLmean, 
+                FLstd, mate_mode, auto_min), callback=show_progress))
         pool.close()
         pool.join()
-        for res in result:
-            RV = res.get()
-            R_all.append(RV["Rmat"])
-            len_iso_all.append(RV["len_iso"])
-            prob_iso_all.append(RV["prob_iso"])
-
     
-    print("\n[Brie] running Brie for %d isoforms on %d genes with %d cores..." 
-        %(TOTAL_TRAN, TOTAL_GENE, nproc))
-
+    FID.close()
+    print("")
 
 
 if __name__ == "__main__":

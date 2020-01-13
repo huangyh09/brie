@@ -18,7 +18,7 @@ exec(open("./brie/version.py").read())
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
-reqs = ['numpy>=1.9.0', 'pysam>=0.9.0']
+reqs = ['numpy>=1.9.0', 'pysam>=0.15.2']
 
 setup(
     name='brie',
@@ -53,6 +53,7 @@ setup(
         'console_scripts': [
             'brie = brie.brie:main',
             'brie-diff = brie.brie_diff:main',
+            'brie-count = brie.brie_count:main'
         ],
     },
 
@@ -67,7 +68,7 @@ setup(
 
     extras_require={
         'docs': [
-            'sphinx >= 1.4',
+            # 'sphinx >= 1.4',
             'sphinx_bootstrap_theme']},
 
     py_modules=['brie']
