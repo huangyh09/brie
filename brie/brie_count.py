@@ -62,12 +62,6 @@ def main():
     group.add_option("--fLen", type="float", nargs=2, dest="frag_leng",
         default=[None,None], help=("Two arguments for fragment length: "
         "mean and standard diveation, default: auto-detected"))
-    group.add_option("--bias", nargs=3, dest="bias_args",
-        default=["unif","None","None"], help=("Three argments for bias "
-        "correction: BIAS_MODE,REF_FILE,BIAS_FILE(s). BIAS_MODE: unif, end5, "
-        "end3, both. REF_FILE: the genome reference file in fasta format. "
-        "BIAS_FILE(s): bias files from dice-bias, use '---' for time specific "
-        "files, [default: unif None None]"))
     group.add_option("--add_premRNA", action="store_true", dest="add_premRNA", 
         default=False, help="Add the pre-mRNA as a transcript")
 
@@ -106,23 +100,9 @@ def main():
         sys.stdout.write("\r[Brie] loading gene annotations ... Done.\n")
         sys.stdout.flush()
     
-    bias_mode, ref_file, bias_file = options.bias_args
-    if bias_mode == "unif":
-        ref_file = None
-        bias_file = None
-    elif ref_file is "None": 
-        ref_file = None
-        bias_file = None
-        bias_mode = "unif"
-        print("[Brie] No reference sequence, change to uniform mode.")
-    elif bias_file is "None":
-        ref_file = None
-        bias_file = None
-        bias_mode = "unif"
-        print("[Brie] No bias parameter file, change to uniform mode.")
-    else:
-        bias_file = bias_file.split("---")
-
+    # bias mode is not supported yet
+    bias_mode, ref_file, bias_file = "unif", None, None
+    
     auto_min = 200
     mate_mode = "pair"
     add_premRNA = False
@@ -173,6 +153,8 @@ def main():
     START_TIME = time.time()
     
     FID = open(options.out_dir + "/read_count.mtx", "w")
+    FID.writelines("%" + "%MatrixMarket matrix coordinate integer general\n")
+    FID.writelines("%d\t%d\t%d\n" %(TOTAL_GENE, sam_table.shape[0], 0))
     
     if nproc <= 1:
         for g in range(len(genes)):
