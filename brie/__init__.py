@@ -8,7 +8,7 @@ at https://brie.readthedocs.io/.
 """
 
 from .version import __version__
-from .model.model_TFProb import BRIE2
+from .models.model_TFProb import BRIE2
 from .utils.io_utils import load_brie_count
 from .utils.bias_utils import FastaFile, BiasFile
 from .utils.tran_utils import TranUnits, TranSplice
