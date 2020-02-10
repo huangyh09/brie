@@ -191,7 +191,7 @@ you are using):
 One typical example on 130 mouse cells during gastrulation is in this folder, 
 from which you will quantify the splicing with BRIE, identify the highly 
 variable splicing events and visualise them with sashimi plot.
-https://github.com/huangyh09/brie/tree/master/example/gastrulation
+https://github.com/huangyh09/brie/tree/master/examples/gastrulation
 
 
 There are some earlier examples: 
@@ -207,6 +207,6 @@ https://sourceforge.net/projects/brie-rna/files/examples/
   anno_maker.sh_
 
 .. _brie-examples.zip: http://ufpr.dl.sourceforge.net/project/brie-rna/examples/brie_quantify/brie-examples.zip
-.. _brie_demo.sh: https://github.com/huangyh09/brie/blob/master/example/brie_demo.sh
-.. _anno_maker.sh: https://github.com/huangyh09/brie/blob/master/example/anno_maker.sh
+.. _brie_demo.sh: https://github.com/huangyh09/brie/blob/master/examples/brie_demo.sh
+.. _anno_maker.sh: https://github.com/huangyh09/brie/blob/master/examples/anno_maker.sh
 
