@@ -9,18 +9,20 @@ import multiprocessing
 from optparse import OptionParser, OptionGroup
 
 from .version import __version__
+from .utils.io_utils import load_brie_count
 from .utils.gtf_utils import load_genes
 from .utils.count import get_count_matrix, SE_probability
 
+
 FID = None
 PROCESSED = 0
-TOTAL_GENE = 0
+TOTAL_BAMs = 0
 START_TIME = time.time()
 
 #TODO: something wrong as there is no reads for isoform 2. Please check!!
     
 def show_progress(RV=None):    
-    global PROCESSED, TOTAL_GENE, START_TIME, FID
+    global PROCESSED, TOTAL_BAMs, START_TIME, FID
     
     if RV is None:
         return RV
@@ -31,11 +33,11 @@ def show_progress(RV=None):
         PROCESSED += 1
         bar_len = 20
         run_time = time.time() - START_TIME
-        percents = 100.0 * PROCESSED / TOTAL_GENE
+        percents = 100.0 * PROCESSED / TOTAL_BAMs
         filled_len = int(bar_len * percents / 100)
         bar = '=' * filled_len + '-' * (bar_len - filled_len)
         
-        sys.stdout.write('\r[BRIE2] [%s] %.1f%% genes done in %.1f sec.' 
+        sys.stdout.write('\r[BRIE2] [%s] %.1f%% cells done in %.1f sec.' 
             % (bar, percents, run_time))
         sys.stdout.flush()
         
@@ -76,7 +78,7 @@ def main():
     else:
         sam_table = np.genfromtxt(options.samList_file, delimiter = None, dtype=str)
         sam_table = sam_table.reshape(sam_table.shape[0], -1)
-        print(sam_table)
+        print(sam_table[:min(3, sam_table.shape[0])], "...")
         
     if options.out_dir is None:
         sam_dir = os.path.abspath(options.samList_file)
@@ -103,8 +105,7 @@ def main():
     nproc = options.nproc
 
     ## Output gene info
-    fid = open(out_dir + "/gene_note.tsv", "w")
-    fid.writelines("GeneID\tGeneName\tTranLens\tTranIDs\n")
+    gene_table = [["GeneID", "GeneName", "TranLens", "TranIDs"]]
     for g in genes:
         tran_ids, tran_lens = [], []
         for t in g.trans:
@@ -112,12 +113,17 @@ def main():
             tran_lens.append(str(t.tranL))
         out_list = [g.geneID, g.geneName, ",".join(tran_lens), 
                     ",".join(tran_ids)]
+        gene_table.append(out_list)
+        
+    fid = open(out_dir + "/gene_note.tsv", "w")
+    for out_list in gene_table:
         fid.writelines("\t".join(out_list) + "\n")
     fid.close()
-    global TOTAL_GENE
-    TOTAL_GENE = len(genes)
         
     ## Output sam total counts
+    global TOTAL_BAMs
+    TOTAL_BAMs = sam_table.shape[0]
+    
     reads_table = np.zeros(sam_table.shape[0])
     for i in range(sam_table.shape[0]):
         if not os.path.isfile(str(sam_table[i, 0])):
@@ -131,33 +137,51 @@ def main():
             if len(tmp) >= 3:
                 reads_table[i] += float(tmp[2])
                 
+    cell_table = [["samID", "samCOUNT"]]
     fid = open(out_dir + "/cell_note.tsv", "w")
     fid.writelines("samID\tsamCOUNT\n")
     for i in range(len(reads_table)):
+        cell_table.append([sam_table[i, 1], reads_table[i]])
         fid.writelines("%s\t%d\n" %(sam_table[i, 1], reads_table[i]))
     fid.close()
     
+    ## Generate isoform probability tensor
+    Prob_tensor = np.zeros((len(genes), 2, 3), dtype=np.float32)
+    for ig, _gene in enumerate(genes):
+        Prob_tensor[ig, :, :] = SE_probability(_gene, rlen=76)
+    
     ## Load read counts
     print("[BRIE2] loading reads for %d genes in %d sam files with %d cores..." 
-          %(TOTAL_GENE, sam_table.shape[0], nproc))
+          %(len(genes), sam_table.shape[0], nproc))
     
     global START_TIME, FID
     START_TIME = time.time()
     
     FID = open(options.out_dir + "/read_count.mtx", "w")
     FID.writelines("%" + "%MatrixMarket matrix coordinate integer general\n")
-    FID.writelines("%d\t%d\t%d\n" %(TOTAL_GENE, sam_table.shape[0], 0))
+    FID.writelines("%d\t%d\t%d\n" %(sam_table.shape[0], len(genes), 0))
     
-    pool = multiprocessing.Pool(processes=nproc)
-    result = []
-    for g in range(len(genes)):
-        result.append(pool.apply_async(get_count_matrix, (genes[g], g, 
-            sam_table[:, 0], 10, 2), callback=show_progress))
-    pool.close()
-    pool.join()
+    if nproc <= 1:
+        for s in range(len(sam_table[:, 0])):
+            res = get_count_matrix(genes, sam_table[s, 0], s, 10, 2)
+            show_progress(res)
+    else:
+        pool = multiprocessing.Pool(processes=nproc)
+        result = []
+        for s in range(len(sam_table[:, 0])):
+            result.append(pool.apply_async(get_count_matrix, (genes, 
+                sam_table[s, 0], s, 10, 2), callback=show_progress))
+        pool.close()
+        pool.join()
     
     FID.close()
     print("")
+    
+    ## Dave data into npz
+    Rmat_dict = load_brie_count(options.out_dir + "/read_count.mtx")
+    np.savez(options.out_dir + "/brie_count.npz", 
+             Rmat_dict=Rmat_dict, Prob_tensor=Prob_tensor, 
+             cell_note=cell_table, gene_note=gene_table)
 
 
 if __name__ == "__main__":

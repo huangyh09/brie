@@ -26,7 +26,7 @@ def _get_segment(exons, read):
     _seglens[-1] = np.sum(read.positions > exons[-1, -1])
     for i in range(exons.shape[0]):
         _seglens[i + 1] = np.sum(
-            read.positions >= exons[i, 0] and read.positions <= exons[i, 1])
+            (read.positions >= exons[i, 0]) * (read.positions <= exons[i, 1]))
     return _seglens
 
 
@@ -45,11 +45,21 @@ def check_reads_compatible(transcript, reads, edge_hang=10, junc_hang=2):
         # check if edge hang is too short
         if (_segs[0] > 0 or _segs[-1] > 0) and sum(_segs[1:-1]) < edge_hang:
             is_compatible[i] = False
+            continue
+            
+        # check if exon has been skipped
+        if len(_segs) > 4:
+            for j in range(2, len(_segs) - 2):
+                if (_segs[j-1] >= junc_hang and _segs[j+1] >= junc_hang and
+                    transcript.exons[j-1, 1] - transcript.exons[j-1, 0] - 
+                    _segs[j] >= junc_hang):
+                    is_compatible[i] = False
+                    break
 
     return np.array(is_compatible)
 
 
-def SE_reads_count(gene, samfile, edge_hang=10, junc_hang=2, **kwargs):
+def SE_reads_count(gene, samFile, edge_hang=10, junc_hang=2, **kwargs):
     """Count the categorical reads mapped to a splicing event
 
     rm_duplicate=True, inner_only=True,
@@ -61,7 +71,7 @@ def SE_reads_count(gene, samfile, edge_hang=10, junc_hang=2, **kwargs):
         exit()
 
     # Fetch reads (TODO: customise fetch_reads function, e.g., FLAG)
-    reads = fetch_reads(samfile, gene.chrom, gene.start, gene.stop, **kwargs)
+    reads = fetch_reads(samFile, gene.chrom, gene.start, gene.stop, **kwargs)
 
     # Check reads compatible
     is_isoform1 = check_reads_compatible(gene.trans[0], reads["reads1"])
@@ -70,11 +80,15 @@ def SE_reads_count(gene, samfile, edge_hang=10, junc_hang=2, **kwargs):
         is_isoform1 *= check_reads_compatible(gene.trans[0], reads["reads2"])
         is_isoform2 *= check_reads_compatible(gene.trans[1], reads["reads2"])
 
-    is_isoform1.append(check_reads_compatible(gene.trans[0], reads["reads1u"]))
-    is_isoform2.append(check_reads_compatible(gene.trans[1], reads["reads1u"]))
+    is_isoform1 = np.append(is_isoform1, 
+        check_reads_compatible(gene.trans[0], reads["reads1u"]))
+    is_isoform2 = np.append(is_isoform2, 
+        check_reads_compatible(gene.trans[1], reads["reads1u"]))
 
-    is_isoform1.append(check_reads_compatible(gene.trans[0], reads["reads2u"]))
-    is_isoform2.append(check_reads_compatible(gene.trans[1], reads["reads2u"]))
+    is_isoform1 = np.append(is_isoform1, 
+        check_reads_compatible(gene.trans[0], reads["reads2u"]))
+    is_isoform2 = np.append(is_isoform2, 
+        check_reads_compatible(gene.trans[1], reads["reads2u"]))
 
     # return Reads matrix
     Rmat = np.zeros((len(is_isoform1), 2), dtype=bool)
@@ -83,25 +97,26 @@ def SE_reads_count(gene, samfile, edge_hang=10, junc_hang=2, **kwargs):
     return Rmat
 
 
-def get_count_matrix(g, g_idx, sam_files, edge_hang=10, junc_hang=2):
+def get_count_matrix(genes, sam_file, sam_num, edge_hang=10, junc_hang=2):
+    samFile = load_samfile(sam_file)
+    
     RV = []
-    for s in range(len(sam_files)):
-        _RV = SE_reads_count(g, sam_files[s], edge_hang=10, junc_hang=2, 
+    for g in range(len(genes)):
+        _Rmat = SE_reads_count(genes[g], samFile, edge_hang=10, junc_hang=2, 
             rm_duplicate=True, inner_only=False, mapq_min=0, mismatch_max=5, 
             rlen_min=1, is_mated=True)
 
-        if _RV["Rmat"].shape[0] == 0:
+        if _Rmat.shape[0] == 0:
             continue
 
-        M = _RV["Rmat"]
-        K = 2**(np.arange(M.shape[1]))
-        code_id, code_cnt = np.unique(np.dot(M, K), return_counts=True)
+        K = 2**(np.arange(_Rmat.shape[1]))
+        code_id, code_cnt = np.unique(np.dot(_Rmat, K), return_counts=True)
         
         count_dict = {}
         for i in range(len(code_id)):
             count_dict["%d" %(code_id[i])] = code_cnt[i]
             
-        RV.append("%d\t%d\t%s" %(g_idx + 1, s + 1, str(count_dict)))
+        RV.append("%d\t%d\t%s" %(sam_num + 1, g + 1, str(count_dict)))
     
     RV_line = ""
     if len(RV) > 0:
@@ -142,8 +157,8 @@ def SE_probability(gene, rlen=75, edge_hang=10, junc_hang=2):
     
     # Isoform 2
     len_isoform2 = l1 + l3 + rlen - 2 * edge_hang
-    prob_mat[1, 0] = (rlen - 2 * junc_hang) / len_isoform2
-    prob_mat[1, 1] = (l1 + l3 - 2 * edge_hang + 2 * junc_hang) / len_isoform2
+    prob_mat[1, 1] = (rlen - 2 * junc_hang) / len_isoform2
+    prob_mat[1, 2] = (l1 + l3 - 2 * edge_hang + 2 * junc_hang) / len_isoform2
     
     return prob_mat
 
