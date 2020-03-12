@@ -23,16 +23,6 @@ def get_count_matrix(g, g_idx, sam_files, bias_mode, ref_file,
         M = _RV["Rmat"]
         K = 2**(np.arange(M.shape[1]))
         code_id, code_cnt = np.unique(np.dot(M, K), return_counts=True)
-#         print(M)
-#         print(_RV["prob_iso"])
-
-#         if np.sum(_RV["prob_iso"] >= 0) != np.sum(M):
-#             print(np.sum(_RV["prob_iso"] >= 0), np.sum(M))
-#             print(code_id)
-
-#         if (np.sum(code_id == 2) > 0):
-#             print(M)
-#             print(code_id, code_cnt)
         
         count_dict = {}
         for i in range(len(code_id)):

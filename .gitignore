@@ -1,3 +1,5 @@
+.DS_Store*
+.vscode/
 temp/
 
 # Byte-compiled / optimized / DLL files

@@ -8,8 +8,9 @@ import numpy as np
 import multiprocessing
 from optparse import OptionParser, OptionGroup
 
-from .utils.gtf_utils import loadgene
-from .utils.run_utils import get_count_matrix
+from .version import __version__
+from .utils.gtf_utils import load_genes
+from .utils.count import get_count_matrix, SE_probability
 
 FID = None
 PROCESSED = 0
@@ -34,7 +35,7 @@ def show_progress(RV=None):
         filled_len = int(bar_len * percents / 100)
         bar = '=' * filled_len + '-' * (bar_len - filled_len)
         
-        sys.stdout.write('\r[Brie] [%s] %.1f%% genes done in %.1f sec.' 
+        sys.stdout.write('\r[BRIE2] [%s] %.1f%% genes done in %.1f sec.' 
             % (bar, percents, run_time))
         sys.stdout.flush()
         
@@ -59,21 +60,18 @@ def main():
     group = OptionGroup(parser, "Optional arguments")
     group.add_option("--nproc", "-p", type="int", dest="nproc", default="4",
         help="Number of subprocesses [default: %default]")
-    group.add_option("--fLen", type="float", nargs=2, dest="frag_leng",
-        default=[None,None], help=("Two arguments for fragment length: "
-        "mean and standard diveation, default: auto-detected"))
-    group.add_option("--add_premRNA", action="store_true", dest="add_premRNA", 
-        default=False, help="Add the pre-mRNA as a transcript")
+    # group.add_option("--add_premRNA", action="store_true", dest="add_premRNA", 
+    #     default=False, help="Add the pre-mRNA as a transcript")
 
     parser.add_option_group(group)
     
     (options, args) = parser.parse_args()
     if len(sys.argv[1:]) == 0:
-        print("Welcome to Brie!\n")
+        print("Welcome to BRIE2 v%s!\n" %(__version__))
         print("use -h or --help for help on argument.")
         sys.exit(1)
     if options.samList_file == None:
-        print("[Brie] Error: need --samList for indexed & aliged sam/bam/cram files.")
+        print("[BRIE2] Error: need --samList for indexed & aliged sam/bam/cram files.")
         sys.exit(1)
     else:
         sam_table = np.genfromtxt(options.samList_file, delimiter = None, dtype=str)
@@ -81,7 +79,7 @@ def main():
         print(sam_table)
         
     if options.out_dir is None:
-        sam_dir = os.path.abspath(samList_file)
+        sam_dir = os.path.abspath(options.samList_file)
         out_dir = os.path.dirname(sam_dir) + "/brieOUT"
     else:
         out_dir = options.out_dir
@@ -91,25 +89,19 @@ def main():
         os.mkdir(os.path.abspath(out_dir))
         
     if options.gff_file == None:
-        print("[Brie] Error: need --gffFile for gene annotation.")
+        print("[BRIE2] Error: need --gffFile for gene annotation.")
         sys.exit(1)
     else:
-        sys.stdout.write("\r[Brie] loading gene annotations ... ")
+        sys.stdout.write("\r[BRIE2] loading gene annotations ... ")
         sys.stdout.flush()
-        genes = loadgene(options.gff_file)
-        sys.stdout.write("\r[Brie] loading gene annotations ... Done.\n")
+        genes = load_genes(options.gff_file)
+        sys.stdout.write("\r[BRIE2] loading gene annotations ... Done.\n")
         sys.stdout.flush()
     
     # bias mode is not supported yet
-    bias_mode, ref_file, bias_file = "unif", None, None
-    
-    auto_min = 200
-    mate_mode = "pair"
     add_premRNA = False
-
     nproc = options.nproc
-    FLmean, FLstd = options.frag_leng
-    
+
     ## Output gene info
     fid = open(out_dir + "/gene_note.tsv", "w")
     fid.writelines("GeneID\tGeneName\tTranLens\tTranIDs\n")
@@ -146,7 +138,7 @@ def main():
     fid.close()
     
     ## Load read counts
-    print("[Brie] loading reads for %d genes in %d sam files with %d cores..." 
+    print("[BRIE2] loading reads for %d genes in %d sam files with %d cores..." 
           %(TOTAL_GENE, sam_table.shape[0], nproc))
     
     global START_TIME, FID
@@ -156,21 +148,13 @@ def main():
     FID.writelines("%" + "%MatrixMarket matrix coordinate integer general\n")
     FID.writelines("%d\t%d\t%d\n" %(TOTAL_GENE, sam_table.shape[0], 0))
     
-    if nproc <= 1:
-        for g in range(len(genes)):
-            RV = get_count_matrix(genes[g], g, gsam_table[:, 0], bias_mode, 
-                                  ref_file, bias_file, FLmean, FLstd, mate_mode, 
-                                  auto_min)
-            show_progress(RV)
-    else:
-        pool = multiprocessing.Pool(processes=nproc)
-        result = []
-        for g in range(len(genes)):
-            result.append(pool.apply_async(get_count_matrix, (genes[g], g, 
-                sam_table[:, 0], bias_mode, ref_file, bias_file, FLmean, 
-                FLstd, mate_mode, auto_min), callback=show_progress))
-        pool.close()
-        pool.join()
+    pool = multiprocessing.Pool(processes=nproc)
+    result = []
+    for g in range(len(genes)):
+        result.append(pool.apply_async(get_count_matrix, (genes[g], g, 
+            sam_table[:, 0], 10, 2), callback=show_progress))
+    pool.close()
+    pool.join()
     
     FID.close()
     print("")
