@@ -13,30 +13,28 @@ class BRIE2():
     Kc : number of cell features
     """
     # TODO: support without gene and / or cell feature
-    def __init__(self, Nc, Ng, Kg, Kc, name=None):
+    def __init__(self, Nc, Ng, Kc, Kg=0, name=None):
         self.Nc = Nc
         self.Ng = Ng
         self.Kc = Kc
         self.Kg = Kg
-
+        
         self.Z_loc = tf.Variable(tf.random.normal([Ng, Nc]), name='Z_loc')
         self.Z_std = tf.Variable(tf.random.normal([Ng, Nc]), name='Z_var')
         self.Wg_loc = tf.Variable(tf.random.normal([Kg, Nc]), name='Wg_loc')
         self.Wg_std = tf.Variable(tf.random.normal([Kg, Nc]), name='Wg_std')
         self.Wc_loc = tf.Variable(tf.random.normal([Ng, Kc]), name='Wc_loc')
         self.Wc_std = tf.Variable(tf.random.normal([Ng, Kc]), name='Wc_std')
-        self.var_s1 = tf.Variable(tf.exp(tf.random.normal([1])), name='var_s1')
-        self.var_s2 = tf.Variable(tf.exp(tf.random.normal([1])), name='var_s2')
+        self.var_s1 = tf.Variable(tf.ones([Ng, 1]) * 3, name='var_s1')
+        self.var_s2 = tf.Variable(tf.ones([Ng, 1]) * 1, name='var_s2')
 
         self.set_prior()
 
     def set_prior(self, 
             w_prior=tfd.Normal(0, 1), 
-            z_prior=tfd.Normal(0, 3),
             std_prior=tfd.Gamma(7, 3)):
         """Set priors distributions"""
         self.w_prior = w_prior
-        self.z_prior = z_prior
         self.std_prior = std_prior
     
     @property
@@ -56,7 +54,7 @@ class BRIE2():
     
     @property
     def std(self):
-        """Variational posterior for the noise standard deviation"""
+        """Variational posterior for the variance of regression residue"""
         return tfd.Gamma(tf.exp(self.var_s1), tf.exp(self.var_s2))
     
     @property
@@ -65,7 +63,6 @@ class BRIE2():
         return (
             tf.reduce_sum(tfd.kl_divergence(self.cell_weight, self.w_prior)) +
             tf.reduce_sum(tfd.kl_divergence(self.gene_weight, self.w_prior)) +
-            tf.reduce_sum(tfd.kl_divergence(self.Z, self.z_prior)) +
             tf.reduce_sum(tfd.kl_divergence(self.std, self.std_prior)))
     
     def logLik(self, Xc, Xg, Rs, P_iso1, P_iso2, sampling=True, size=10):
@@ -76,7 +73,7 @@ class BRIE2():
         _Z = self.Z.sample(size)                         # (size, n_g, n_c)
         _W_cell = self.cell_weight.sample(size)          # (size, n_g, k_c)
         _W_gene = self.gene_weight.sample(size)          # (size, k_g, n_c)
-        _zz_var  = tf.sqrt(self.std.sample((size, 1)))   # (size, 1, 1)
+        _zz_var  = tf.sqrt(self.std.sample((size)))      # (size, n_g, 1)
         
         # LogLike part 1: Psi from regression
         _zz_loc = (
@@ -119,4 +116,3 @@ class BRIE2():
                                    num_steps=num_steps, 
                                    optimizer=optimizer)
         return losses
-
