@@ -25,17 +25,17 @@ class BRIE2():
         self.Wg_std = tf.Variable(tf.random.normal([Kg, Nc]), name='Wg_std')
         self.Wc_loc = tf.Variable(tf.random.normal([Ng, Kc]), name='Wc_loc')
         self.Wc_std = tf.Variable(tf.random.normal([Ng, Kc]), name='Wc_std')
-        self.tau_s1 = tf.Variable(tf.ones([Ng, 1]) * 3, name='var_s1')
-        self.tau_s2 = tf.Variable(tf.ones([Ng, 1]) * 1, name='var_s2')
+        self.var_s1 = tf.Variable(tf.ones([Ng, 1]) * 3, name='var_s1')
+        self.var_s2 = tf.Variable(tf.ones([Ng, 1]) * 1, name='var_s2')
 
         self.set_prior()
 
     def set_prior(self, 
             w_prior=tfd.Normal(0, 1), 
-            tau_prior=tfd.Gamma(7, 3)):
+            std_prior=tfd.Gamma(7, 3)):
         """Set priors distributions"""
         self.w_prior = w_prior
-        self.tau_prior = tau_prior
+        self.std_prior = std_prior
     
     @property
     def cell_weight(self):
@@ -53,9 +53,9 @@ class BRIE2():
         return tfd.Normal(self.Z_loc, tf.exp(self.Z_std))
     
     @property
-    def tau(self):
-        """Variational posterior for the precision of regression residue"""
-        return tfd.Gamma(tf.exp(self.tau_s1), tf.exp(self.tau_s2))
+    def std(self):
+        """Variational posterior for the variance of regression residue"""
+        return tfd.Gamma(tf.exp(self.var_s1), tf.exp(self.var_s2))
     
     @property
     def KLdiverg(self):
@@ -63,46 +63,28 @@ class BRIE2():
         return (
             tf.reduce_sum(tfd.kl_divergence(self.cell_weight, self.w_prior)) +
             tf.reduce_sum(tfd.kl_divergence(self.gene_weight, self.w_prior)) +
-            tf.reduce_sum(tfd.kl_divergence(self.tau, self.tau_prior)))
+            tf.reduce_sum(tfd.kl_divergence(self.std, self.std_prior)))
     
     def logLik(self, Xc, Xg, Rs, P_iso1, P_iso2, sampling=True, size=10):
         """Get marginal logLikelihood via variaitonal posterior
         """
         # TODO: introduce sparse tensor here
+        # tensor shapes: (size, n_gene, n_cell)
+        _Z = self.Z.sample(size)                         # (size, n_g, n_c)
+        _W_cell = self.cell_weight.sample(size)          # (size, n_g, k_c)
+        _W_gene = self.gene_weight.sample(size)          # (size, k_g, n_c)
+        _zz_var  = tf.sqrt(self.std.sample((size)))      # (size, n_g, 1)
         
-        # LogLik part 1.1: Gaussian cross-entropy
-        _zz_loc = tf.matmul(self.Wc_loc, Xc) + tf.matmul(Xg, self.Wg_loc)
-        _zz_tau = tf.sqrt(self.tau.mean())
-        _normal = tfd.Normal(_zz_loc, 1 / _zz_tau)
-        _logLik_Z1 = - self.Z.cross_entropy(_normal)
-        
-        # LogLik part 1.2: analytical Other terms
-        _logLik_Z2 = 0.5 * (
-            tf.math.digamma(tf.exp(self.tau_s1)) -
-            tf.math.log(tf.exp(self.tau_s1)) * 2 + 
-            tf.math.log(tf.exp(self.tau_s2)) - 
-            tf.matmul(tf.exp(self.Wc_std)**2, Xc**2) * _zz_tau**2 -
-            tf.matmul(Xg**2, tf.exp(self.Wg_std)**2) * _zz_tau**2)
-        
-        _logLik_Z = _logLik_Z1 + _logLik_Z2
-        
-        
-        # # Monte Carlo Based expectation
-        # _Z = self.Z.sample(size)                         # (size, n_g, n_c)
-        # _W_cell = self.cell_weight.sample(size)          # (size, n_g, k_c)
-        # _W_gene = self.gene_weight.sample(size)          # (size, k_g, n_c)
-        # _zz_tau  = tf.sqrt(self.tau.sample((size)))      # (size, n_g, 1)
-        # _zz_loc = (
-        #     tf.tensordot(_W_cell, Xc, [2, 0]) + 
-        #     tf.transpose(tf.tensordot(Xg, _W_gene, [1, 1]), [1, 0, 2]))
-        # _normal = tfd.Normal(_zz_loc, 1 / _zz_tau)
-        # _logLik_Z = tf.reduce_mean(_normal.log_prob(_Z), axis=0)
-        
+        # LogLike part 1: Psi from regression
+        _zz_loc = (
+            tf.tensordot(_W_cell, Xc, [2, 0]) + 
+            tf.transpose(tf.tensordot(Xg, _W_gene, [1, 1]), [1, 0, 2]))
+        _normal = tfd.Normal(_zz_loc, _zz_var)
+        _logLik_Z = _normal.log_prob(_Z)
 
-        # LogLike part 2: reads counts in regard to Z
-        _Z = self.Z.sample(size)                # (size, n_g, n_c)
-        Psi1 = tf.sigmoid(_Z)                   # fraction of isoform 1
-        Psi2 = 1 - Psi1                         # fraction of isoform 2
+        # LogLike part 1: reads counts in regard to Z
+        Psi1 = tf.sigmoid(_Z)                           # fraction of isoform 1
+        Psi2 = 1 - Psi1                                 # fraction of isoform 2
         Psi1_log = tf.math.log_sigmoid(_Z)
         Psi2_log = tf.math.log_sigmoid(0 - _Z)
                 
@@ -118,8 +100,7 @@ class BRIE2():
             _re1(Rs['3']) * (tf.math.log(
                 _re2(P_iso1[:, 2]) * Psi1 + _re2(P_iso2[:, 2]) * Psi2)))
                 
-        return tf.reduce_mean(_logLik_S, axis=0) + _logLik_Z
-    
+        return tf.reduce_mean(_logLik_S + _logLik_Z, axis=0)
 
     def fit(self, Xc, Xg, Rs, P_iso1, P_iso2, num_steps=100, optimizer=None,
             learn_rate=0.05, **kwargs):
