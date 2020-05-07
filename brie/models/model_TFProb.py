@@ -21,12 +21,17 @@ class BRIE2():
         
         self.Z_loc = tf.Variable(tf.random.normal([Ng, Nc]), name='Z_loc')
         self.Z_std = tf.Variable(tf.random.normal([Ng, Nc]), name='Z_var')
-        self.Wg_loc = tf.Variable(tf.random.normal([Kg, Nc]), name='Wg_loc')
-        self.Wg_std = tf.Variable(tf.random.normal([Kg, Nc]), name='Wg_std')
-        self.Wc_loc = tf.Variable(tf.random.normal([Ng, Kc]), name='Wc_loc')
-        self.Wc_std = tf.Variable(tf.random.normal([Ng, Kc]), name='Wc_std')
         self.tau_s1 = tf.Variable(tf.ones([Ng, 1]) * 3, name='var_s1')
         self.tau_s2 = tf.Variable(tf.ones([Ng, 1]) * 1, name='var_s2')
+        
+        self.Wc_loc = tf.Variable(tf.random.normal([Ng, Kc]), name='Wc_loc')
+        self.Wc_std = tf.Variable(tf.random.normal([Ng, Kc]), name='Wc_std')
+        if self.Kg == 0:
+            self.Wg_loc = tf.constant(tf.zeros([Kg, Nc]), name='Wg_loc')
+            self.Wg_std = tf.constant(tf.zeros([Kg, Nc]), name='Wg_std')
+        else:
+            self.Wg_loc = tf.Variable(tf.random.normal([Kg, Nc]), name='Wg_loc')
+            self.Wg_std = tf.Variable(tf.random.normal([Kg, Nc]), name='Wg_std')
 
         self.set_prior()
 
@@ -65,28 +70,9 @@ class BRIE2():
             tf.reduce_sum(tfd.kl_divergence(self.gene_weight, self.w_prior)) +
             tf.reduce_sum(tfd.kl_divergence(self.tau, self.tau_prior)))
     
-    def logLik(self, Xc, Xg, Rs, P_iso1, P_iso2, sampling=True, size=10):
-        """Get marginal logLikelihood via variaitonal posterior
+    def Expect_Z(self, Xc, Xg=None):
+        """Get the expectation of z analytically
         """
-        # TODO: introduce sparse tensor here
-        
-        # LogLik part 1.1: Gaussian cross-entropy
-        _zz_loc = tf.matmul(self.Wc_loc, Xc) + tf.matmul(Xg, self.Wg_loc)
-        _zz_tau = tf.sqrt(self.tau.mean())
-        _normal = tfd.Normal(_zz_loc, 1 / _zz_tau)
-        _logLik_Z1 = - self.Z.cross_entropy(_normal)
-        
-        # LogLik part 1.2: analytical Other terms
-        _logLik_Z2 = 0.5 * (
-            tf.math.digamma(tf.exp(self.tau_s1)) -
-            tf.math.log(tf.exp(self.tau_s1)) * 2 + 
-            tf.math.log(tf.exp(self.tau_s2)) - 
-            tf.matmul(tf.exp(self.Wc_std)**2, Xc**2) * _zz_tau**2 -
-            tf.matmul(Xg**2, tf.exp(self.Wg_std)**2) * _zz_tau**2)
-        
-        _logLik_Z = _logLik_Z1 + _logLik_Z2
-        
-        
         # # Monte Carlo Based expectation
         # _Z = self.Z.sample(size)                         # (size, n_g, n_c)
         # _W_cell = self.cell_weight.sample(size)          # (size, n_g, k_c)
@@ -98,7 +84,38 @@ class BRIE2():
         # _normal = tfd.Normal(_zz_loc, 1 / _zz_tau)
         # _logLik_Z = tf.reduce_mean(_normal.log_prob(_Z), axis=0)
         
+        _zz_loc = tf.matmul(self.Wc_loc, Xc)
+        if self.Kg > 0 and Xg is not None:
+            _zz_loc += tf.matmul(Xg, self.Wg_loc)
+        _zz_tau = self.tau.mean()
+        _normal = tfd.Normal(_zz_loc, 1 / tf.sqrt(_zz_tau))
+        # _logLik_Z1 = - self.Z.cross_entropy(_normal)
+        _logLik_Z1 = tfd.kl_divergence(self.Z, _normal)
+        
+        # LogLik part 1.2: analytical Other terms
+#         _logLik_Z2 = - 0.5 * (
+#             tf.math.digamma(tf.exp(self.tau_s1)) * self.Nc -
+#             tf.math.log(tf.exp(self.tau_s1)) * 2  * self.Nc + 
+#             tf.math.log(tf.exp(self.tau_s2)) * self.Nc - 
+#             tf.matmul(tf.exp(self.Wc_std)**2, Xc**2) * _zz_tau**2)
 
+        _logLik_Z2 = - 0.5 * (
+            tf.math.digamma(tf.exp(self.tau_s1)) * self.Nc -
+            tf.math.log(tf.exp(self.tau_s1)) * self.Nc -
+            tf.matmul(tf.exp(self.Wc_std)**2, Xc**2) * _zz_tau)
+        
+        if self.Kg > 0 and Xg is not None:
+            _logLik_Z2 += - 0.5 * (
+                -tf.matmul(Xg**2, tf.exp(self.Wg_std)**2) * _zz_tau)
+            # _logLik_Z2 += 0.5 * tf.matmul(Xg**2, tf.exp(self.Wg_std)**2)
+            
+        return tf.reduce_sum(_logLik_Z1 + _logLik_Z2)
+    
+    
+    def logLik(self, Xc, Rs, P_iso1, P_iso2, Xg=None, sampling=True, size=10):
+        """Get marginal logLikelihood on link distribution
+        """
+        # TODO: introduce sparse tensor here
         # LogLike part 2: reads counts in regard to Z
         _Z = self.Z.sample(size)                # (size, n_g, n_c)
         Psi1 = tf.sigmoid(_Z)                   # fraction of isoform 1
@@ -118,18 +135,18 @@ class BRIE2():
             _re1(Rs['3']) * (tf.math.log(
                 _re2(P_iso1[:, 2]) * Psi1 + _re2(P_iso2[:, 2]) * Psi2)))
                 
-        return tf.reduce_mean(_logLik_S, axis=0) + _logLik_Z
+        return tf.reduce_mean(_logLik_S, axis=0)
     
 
-    def fit(self, Xc, Xg, Rs, P_iso1, P_iso2, num_steps=100, optimizer=None,
+    def fit(self, Xc, Rs, P_iso1, P_iso2, Xg=None, num_steps=100, optimizer=None,
             learn_rate=0.05, **kwargs):
         """Fit the model's parameters"""
         if optimizer is None:
             optimizer = tf.optimizers.Adam(learning_rate=learn_rate)
             
-        loss_fn = lambda: (self.KLdiverg - 
-                           tf.reduce_sum(self.logLik(Xc, Xg, Rs, P_iso1, 
-                                                     P_iso2, **kwargs)))
+        loss_fn = lambda: (self.KLdiverg + self.Expect_Z(Xc, Xg) -
+                           tf.reduce_sum(self.logLik(Xc, Rs, P_iso1, P_iso2,
+                                                     Xg, **kwargs)))
         
         losses = tfp.math.minimize(loss_fn, 
                                    num_steps=num_steps, 

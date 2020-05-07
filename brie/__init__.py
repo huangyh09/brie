@@ -12,6 +12,7 @@ from .models.model_TFProb import BRIE2
 from .utils.io_utils import load_brie_count
 from .utils.sam_utils import load_samfile, fetch_reads
 from .utils.gtf_utils import Gene, Transcript, load_genes, save_genes
+from .utils.base_utils import match
 
 
 ## to remove
