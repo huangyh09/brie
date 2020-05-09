@@ -66,9 +66,9 @@ class BRIE2():
     def KLdiverg(self):
         """Sum of KL divergences between posteriors and priors"""
         return (
-            tf.reduce_sum(tfd.kl_divergence(self.cell_weight, self.w_prior)) +
-            tf.reduce_sum(tfd.kl_divergence(self.gene_weight, self.w_prior)) +
-            tf.reduce_sum(tfd.kl_divergence(self.tau, self.tau_prior)))
+            tf.reduce_sum(tfd.kl_divergence(self.cell_weight, self.w_prior), axis=1) +
+            tf.reduce_sum(tfd.kl_divergence(self.tau, self.tau_prior), axis=1) +
+            tf.reduce_sum(tfd.kl_divergence(self.gene_weight, self.w_prior)))
     
     def Expect_Z(self, Xc, Xg=None):
         """Get the expectation of z analytically
@@ -109,7 +109,7 @@ class BRIE2():
                 -tf.matmul(Xg**2, tf.exp(self.Wg_std)**2) * _zz_tau)
             # _logLik_Z2 += 0.5 * tf.matmul(Xg**2, tf.exp(self.Wg_std)**2)
             
-        return tf.reduce_sum(_logLik_Z1 + _logLik_Z2)
+        return _logLik_Z1 + _logLik_Z2
     
     
     def logLik(self, Xc, Rs, P_iso1, P_iso2, Xg=None, sampling=True, size=10):
@@ -144,11 +144,19 @@ class BRIE2():
         if optimizer is None:
             optimizer = tf.optimizers.Adam(learning_rate=learn_rate)
             
-        loss_fn = lambda: (self.KLdiverg + self.Expect_Z(Xc, Xg) -
-                           tf.reduce_sum(self.logLik(Xc, Rs, P_iso1, P_iso2,
-                                                     Xg, **kwargs)))
+        loss_fn = lambda: (
+            #tf.reduce_sum(self.KLdiverg) + 
+            tf.reduce_sum(self.Expect_Z(Xc, Xg)) -
+            tf.reduce_sum(self.logLik(Xc, Rs, P_iso1, P_iso2,
+                                      Xg, **kwargs)))
         
         losses = tfp.math.minimize(loss_fn, 
                                    num_steps=num_steps, 
                                    optimizer=optimizer)
+        
+        self.loss_gene = (
+            #tf.reduce_sum(self.KLdiverg) + 
+            tf.reduce_sum(self.Expect_Z(Xc, Xg), axis=1) -
+            tf.reduce_sum(self.logLik(Xc, Rs, P_iso1, P_iso2,
+                                      Xg, **kwargs), axis=1))
         return losses
