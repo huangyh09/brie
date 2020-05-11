@@ -8,10 +8,9 @@ import numpy as np
 import multiprocessing
 from optparse import OptionParser, OptionGroup
 
-from .version import __version__
-from .utils.io_utils import load_brie_count
-from .utils.gtf_utils import load_genes
-from .utils.count import get_count_matrix, SE_probability
+from ..version import __version__
+from ..utils.io_utils import read_brieMM, read_gff
+from ..utils.count import get_count_matrix, SE_probability
 
 
 FID = None
@@ -45,65 +44,36 @@ def show_progress(RV=None):
 
 
 
-def main():
-    import warnings
-    warnings.filterwarnings('error')
-
-    # parse command line options
-    parser = OptionParser()
-    parser.add_option("--gffFile", "-a", dest="gff_file", default=None,
-        help="GTF/GFF3 file for gene and transcript annotation")
-    parser.add_option("--samList", "-S", dest="samList_file", default=None,
-        help=("A tsv file containing sorted and indexed bam/sam/cram files. "
-              "No header line; file path and cell id (optional)"))
-    parser.add_option("--out_dir", "-o", dest="out_dir", default=None, 
-        help="Full path of output directory [default: $samList/brieOUT]")
-
-    group = OptionGroup(parser, "Optional arguments")
-    group.add_option("--nproc", "-p", type="int", dest="nproc", default="4",
-        help="Number of subprocesses [default: %default]")
-    # group.add_option("--add_premRNA", action="store_true", dest="add_premRNA", 
-    #     default=False, help="Add the pre-mRNA as a transcript")
-
-    parser.add_option_group(group)
+def count(gff_file, samList_file, out_dir=None, nproc=1, add_premRNA=False):
+    """CLI for counting reads supporting isoforms
+    """
+    # Parameter check
     
-    (options, args) = parser.parse_args()
-    if len(sys.argv[1:]) == 0:
-        print("Welcome to BRIE2 v%s!\n" %(__version__))
-        print("use -h or --help for help on argument.")
-        sys.exit(1)
-    if options.samList_file == None:
-        print("[BRIE2] Error: need --samList for indexed & aliged sam/bam/cram files.")
-        sys.exit(1)
-    else:
-        sam_table = np.genfromtxt(options.samList_file, delimiter = None, dtype=str)
-        sam_table = sam_table.reshape(sam_table.shape[0], -1)
-        print(sam_table[:min(3, sam_table.shape[0])], "...")
+    ## Load sam file list
+    sam_table = np.genfromtxt(samList_file, delimiter = None, dtype=str)
+    sam_table = sam_table.reshape(sam_table.shape[0], -1)
+    print(sam_table[:min(3, sam_table.shape[0])], "...")
         
-    if options.out_dir is None:
-        sam_dir = os.path.abspath(options.samList_file)
+    ## Check out_dir
+    if out_dir is None:
+        sam_dir = os.path.abspath(samList_file)
         out_dir = os.path.dirname(sam_dir) + "/brieOUT"
     else:
-        out_dir = options.out_dir
+        out_dir = out_dir
+        
     try:
         os.stat(os.path.abspath(out_dir))
     except:
         os.mkdir(os.path.abspath(out_dir))
         
-    if options.gff_file == None:
-        print("[BRIE2] Error: need --gffFile for gene annotation.")
-        sys.exit(1)
-    else:
-        sys.stdout.write("\r[BRIE2] loading gene annotations ... ")
-        sys.stdout.flush()
-        genes = load_genes(options.gff_file)
-        sys.stdout.write("\r[BRIE2] loading gene annotations ... Done.\n")
-        sys.stdout.flush()
+    ## Load GFF file
+    sys.stdout.write("\r[BRIE2] loading gene annotations ... ")
+    sys.stdout.flush()
+    genes = read_gff(gff_file)
+    sys.stdout.write("\r[BRIE2] loading gene annotations ... Done.\n")
+    sys.stdout.flush()
     
-    # bias mode is not supported yet
-    add_premRNA = False
-    nproc = options.nproc
-
+    # Running
     ## Output gene info
     gene_table = [["GeneID", "GeneName", "TranLens", "TranIDs"]]
     for g in genes:
@@ -157,7 +127,7 @@ def main():
     global START_TIME, FID
     START_TIME = time.time()
     
-    FID = open(options.out_dir + "/read_count.mtx", "w")
+    FID = open(out_dir + "/read_count.mtx", "w")
     FID.writelines("%" + "%MatrixMarket matrix coordinate integer general\n")
     FID.writelines("%d\t%d\t%d\n" %(sam_table.shape[0], len(genes), 0))
     
@@ -177,11 +147,53 @@ def main():
     FID.close()
     print("")
     
-    ## Dave data into npz
-    Rmat_dict = load_brie_count(options.out_dir + "/read_count.mtx")
-    np.savez(options.out_dir + "/brie_count.npz", 
+    ## Save data into npz
+    Rmat_dict = read_brieMM(out_dir + "/read_count.mtx")
+    np.savez(out_dir + "/brie_count.npz", 
              Rmat_dict=Rmat_dict, Prob_tensor=Prob_tensor, 
              cell_note=cell_table, gene_note=gene_table)
+    
+    
+def main():
+    import warnings
+    warnings.filterwarnings('error')
+
+    # parse command line options
+    parser = OptionParser()
+    parser.add_option("--gffFile", "-a", dest="gff_file", default=None,
+        help="GTF/GFF3 file for gene and transcript annotation")
+    parser.add_option("--samList", "-S", dest="samList_file", default=None,
+        help=("A tsv file containing sorted and indexed bam/sam/cram files. "
+              "No header line; file path and cell id (optional)"))
+    parser.add_option("--out_dir", "-o", dest="out_dir", default=None, 
+        help="Full path of output directory [default: $samList/brieOUT]")
+
+    group = OptionGroup(parser, "Optional arguments")
+    group.add_option("--nproc", "-p", type="int", dest="nproc", default="4",
+        help="Number of subprocesses [default: %default]")
+    # group.add_option("--add_premRNA", action="store_true", dest="add_premRNA", 
+    #     default=False, help="Add the pre-mRNA as a transcript")
+
+    parser.add_option_group(group)
+    
+    (options, args) = parser.parse_args()
+    if len(sys.argv[1:]) == 0:
+        print("Welcome to BRIE2 v%s!\n" %(__version__))
+        print("use -h or --help for help on argument.")
+        sys.exit(1)
+    if options.samList_file == None:
+        print("[BRIE2] Error: need --samList for indexed & aliged sam/bam/cram files.")
+        sys.exit(1)
+        
+    if options.gff_file == None:
+        print("[BRIE2] Error: need --gffFile for gene annotation.")
+        sys.exit(1)
+    
+    # bias mode is not supported yet
+    add_premRNA = False
+    
+    count(options.gff_file, options.samList_file, options.out_dir, 
+          options.nproc, add_premRNA)
 
 
 if __name__ == "__main__":

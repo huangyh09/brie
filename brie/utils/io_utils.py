@@ -1,11 +1,52 @@
 # Containing API to load the count matrix data
 
+import anndata
 import numpy as np
+import pandas as pd
 from scipy.sparse import csc_matrix
 
-def load_brie_count(path):
+from anndata import read_h5ad
+from .gtf_utils import load_genes as read_gff
+
+
+def read_npz(path):
+    """Read count data in the npz format into anaData
     """
-    Load dictionary-format sparse count matrix
+    brie_dat = np.load(path, allow_pickle=True)
+    
+    Rmat_dict = brie_dat['Rmat_dict'].item()
+    Rmat = {}
+    for _key in Rmat_dict:
+        Rmat[_key] = Rmat_dict[_key].astype(np.float32).toarray()
+    Rmat.keys()
+    
+    X = Rmat['1'] + Rmat['2'] + Rmat['3']
+    layers = {}
+    layers['isoform1']  = Rmat['1']
+    layers['isoform2']  = Rmat['2']
+    layers['ambiguous'] = Rmat['3']
+    layers['poorQual']  = Rmat['0']
+    
+    obs = pd.DataFrame(brie_dat['cell_note'][1:, :],
+                       index = brie_dat['cell_note'][1:, 0],
+                       columns=brie_dat['cell_note'][0, :])
+    
+    var = pd.DataFrame(brie_dat['gene_note'][1:, :],
+                       index = brie_dat['gene_note'][1:, 0],
+                       columns=brie_dat['gene_note'][0, :])
+    
+    Prob_tensor = brie_dat['Prob_tensor']
+    varm = {}
+    varm['p_ambiguous'] = Prob_tensor[:, :, 2]
+    
+    adata = anndata.AnnData(X=X, obs=obs, var=var, varm=varm,
+                            layers=layers, dtype='float32')
+    return adata
+
+
+def read_brieMM(path):
+    """Read brie count generated Market martrix: dictionary-format 
+    sparse count matrix
     """
     fid = open(path, 'r')
     lines = fid.readlines()
@@ -28,8 +69,10 @@ def load_brie_count(path):
     for _key in dat_dict:
         _mat = np.array(dat_dict[_key], dtype='int')
         _mat[:, :2] -= 1 # 0-based index
-        mat_dict[_key] = csc_matrix((_mat[:, 2], (_mat[:, 0], _mat[:, 1])), 
-                                    shape=(n_gene, n_cell))
+        mat_dict[_key] = csc_matrix(
+            (_mat[:, 2], (_mat[:, 0], _mat[:, 1])), 
+            shape=(n_gene, n_cell)
+        )
         
     return mat_dict
 

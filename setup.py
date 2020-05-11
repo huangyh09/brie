@@ -18,8 +18,9 @@ exec(open("./brie/version.py").read())
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
-reqs = ['numpy>=1.9.0', 'pysam>=0.15.2', 'tensorflow-probability>=0.8.0',
-        'tensorflow>=2.0.0']
+reqs = ['numpy>=1.9.0', 'pysam>=0.15.2', 'anndata>=0.6.0', 'pandas>=0.23.0', 'h5py',
+        'tensorflow-probability>=0.8.0', 'tensorflow>=2.0.0', 'click>=7.0.0', 
+        'matplotlib>=3.1.2']
 
 setup(
     name='brie',
@@ -52,13 +53,14 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'brie = brie.brie:main',
-            'brie-diff = brie.brie_diff:main',
-            'brie-count = brie.brie_count:main'
+            'brie = brie:_cli.cli',
+            'brie-brie = brie.bin.brie:main',
+            'brie-diff = brie.bin.brie_diff:main',
+            'brie-count = brie.bin.count:main'
         ],
     },
-
-    # python_requires='>=3.5',
+    
+    python_requires='>=3.5',
 
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip's
@@ -66,6 +68,9 @@ setup(
     # https://packaging.python.org/en/latest/requirements.html
 
     install_requires=reqs,
+    # install_requires=[
+    #     l.strip() for l in Path('requirements.txt').read_text('utf-8').splitlines()
+    # ],
 
     extras_require={
         'docs': [

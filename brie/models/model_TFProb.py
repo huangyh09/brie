@@ -1,9 +1,11 @@
 ## BRIE model
 
+import time
 import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
 from tensorflow_probability import distributions as tfd
+
 
 class BRIE2():
     """
@@ -11,108 +13,76 @@ class BRIE2():
     Nc : number of cells
     Kg : number of gene features
     Kc : number of cell features
-    """
-    # TODO: support without gene and / or cell feature
-    def __init__(self, Nc, Ng, Kc, Kg=0, name=None):
+    """ 
+    def __init__(self, Nc, Ng, Kc, Kg=0, intercept=None, 
+                 p_ambiguous=None, name=None):
         self.Nc = Nc
         self.Ng = Ng
         self.Kc = Kc
         self.Kg = Kg
         
-        self.Z_loc = tf.Variable(tf.random.normal([Ng, Nc]), name='Z_loc')
+        self.Z_loc = tf.Variable(tf.random.normal([Ng, Nc]), name='Z_loc',
+            constraint=lambda t: tf.clip_by_value(t, -9, 9))
         self.Z_std = tf.Variable(tf.random.normal([Ng, Nc]), name='Z_var')
-        self.tau_s1 = tf.Variable(tf.ones([Ng, 1]) * 3, name='var_s1')
-        self.tau_s2 = tf.Variable(tf.ones([Ng, 1]) * 1, name='var_s2')
+
+        self.sigma_log = tf.Variable(tf.ones([Ng, 1]), name='sigma_log')
         
         self.Wc_loc = tf.Variable(tf.random.normal([Ng, Kc]), name='Wc_loc')
-        self.Wc_std = tf.Variable(tf.random.normal([Ng, Kc]), name='Wc_std')
         if self.Kg == 0:
             self.Wg_loc = tf.constant(tf.zeros([Kg, Nc]), name='Wg_loc')
-            self.Wg_std = tf.constant(tf.zeros([Kg, Nc]), name='Wg_std')
         else:
             self.Wg_loc = tf.Variable(tf.random.normal([Kg, Nc]), name='Wg_loc')
-            self.Wg_std = tf.Variable(tf.random.normal([Kg, Nc]), name='Wg_std')
+        
+        if intercept is None:
+            self.intercept = tf.Variable(tf.random.normal([Ng, 1]), name='biase')
+        else:
+            _intercept = tf.ones([Ng, 1]) * intercept
+            self.intercept = tf.constant(_intercept, name='biase')
+            
+        if p_ambiguous is None:
+            self.p_ambiguous = tf.ones([Ng, 2]) * 0.5
+        else:
+            self.p_ambiguous = p_ambiguous
+        self.rho = self.p_ambiguous[:, 0] / self.p_ambiguous.sum(1)
 
-        self.set_prior()
-
-    def set_prior(self, 
-            w_prior=tfd.Normal(0, 1), 
-            tau_prior=tfd.Gamma(7, 3)):
-        """Set priors distributions"""
-        self.w_prior = w_prior
-        self.tau_prior = tau_prior
-    
-    @property
-    def cell_weight(self):
-        """Variational posterior for the weight"""
-        return tfd.Normal(self.Wc_loc, tf.exp(self.Wc_std))
-    
-    @property
-    def gene_weight(self):
-        """Variational posterior for the weight"""
-        return tfd.Normal(self.Wg_loc, tf.exp(self.Wg_std))
+#         if prob_ambiguous is None:
+#             self.rho_logit = tf.Variable(tf.random.normal([Ng, 1]), 
+#                                          name='rho_logit')
+#         else:
+#             rho = prob_ambiguous[:, 0] / prob_ambiguous.sum(axis=1)
+#             self.rho_logit = tf.constant(tf.math.log(rho / (1 - rho)), 
+#                                          name='rho_logit')
+           
+#     @property
+#     def rho(self):
+#         """Ratio of ambiguous reads between isoform 1 and 2"""
+#         return tf.sigmoid(self.rho_logit)
 
     @property
     def Z(self):
         """Variational posterior for the logit Psi"""
         return tfd.Normal(self.Z_loc, tf.exp(self.Z_std))
-    
+        
     @property
-    def tau(self):
-        """Variational posterior for the precision of regression residue"""
-        return tfd.Gamma(tf.exp(self.tau_s1), tf.exp(self.tau_s2))
+    def sigma(self):
+        """Standard deviation of predicted Z"""
+        return tf.exp(self.sigma_log)
+        
     
-    @property
-    def KLdiverg(self):
-        """Sum of KL divergences between posteriors and priors"""
-        return (
-            tf.reduce_sum(tfd.kl_divergence(self.cell_weight, self.w_prior), axis=1) +
-            tf.reduce_sum(tfd.kl_divergence(self.tau, self.tau_prior), axis=1) +
-            tf.reduce_sum(tfd.kl_divergence(self.gene_weight, self.w_prior)))
-    
-    def Expect_Z(self, Xc, Xg=None):
+    def regression_KL(self, Xc, Xg=None):
         """Get the expectation of z analytically
         """
-        # # Monte Carlo Based expectation
-        # _Z = self.Z.sample(size)                         # (size, n_g, n_c)
-        # _W_cell = self.cell_weight.sample(size)          # (size, n_g, k_c)
-        # _W_gene = self.gene_weight.sample(size)          # (size, k_g, n_c)
-        # _zz_tau  = tf.sqrt(self.tau.sample((size)))      # (size, n_g, 1)
-        # _zz_loc = (
-        #     tf.tensordot(_W_cell, Xc, [2, 0]) + 
-        #     tf.transpose(tf.tensordot(Xg, _W_gene, [1, 1]), [1, 0, 2]))
-        # _normal = tfd.Normal(_zz_loc, 1 / _zz_tau)
-        # _logLik_Z = tf.reduce_mean(_normal.log_prob(_Z), axis=0)
-        
-        _zz_loc = tf.matmul(self.Wc_loc, Xc)
+        _zz_loc = tf.matmul(self.Wc_loc, Xc) + self.intercept
         if self.Kg > 0 and Xg is not None:
             _zz_loc += tf.matmul(Xg, self.Wg_loc)
-        _zz_tau = self.tau.mean()
-        _normal = tfd.Normal(_zz_loc, 1 / tf.sqrt(_zz_tau))
-        # _logLik_Z1 = - self.Z.cross_entropy(_normal)
-        _logLik_Z1 = tfd.kl_divergence(self.Z, _normal)
-        
-        # LogLik part 1.2: analytical Other terms
-#         _logLik_Z2 = - 0.5 * (
-#             tf.math.digamma(tf.exp(self.tau_s1)) * self.Nc -
-#             tf.math.log(tf.exp(self.tau_s1)) * 2  * self.Nc + 
-#             tf.math.log(tf.exp(self.tau_s2)) * self.Nc - 
-#             tf.matmul(tf.exp(self.Wc_std)**2, Xc**2) * _zz_tau**2)
-
-        _logLik_Z2 = - 0.5 * (
-            tf.math.digamma(tf.exp(self.tau_s1)) * self.Nc -
-            tf.math.log(tf.exp(self.tau_s1)) * self.Nc -
-            tf.matmul(tf.exp(self.Wc_std)**2, Xc**2) * _zz_tau)
-        
-        if self.Kg > 0 and Xg is not None:
-            _logLik_Z2 += - 0.5 * (
-                -tf.matmul(Xg**2, tf.exp(self.Wg_std)**2) * _zz_tau)
-            # _logLik_Z2 += 0.5 * tf.matmul(Xg**2, tf.exp(self.Wg_std)**2)
             
-        return _logLik_Z1 + _logLik_Z2
+        _normal = tfd.Normal(_zz_loc, self.sigma)
+        _regression_KL = tfd.kl_divergence(self.Z, _normal)
+        
+        return _regression_KL
     
     
-    def logLik(self, Xc, Rs, P_iso1, P_iso2, Xg=None, sampling=True, size=10):
+    def logLik_VB(self, count_layers, sampling=True, size=10):
         """Get marginal logLikelihood on link distribution
         """
         # TODO: introduce sparse tensor here
@@ -125,38 +95,63 @@ class BRIE2():
                 
         # Calculate element wise logLikelihood
         def _re1(x):
-            return tf.reshape(x, (1, self.Ng, self.Nc))
+            return tf.expand_dims(x, 0) #(1, self.Ng, self.Nc)
         def _re2(x): 
-            return tf.reshape(x, (1, self.Ng, 1))
+            return tf.expand_dims(tf.expand_dims(x, 0), 2) #(1, self.Ng, 1)
         
         _logLik_S = (
-            _re1(Rs['1']) * (tf.math.log(_re2(P_iso1[:, 0])) + Psi1_log) + 
-            _re1(Rs['2']) * (tf.math.log(_re2(P_iso2[:, 1])) + Psi2_log) + 
-            _re1(Rs['3']) * (tf.math.log(
-                _re2(P_iso1[:, 2]) * Psi1 + _re2(P_iso2[:, 2]) * Psi2)))
+            _re1(count_layers['1'].transpose()) * Psi1_log + 
+            _re1(count_layers['2'].transpose()) * Psi2_log + 
+            _re1(count_layers['3'].transpose()) * tf.math.log(
+                _re2(self.rho) * Psi1 + _re2(1 - self.rho) * Psi2))
+
+#         _prob1_log = _re2(tf.math.log(1 - self.p_ambiguous[:, 0]))
+#         _prob2_log = _re2(tf.math.log(1 - self.p_ambiguous[:, 1]))
+#         _logLik_S = (
+#             _re1(count_layers['1']) * (_prob1_log + Psi1_log) + 
+#             _re1(count_layers['2']) * (_prob2_log + Psi2_log) + 
+#             _re1(count_layers['3']) * tf.math.log(
+#                 _re2(self.p_ambiguous[:, 0]) * Psi1 + 
+#                 _re2(self.p_ambiguous[:, 1]) * Psi2))
                 
         return tf.reduce_mean(_logLik_S, axis=0)
     
 
-    def fit(self, Xc, Rs, P_iso1, P_iso2, Xg=None, num_steps=100, optimizer=None,
-            learn_rate=0.05, **kwargs):
+    def fit(self, count_layers, Xc, Xg=None, optimizer=None,
+            learn_rate=0.05, min_iter=200, max_iter=5000, 
+            add_iter=100, epsilon_conv=1e-2, verbose=True, **kwargs):
         """Fit the model's parameters"""
+        start_time = time.time()
+        
         if optimizer is None:
             optimizer = tf.optimizers.Adam(learning_rate=learn_rate)
             
         loss_fn = lambda: (
-            #tf.reduce_sum(self.KLdiverg) + 
-            tf.reduce_sum(self.Expect_Z(Xc, Xg)) -
-            tf.reduce_sum(self.logLik(Xc, Rs, P_iso1, P_iso2,
-                                      Xg, **kwargs)))
+            tf.reduce_sum(self.regression_KL(Xc, Xg)) -
+            tf.reduce_sum(self.logLik_VB(count_layers, **kwargs)))
         
         losses = tfp.math.minimize(loss_fn, 
-                                   num_steps=num_steps, 
+                                   num_steps=min_iter, 
                                    optimizer=optimizer)
         
+        n_iter = min_iter + 0
+        while ((losses[-20:-10].numpy().mean() - losses[-10:].numpy().mean() > 
+                epsilon_conv) and  n_iter < max_iter):
+            n_iter += add_iter
+            losses = tf.concat([
+                losses,
+                tfp.math.minimize(loss_fn, 
+                                  num_steps=add_iter, 
+                                  optimizer=optimizer)
+            ], axis=0)
+            
+        if verbose:
+            print("BRIE2 model fit with %d steps in %.2f min, loss: %.2f" %(
+                n_iter, (time.time() - start_time) / 60, losses[-1]))
+        
         self.loss_gene = (
-            #tf.reduce_sum(self.KLdiverg) + 
-            tf.reduce_sum(self.Expect_Z(Xc, Xg), axis=1) -
-            tf.reduce_sum(self.logLik(Xc, Rs, P_iso1, P_iso2,
-                                      Xg, **kwargs), axis=1))
+            tf.reduce_sum(self.regression_KL(Xc, Xg), axis=1) -
+            tf.reduce_sum(self.logLik_VB(count_layers, **kwargs), axis=1))
+        
+        self.losses = losses
         return losses

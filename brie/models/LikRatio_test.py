@@ -6,61 +6,73 @@ from statsmodels.stats.multitest import multipletests
 
 from .model_TFProb import BRIE2
 
-def pval_LR_test(LR, df=1):
-    """Return the p values of loglikelihood ratio test
-    """
-    pval = chi2.logsf(2 * LR, df = df)
 
-def LR_test(Xc, Rmat, P_iso1, P_iso2):
-    """Permutation test
+def LikRatio_test(count_layers, Xc, p_ambiguous=None, index=None,
+                  layer_ids=['isoform1', 'isoform2', 'ambiguous'], 
+                  learn_steps=[100, 200, 300], 
+                  learn_rates=[0.02, 0.5, 0.1], **kwargs):
+    """likelihood ratio test
     """
     start_time = time.time()
+    
+    if isinstance(learn_steps, int):
+        learn_steps = [learn_steps]
+    if isinstance(learn_rates, float) or isinstance(learn_rates, int):
+        learn_rates = [learn_rates]
+    
+    if (len(learn_steps) != len(learn_rates)):
+        print("Error: len(learn_steps) != len(learn_rates).")
+        return None
+    
+    ## load the dict
+    _count_layers = {}
+    for i in range(3):
+        _count_layers[str(i + 1)] = count_layers[layer_ids[i]]
 
     ## Fit model with real data
-    model_real = BRIE2(Nc=Xc.shape[1], Ng=P_iso1.shape[0],
-                       Kc=Xc.shape[0], Kg=0)
+    n_genes = count_layers[layer_ids[0]].shape[1]
     
-    losses = tf.concat([
-            model_real.fit(Xc = Xc, Rs = Rmat,
-                           P_iso1 = P_iso1, P_iso2 = P_iso2,
-                           num_steps=100, learn_rate=0.02, size=10),
-            model_real.fit(Xc = Xc, Rs = Rmat,
-                           P_iso1 = P_iso1, P_iso2 = P_iso2,
-                           num_steps=100, learn_rate=0.05, size=10),
-            model_real.fit(Xc = Xc, Rs = Rmat,
-                           P_iso1 = P_iso1, P_iso2 = P_iso2,
-                           num_steps=300, learn_rate=0.1, size=10)
-        ], axis=0)
+    model_real = BRIE2(Nc=Xc.shape[1], Ng=n_genes,
+                       Kc=Xc.shape[0], Kg=0, 
+                       p_ambiguous=p_ambiguous)
     
-    model_real.losses = losses
-    loss_real = losses[-1]
-    weight_real = model_real.cell_weight.mean().numpy()
+#     losses = model_real.fit(_count_layers, Xc = Xc, **kwargs)
+#     model_real.losses = losses
+
+    loss_list = []
+    for i in range(len(learn_steps)):
+        loss_list.append(
+            model_real.fit(_count_layers, Xc = Xc, max_iter=learn_steps[i], 
+                           learn_rate=learn_rates[i], **kwargs)
+        )
+    model_real.losses = tf.concat(loss_list, axis=0)
+    
+    weight_real = model_real.Wc_loc.numpy()
     
     print("Fit real data: %.2f min" % ((time.time() - start_time)/60))
-    print(loss_real)
-    
+    print(model_real.losses[-1])
     
     ## Fit model with one removed feature
     start_time = time.time()
-    LR = np.zeros(weight_real.shape)
-    for i in range(Xc.shape[0]):
-        model_test = BRIE2(Nc=Xc.shape[1], Ng=P_iso1.shape[0],
-                           Kc=Xc.shape[0] - 1, Kg=0)
-        Xc_del = np.delete(Xc, i, 0)
+    if index is None:
+        index = range(Xc.shape[0])
         
-        losses = tf.concat([
-            model_test.fit(Xc = Xc_del, Rs = Rmat,
-                           P_iso1 = P_iso1, P_iso2 = P_iso2,
-                           num_steps=100, learn_rate=0.02, size=10),
-            model_test.fit(Xc = Xc_del, Rs = Rmat,
-                           P_iso1 = P_iso1, P_iso2 = P_iso2,
-                           num_steps=100, learn_rate=0.05, size=10),
-            model_test.fit(Xc = Xc_del, Rs = Rmat,
-                           P_iso1 = P_iso1, P_iso2 = P_iso2,
-                           num_steps=300, learn_rate=0.1, size=10)
-        ], axis=0)
+    LR = np.zeros((weight_real.shape[0], len(index)), dtype=np.float32)
+    for ii, idx in enumerate(index):
+        print("Fitting null model with feature %d" %(idx))
+        Xc_del = np.delete(Xc, idx, 0)
+        model_test = BRIE2(Nc=Xc_del.shape[1], Ng=n_genes,
+                           Kc=Xc_del.shape[0], Kg=0, 
+                           p_ambiguous=p_ambiguous)
+        
+#         losses = model_test.fit(_count_layers, Xc = Xc_del, **kwargs)
 
-        LR[:, i] = model_real.loss_gene - model_test.loss_gene
+        for i in range(len(learn_steps)):
+            model_test.fit(_count_layers, Xc = Xc_del, max_iter=learn_steps[i], 
+                           learn_rate=learn_rates[i], **kwargs)
+        
+        LR[:, ii] = model_real.loss_gene - model_test.loss_gene
+        
     print("Fit deleted data: %.2f min" % ((time.time() - start_time)/60))
     
     model_real.LR = LR # NUll vs H1
@@ -68,8 +80,8 @@ def LR_test(Xc, Rmat, P_iso1, P_iso2):
     
     fdr = np.zeros(LR.shape)
     for i in range(fdr.shape[1]):
-        fdr[:, i] = multipletests(np.exp(model_real.pval_log[:, i]))[1]
+        fdr[:, i] = multipletests(np.exp(model_real.pval_log[:, i]), 
+                                  method="fdr_bh")[1]
     model_real.fdr = fdr
     
     return model_real
-

@@ -7,21 +7,22 @@ The official documentation together with examples and tutorials can be found
 at https://brie.readthedocs.io/.
 """
 
+from ._cli import cli
 from .version import __version__
+
+# direct classes or functions
 from .models.model_TFProb import BRIE2
-from .utils.io_utils import load_brie_count
-from .utils.sam_utils import load_samfile, fetch_reads
-from .utils.gtf_utils import Gene, Transcript, load_genes, save_genes
+from .utils.io_utils import read_brieMM, read_h5ad, read_gff, read_npz
 from .utils.base_utils import match
 
+# set simplified alias
+from . import plot as pl
+from . import tools as tl
+from . import preprocessing as pp
 
-## to remove
-from .utils.bias_utils import FastaFile, BiasFile
-from .utils.tran_utils import TranUnits, TranSplice
 
-
-__all__ = [
-    "__version__",
-    "utils",
-    "models"
-]
+# __all__ = [
+#     "__version__",
+#     "utils",
+#     "models"
+# ]
