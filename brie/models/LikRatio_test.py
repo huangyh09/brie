@@ -6,7 +6,6 @@ from statsmodels.stats.multitest import multipletests
 
 from .model_TFProb import BRIE2
 
-
 def LikRatio_test(count_layers, Xc, p_ambiguous=None, index=None,
                   layer_ids=['isoform1', 'isoform2', 'ambiguous'], 
                   learn_steps=[100, 200, 300], 
@@ -25,9 +24,11 @@ def LikRatio_test(count_layers, Xc, p_ambiguous=None, index=None,
         return None
     
     ## load the dict
-    _count_layers = {}
-    for i in range(3):
-        _count_layers[str(i + 1)] = count_layers[layer_ids[i]]
+#     _count_layers = {}
+#     _keys = _count_layers.keys()
+#     for i in range(3):
+#         _count_layers[_keys[i]] = count_layers[layer_ids[i]]
+    _count_layers = count_layers.copy()
 
     ## Fit model with real data
     n_genes = count_layers[layer_ids[0]].shape[1]
@@ -76,11 +77,11 @@ def LikRatio_test(count_layers, Xc, p_ambiguous=None, index=None,
     print("Fit deleted data: %.2f min" % ((time.time() - start_time)/60))
     
     model_real.LR = LR # NUll vs H1
-    model_real.pval_log = chi2.logsf(-2 * LR, df = 1) #* log10(exp(1))
+    model_real.pval_log10 = chi2.logsf(-2 * LR, df = 1) * np.log10(np.exp(1))
     
     fdr = np.zeros(LR.shape)
     for i in range(fdr.shape[1]):
-        fdr[:, i] = multipletests(np.exp(model_real.pval_log[:, i]), 
+        fdr[:, i] = multipletests(10**(model_real.pval_log10[:, i]), 
                                   method="fdr_bh")[1]
     model_real.fdr = fdr
     

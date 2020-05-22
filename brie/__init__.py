@@ -17,8 +17,8 @@ from .utils.base_utils import match
 
 # set simplified alias
 from . import plot as pl
-from . import tools as tl
-from . import preprocessing as pp
+from .models import tools as tl
+from .utils import preprocessing as pp
 
 
 # __all__ = [

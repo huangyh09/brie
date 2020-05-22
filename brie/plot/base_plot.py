@@ -1,0 +1,66 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+def loss(losses, last=200):
+    plt.figure(figsize=(8, 3.5))
+    plt.subplot(1, 2, 1)
+    plt.plot(losses)
+    plt.xlabel("iterations")
+    plt.ylabel("loss")
+
+    plt.subplot(1, 2, 2)
+    plt.plot(range(len(losses)-last, len(losses)), losses[-last:])
+    plt.xlabel("iterations")
+    plt.ylabel("loss")
+
+    plt.tight_layout()
+    plt.show()
+
+    
+def counts(adata, genes, size='Psi', color=None, gene_key='index',
+           layers=['isoform1', 'isoform2'], nrow=None, ncol=None, 
+           show_key="index", add_val=None, **keyargs):
+    """Plot the counts for isoforms
+    """
+    import pandas as pd
+    import seaborn as sns
+    
+    if ncol is None:
+        ncol = min(4, len(genes))
+    if nrow is None:
+        nrow = np.ceil(len(genes) / ncol)
+    
+    if color is None:
+        color_use = None
+    else:
+        try:
+            if len(color) == adata.shape[0]:
+                color_use = color
+            else:
+                color_use = adata.obs[color]
+        except ValueError:
+            color_use = None
+            #print("Not a valid value for color: %s" %(color))
+    
+    for i in range(len(genes)):
+        plt.subplot(nrow, ncol, i + 1)
+        adata_use = adata[:, adata.var[gene_key] == genes[i]]
+        df_tmp = pd.DataFrame({
+            "x": adata_use.layers[layers[0]][:, 0],
+            "y": adata_use.layers[layers[1]][:, 0],
+            color: color_use,
+            size: adata_use.layers[size][:, 0]})
+
+        ax = sns.scatterplot(x="x",  y="y", hue=color, size=size, 
+                             data=df_tmp, **keyargs)
+
+        plt.xlabel("n_reads: %s" %(layers[0]))
+        plt.ylabel("n_reads: %s" %(layers[1]))
+        _title = adata_use.var[show_key][0]
+        if add_val in adata_use.var:
+            _title += "; %s: %s" %(add_val, adata_use.var[add_val][0])
+        plt.title(list(adata_use.var[show_key])[0])
+        plt.title(_title)
+        #print(-res_md.pval_log10[sig_idx[i], 0])
+
+    plt.tight_layout()

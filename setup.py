@@ -18,9 +18,9 @@ exec(open("./brie/version.py").read())
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
-reqs = ['numpy>=1.9.0', 'pysam>=0.15.2', 'anndata>=0.6.0', 'pandas>=0.23.0', 'h5py',
-        'tensorflow-probability>=0.8.0', 'tensorflow>=2.0.0', 'click>=7.0.0', 
-        'matplotlib>=3.1.2']
+reqs = ['numpy>=1.9.0', 'pysam>=0.15.2', 'anndata>=0.6.0', 'pandas>=0.23.0', 
+        'h5py', 'tensorflow-probability>=0.8.0', 'tensorflow>=2.0.0', 
+        'click>=7.0.0', 'matplotlib>=3.1.2', 'seaborn>=0.10.0']
 
 setup(
     name='brie',
@@ -45,7 +45,8 @@ setup(
 
     # What does your project relate to?
     keywords=['splicing isoform estimate', 'Bayesian regression',
-              'single cell RNA-seq', 'Markov chain Monte Carlo'],
+              'single cell RNA-seq', 'Markov chain Monte Carlo',
+              'variantional inference'],
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
