@@ -8,6 +8,14 @@
 ################################################################
 
 
+### Top notice: ###
+# This requires briekit package: https://pypi.org/project/briekit/
+# It requires to install in Python 2 environment
+# Readmore: https://github.com/huangyh09/briekit/wiki
+
+echo "Please use briekit package in Python 2 environment!"
+
+
 DATA_DIR=/disk/scratch/yhuang/anno
 
 ### 1. download files
@@ -29,13 +37,13 @@ fasta2=$DATA_DIR/GRCh38.p7.genome.fa
 ### 2. Splicing events filtering
 ## https://brie-rna.sourceforge.io/manual.html#splicing-events
 
-# brie-event -a $anno_ref1 -o $DATA_DIR/mouse_AS
-# brie-event-filter -a $DATA_DIR/mouse_AS/SE.gff3 --anno_ref $anno_ref1 -r $fasta1
-# brie-event-filter -a $DATA_DIR/mouse_AS/SE.gff3 --anno_ref $anno_ref1 -r $fasta1 -o $DATA_DIR/mouse_AS/SE.extended --add_chrom chrX,chrY --as_exon_min 10 --as_exon_max 100000000 --as_exon_tss 10 --as_exon_tts 10 --no_splice_site #--keep_overlap
+# briekit-event -a $anno_ref1 -o $DATA_DIR/mouse_AS
+# briekit-event-filter -a $DATA_DIR/mouse_AS/SE.gff3 --anno_ref $anno_ref1 -r $fasta1
+# briekit-event-filter -a $DATA_DIR/mouse_AS/SE.gff3 --anno_ref $anno_ref1 -r $fasta1 -o $DATA_DIR/mouse_AS/SE.extended --add_chrom chrX,chrY --as_exon_min 10 --as_exon_max 100000000 --as_exon_tss 10 --as_exon_tts 10 --no_splice_site #--keep_overlap
 
-# brie-event -a $anno_ref2 -o $DATA_DIR/human_AS
-# brie-event-filter -a $DATA_DIR/human_AS/SE.gff3 --anno_ref $anno_ref2 -r $fasta2
-# brie-event-filter -a $DATA_DIR/human_AS/SE.gff3 --anno_ref $anno_ref2 -r $fasta2 -o $DATA_DIR/human_AS/SE.extended --add_chrom chrX,chrY --as_exon_min 10 --as_exon_max 100000000 --as_exon_tss 10 --as_exon_tts 10 --no_splice_site #--keep_overlap
+# briekit-event -a $anno_ref2 -o $DATA_DIR/human_AS
+# briekit-event-filter -a $DATA_DIR/human_AS/SE.gff3 --anno_ref $anno_ref2 -r $fasta2
+# briekit-event-filter -a $DATA_DIR/human_AS/SE.gff3 --anno_ref $anno_ref2 -r $fasta2 -o $DATA_DIR/human_AS/SE.extended --add_chrom chrX,chrY --as_exon_min 10 --as_exon_max 100000000 --as_exon_tss 10 --as_exon_tts 10 --no_splice_site #--keep_overlap
 
 
 ### 3. Extacting sequence feature for BRIE
@@ -47,13 +55,13 @@ phast1=$DATA_DIR/mm10.60way.phastCons.bw
 feature1=$DATA_DIR/mouse_AS/mouse_factors.SE.most.csv
 feature2=$DATA_DIR/mouse_AS/mouse_factors.SE.gold.csv
 
-brie-factor -a $DATA_DIR/mouse_AS/SE.extended.gold.gtf -r $fasta1 -c $phast1 -o $feature1 -p 20
-brie-factor -a $DATA_DIR/mouse_AS/SE.gold.gtf -r $fasta1 -c $phast1 -o $feature2 -p 1
+briekit-factor -a $DATA_DIR/mouse_AS/SE.extended.gold.gtf -r $fasta1 -c $phast1 -o $feature1 -p 20
+briekit-factor -a $DATA_DIR/mouse_AS/SE.gold.gtf -r $fasta1 -c $phast1 -o $feature2 -p 1
 
 
 phast2=$DATA_DIR/hg38.phastCons100way.bw
 feature3=$DATA_DIR/human_AS/human_factors.SE.most.csv
 feature4=$DATA_DIR/human_AS/human_factors.SE.gold.csv
 
-brie-factor -a $DATA_DIR/human_AS/SE.extended.gold.gtf -r $fasta2 -c $phast2 -o $feature3 -p 20
-brie-factor -a $DATA_DIR/human_AS/SE.gold.gtf -r $fasta2 -c $phast2 -o $feature4 -p 20
+briekit-factor -a $DATA_DIR/human_AS/SE.extended.gold.gtf -r $fasta2 -c $phast2 -o $feature3 -p 20
+briekit-factor -a $DATA_DIR/human_AS/SE.gold.gtf -r $fasta2 -c $phast2 -o $feature4 -p 20
