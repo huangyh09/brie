@@ -29,10 +29,11 @@ class BRIE2():
         self.Wg_loc = tf.Variable(tf.random.normal([Kg, Nc]), name='Wg_loc')
         
         if intercept is None:
-            self.intercept = tf.Variable(tf.random.normal([Ng, 1]), name='biase')
+            self.intercept = tf.Variable(tf.random.normal([Ng, 1]), name='bias',
+                constraint=lambda t: tf.clip_by_value(t, -9, 9))
         else:
             _intercept = tf.ones([Ng, 1]) * intercept
-            self.intercept = tf.constant(_intercept, name='biase')
+            self.intercept = tf.constant(_intercept, name='bias')
             
         if sigma is None:
             self.sigma_log = tf.Variable(tf.ones([Ng, 1]), name='sigma_log')
@@ -161,7 +162,9 @@ class BRIE2():
                                    optimizer=optimizer)
         
         n_iter = min_iter + 0
-        while ((losses[-20:-10].numpy().mean() - losses[-10:].numpy().mean() > 
+        d1 = min(50, add_iter / 2)
+        d2 = d1 * 2
+        while ((losses[-d2:-d1].numpy().mean() - losses[-d1:].numpy().mean() > 
                 epsilon_conv) and  n_iter < max_iter):
             n_iter += add_iter
             losses = tf.concat([
@@ -171,7 +174,6 @@ class BRIE2():
                                   optimizer=optimizer)
             ], axis=0)
             
-        
         
         self.loss_gene = self.get_loss(count_layers, target, axis=1, 
                                        size=1000, **kwargs)
