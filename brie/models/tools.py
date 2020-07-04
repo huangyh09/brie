@@ -1,13 +1,14 @@
 # Tools for BRIE package
 
 import numpy as np
-from .model_TFProb import BRIE2
-from .simulator import simulator
-
 from scipy.stats import chi2
 from statsmodels.stats.multitest import multipletests
 
-def fitBRIE(adata, Xc=None, Xg=None, add_intercept=True, **keyargs):
+from .simulator import simulator
+from .model_wrap import fit_BRIE_matrix
+
+def fitBRIE(adata, Xc=None, Xg=None, add_intercept=False, do_LRT=True, 
+            layer_keys=['isoform1', 'isoform2', 'ambiguous'], **keyargs):
     """Fit a BRIE model with cell and/or gene features
     
     Parameters
@@ -19,6 +20,13 @@ def fitBRIE(adata, Xc=None, Xg=None, add_intercept=True, **keyargs):
         Cell features.
     Xg : `numpy.array`, (n_gene, n_feature), np.float32, optional
         Gene features.
+    add_intercept : bool
+        If add intecept for cell feature
+    do_LRT : bool
+        If perform likelihood ratio test for each gene
+    layer_keys : list of `str` with length == 2 or 3
+        isoform1, isoform2, [ambiguous]. Ambiguous count is optional.
+        
     **keyargs : keyargs for BRIE2.fit()
         
     Returns
@@ -28,25 +36,22 @@ def fitBRIE(adata, Xc=None, Xg=None, add_intercept=True, **keyargs):
         `Xg` and `weight_c` to `adata.varm`;
         `Psi` and `Psi_var` to `adata.layers`.
     """
+    _data = [adata.layers[_key] for _key in layer_keys]
+    
     if Xc is None:
-        Xc = np.ones((0, adata.shape[0]), np.float32)
+        Xc = np.ones((0, _data[0].shape[0]), np.float32)
     if Xg is None:
-        Xg = np.ones((adata.shape[1], 0), np.float32)
+        Xg = np.ones((_data[0].shape[1], 0), np.float32)
         
     _intecept = None if add_intercept else 0
-        
-    model = BRIE2(Nc=adata.shape[0], Ng=adata.shape[1],
-                  Kc=Xc.shape[0], Kg=Xg.shape[1], 
-                  intercept = _intecept,
-                  p_ambiguous=adata.varm['p_ambiguous'])
     
-#     _layers = {}
-#     _layers['1'] = adata.layers['isoform1']
-#     _layers['2'] = adata.layers['isoform2']
-#     _layers['3'] = adata.layers['ambiguous']
-#     losses = model.fit(_layers, Xc = Xc, Xg = Xg, **keyargs)
+    if 'p_ambiguous' not in adata.varm:
+        _p_ambiguous = np.ones(Xg.shape[0], 2, dtype=np.float32) * 0.5
+    else:
+        _p_ambiguous=adata.varm['p_ambiguous']
     
-    losses = model.fit(adata.layers, Xc = Xc, Xg = Xg, **keyargs)
+    model = fit_BRIE_matrix(_data, Xc=Xc, Xg=Xg, intercept = _intecept,
+                            p_ambiguous=_p_ambiguous, **keyargs)
     
     # update adata
     if Xc.shape[0] > 0:
@@ -60,8 +65,14 @@ def fitBRIE(adata, Xc=None, Xg=None, add_intercept=True, **keyargs):
     adata.varm['intercept'] = model.intercept.numpy()
     adata.varm['sigma'] = model.sigma.numpy()
         
+    # introduce sparse matrix for this
     adata.layers['Psi'] = model.Psi.numpy().transpose()
     adata.layers['Z_std'] = np.exp(model.Z_std.numpy()).transpose()
+    
+    if do_LRT:
+        adata.varm['fdr'] = model.fdr
+        adata.varm['pval'] = model.pval
+        adata.varm['ELBO_gain'] = model.ELBO_gain
     
     # return BRIE model
     return model

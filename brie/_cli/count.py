@@ -19,7 +19,7 @@ def print_help(ctx, param, value):
                     "files. No header line; file path and cell id (optional)"))
 @click.option("--outDir", "-o", required=True, default=None,
               type=click.Path(exists=False),
-              help="Full path of output directory [default: $samList/brieOUT]")
+              help="Full path of output directory [default: $samList/brieCOUNT]")
 @click.option("--nproc", "-p", default=1, type=int, show_default=True,
               help="Number of subprocesses")
 # @click.option("--add-premRNA", default=False, is_flag=True,

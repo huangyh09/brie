@@ -57,7 +57,7 @@ def count(gff_file, samList_file, out_dir=None, nproc=1, add_premRNA=False):
     ## Check out_dir
     if out_dir is None:
         sam_dir = os.path.abspath(samList_file)
-        out_dir = os.path.dirname(sam_dir) + "/brieOUT"
+        out_dir = os.path.dirname(sam_dir) + "/brieCOUNT"
     else:
         out_dir = out_dir
         
@@ -166,7 +166,7 @@ def main():
         help=("A tsv file containing sorted and indexed bam/sam/cram files. "
               "No header line; file path and cell id (optional)"))
     parser.add_option("--out_dir", "-o", dest="out_dir", default=None, 
-        help="Full path of output directory [default: $samList/brieOUT]")
+        help="Full path of output directory [default: $samList/brieCOUNT]")
 
     group = OptionGroup(parser, "Optional arguments")
     group.add_option("--nproc", "-p", type="int", dest="nproc", default="4",
@@ -178,7 +178,7 @@ def main():
     
     (options, args) = parser.parse_args()
     if len(sys.argv[1:]) == 0:
-        print("Welcome to BRIE2 v%s!\n" %(__version__))
+        print("Welcome to brie-count in BRIE v%s!\n" %(brie.__version__))
         print("use -h or --help for help on argument.")
         sys.exit(1)
     if options.samList_file == None:

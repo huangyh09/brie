@@ -47,15 +47,15 @@ def filter_genes(data, min_counts=0, min_cells=0,
     # filtering
     gene_subset = np.ones(adata.n_vars, dtype=bool)
     
-    gene_subset &= total_counts.sum(0) >= min_counts
-    gene_subset &= (total_counts > 0).sum(0) >= min_cells
+    gene_subset &= np.array(total_counts.sum(0)).reshape(-1) >= min_counts
+    gene_subset &= np.array((total_counts > 0).sum(0)).reshape(-1) >= min_cells
     
-    gene_subset &= unique_counts.sum(0) >= min_counts_uniq
-    gene_subset &= (unique_counts > 0).sum(0) >= min_cells_uniq
+    gene_subset &= np.array(unique_counts.sum(0)).reshape(-1) >= min_counts_uniq
+    gene_subset &= np.array((unique_counts > 0).sum(0)).reshape(-1) >= min_cells_uniq
     
     adata._inplace_subset_var(gene_subset)
-    adata.var['n_counts'] = total_counts.sum(0)[gene_subset]
-    adata.var['n_counts_uniq'] = unique_counts.sum(0)[gene_subset]
+    adata.var['n_counts'] = np.array(total_counts.sum(0)).reshape(-1)[gene_subset]
+    adata.var['n_counts_uniq'] = np.array(unique_counts.sum(0)).reshape(-1)[gene_subset]
 
     s = np.sum(~gene_subset)
     if s > 0:

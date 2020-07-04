@@ -42,7 +42,7 @@ class BRIE2():
             self.sigma_log = tf.constant(tf.math.log(_sigma), name='sigma_log')
             
         if p_ambiguous is None:
-            self.p_ambiguous = tf.ones([Ng, 2]) * 0.5
+            self.p_ambiguous = np.ones([Ng, 2], dtype=np.float32) * 0.5
         else:
             self.p_ambiguous = p_ambiguous
         self.rho = self.p_ambiguous[:, 0] / self.p_ambiguous.sum(1)
@@ -72,8 +72,7 @@ class BRIE2():
         return tfd.Normal(_zz_loc, self.sigma)
     
         
-    def logLik_MC(self, count_layers, mode="post", size=10, 
-                  layer_keys=['1', '2', '3']):
+    def logLik_MC(self, count_layers, mode="post", size=10):
         """Get marginal logLikelihood on variational or prior distribution
         with Monte Carlo sampling
         """
@@ -109,10 +108,12 @@ class BRIE2():
         Psi2_log = tf.math.log_sigmoid(0 - _Z)
         
         _logLik_S = (
-            _re1(count_layers[layer_keys[0]].transpose()) * Psi1_log + 
-            _re1(count_layers[layer_keys[1]].transpose()) * Psi2_log + 
-            _re1(count_layers[layer_keys[2]].transpose()) * tf.math.log(
-                _re2(self.rho) * Psi1 + _re2(1 - self.rho) * Psi2))
+            _re1(count_layers[0].transpose()) * Psi1_log + 
+            _re1(count_layers[1].transpose()) * Psi2_log)
+        
+        if len(count_layers) > 2 and np.mean(self.rho == 0.5) < 1:
+            _logLik_S += _re1(count_layers[2].transpose()) * tf.math.log(
+                _re2(self.rho) * Psi1 + _re2(1 - self.rho) * Psi2)
                 
         ## return the mean over the sampling
         if mode == "prior":

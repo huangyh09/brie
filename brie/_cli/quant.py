@@ -13,6 +13,7 @@ def print_help(ctx, param, value):
 @click.option('--help', '-h', is_flag=True, expose_value=False,
               is_eager=False, callback=print_help, help="Print help message")
 def quant():
-    """Quantification of isoforms: comming soon."""
+    """Quantification of isoforms and Detect predictable splicing events with 
+    covariant"""
     print("Quant CLI: comming soon.")
     # brie._sh.quant()

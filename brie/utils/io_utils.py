@@ -17,7 +17,7 @@ def read_npz(path):
     Rmat_dict = brie_dat['Rmat_dict'].item()
     Rmat = {}
     for _key in Rmat_dict:
-        Rmat[_key] = Rmat_dict[_key].astype(np.float32).toarray()
+        Rmat[_key] = Rmat_dict[_key].astype(np.float32)#.toarray()
     Rmat.keys()
     
     X = Rmat['1'] + Rmat['2'] + Rmat['3']

@@ -13,10 +13,12 @@ def simulator(model, adata):
 #     _Psi_tensor = np.expand_dims(_Psi, 2), 
 #     Prob_iso = np.zeros((n, 3, 2))
 
+    layer_keys=['isoform1', 'isoform2', 'ambiguous']
+    
     adata = adata.copy()
-    total_counts = (adata.layers['isoform1'] + 
-                    adata.layers['isoform2'] + 
-                    adata.layers['ambiguous']).transpose()
+    total_counts = (adata.layers[layer_keys[0]] + 
+                    adata.layers[layer_keys[1]] + 
+                    adata.layers[layer_keys[2]]).transpose()
         
     _Psi = tf.sigmoid(model.Z_prior.sample()).numpy()
     _binom = tfd.Binomial(total_counts, probs=_Psi) ## accounting for tranL
@@ -31,9 +33,9 @@ def simulator(model, adata):
     N23 = _binom.sample().numpy()
     N22 = N2 - N23
     
-    adata.layers['isoform1'] = N11.transpose()
-    adata.layers['isoform2'] = N22.transpose()
-    adata.layers['ambiguous'] = (N13 + N23).transpose()
+    adata.layers[layer_keys[0]] = N11.transpose()
+    adata.layers[layer_keys[1]] = N22.transpose()
+    adata.layers[layer_keys[2]] = (N13 + N23).transpose()
         
     # update adata
     if model.Xc is not None and model.Xc.shape[0] > 0:

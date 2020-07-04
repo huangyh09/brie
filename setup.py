@@ -57,7 +57,8 @@ setup(
             'brie = brie:_cli.cli',
             'brie-brie = brie.bin.brie:main',
             'brie-diff = brie.bin.brie_diff:main',
-            'brie-count = brie.bin.count:main'
+            'brie-count = brie.bin.count:main',
+            'brie-quant = brie.bin.quant:main'
         ],
     },
     

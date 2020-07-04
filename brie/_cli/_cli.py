@@ -2,7 +2,6 @@ import click
 
 from .count import count
 from .quant import quant
-from .detect import detect
 from .extract import extract
 from .download import download
 
@@ -36,6 +35,5 @@ def cli(ctx):
 
 cli.add_command(count)
 cli.add_command(quant)
-cli.add_command(detect)
 cli.add_command(extract)
 cli.add_command(download)

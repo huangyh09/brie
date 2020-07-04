@@ -1,4 +1,4 @@
 from .count import count
-from .detect import detect
+from .quant import quant
 
 __all__ = ["count", "detect"]

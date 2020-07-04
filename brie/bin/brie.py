@@ -10,7 +10,7 @@ import multiprocessing
 from optparse import OptionParser, OptionGroup
 
 # import pyximport; pyximport.install()
-from .utils.gtf_utils import loadgene
+from .utils.gtf_utils import load_genes
 from .utils.run_utils import set_info, map_data, save_data
 from .models.model_brie import brie_MH_Heuristic
 
@@ -107,7 +107,7 @@ def main():
         sys.stdout.write("\r[Brie] loading annotation file... ")
         sys.stdout.flush()
         # anno = load_annotation(options.anno_file, options.anno_source)
-        genes = loadgene(options.anno_file)
+        genes = load_genes(options.anno_file)
         sys.stdout.write("\r[Brie] loading annotation file... Done.\n")
         sys.stdout.flush()
         # genes = anno["genes"]
