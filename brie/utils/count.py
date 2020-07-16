@@ -162,3 +162,47 @@ def SE_probability(gene, rlen=75, edge_hang=10, junc_hang=2):
     
     return prob_mat
 
+
+def SE_effLen(gene, rlen=75, edge_hang=10, junc_hang=2):
+    """Get effective length matrix for three read categories from two isoforms.
+    
+    In exon-skipping (SE) event, there are two isoform:
+    isoform1 for exon inclusion and isoform2 for exon exclusion.
+    and three read groups:
+    group1: uniquely from isoform1
+    group2: uniquely from isoform2
+    group3: ambiguous identity
+    
+    Here, we only treat single-end reads. For paired-end reads,
+    we treat it as the single-end by only using the most informative
+    mate, namely the mate mapped to least number of isoform(s).
+    
+    isoform1: l1 + l2 + l3 + rlen - 2 * edge_hang
+        read group1: l2 + rlen - 2 * junc_hang
+        read group3: l1 + l3 - 2 * edge_hang + 2 * junc_hang
+    isoform2: l1 + l3 + rlen - 2 * edge_hang
+        read group2: rlen - 2 * junc_hang
+        read group3: l1 + l3 - 2 * edge_hang + 2 * junc_hang
+    """
+    # check SE event
+    if _check_SE_event(gene) == False:
+        print("This is not exon-skipping event!")
+        exit()
+    
+    l1, l2, l3 = gene.trans[0].exons[:, 1] - gene.trans[0].exons[:, 0]
+    isoLen_mat = np.zeros((2, 3))
+    
+    # isoform length
+    len_isoform1 = l1 + l2 + l3 + rlen - 2 * edge_hang
+    len_isoform2 = l1 + l3 + rlen - 2 * edge_hang
+    
+    # segments
+    isoLen_mat[0, 0] = l2 + rlen - 2 * junc_hang
+    isoLen_mat[1, 1] = rlen - 2 * junc_hang
+    isoLen_mat[0, 2] = l1 + l3 - 2 * edge_hang + 2 * junc_hang
+    isoLen_mat[1, 2] = l1 + l3 - 2 * edge_hang + 2 * junc_hang
+    
+    # prob_mat = isoLen_mat / isoLen_mat.sum(1, keepdims=True)
+    
+    return isoLen_mat
+

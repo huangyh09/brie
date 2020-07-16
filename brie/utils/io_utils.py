@@ -35,8 +35,13 @@ def read_npz(path):
                        index = brie_dat['gene_note'][1:, 0],
                        columns=brie_dat['gene_note'][0, :])
     
-    Prob_tensor = brie_dat['Prob_tensor']
+    
+    effLen_tensor = brie_dat['effLen_tensor']
+    Prob_tensor = effLen_tensor / effLen_tensor.sum(2, keepdims=True)
+    
     varm = {}
+    varm['effLen'] = np.append(effLen_tensor[:, 0, :],
+                               effLen_tensor[:, 1, :], axis=1)
     varm['p_ambiguous'] = Prob_tensor[:, :, 2]
     
     adata = anndata.AnnData(X=X, obs=obs, var=var, varm=varm,

@@ -10,40 +10,10 @@ from ..settings import verbosity
 from scipy.stats import chi2
 from scipy.sparse import csc_matrix
 from statsmodels.stats.multitest import multipletests
-
-class Result_list:
-    def __init__(self, model_list, idx_list=None, do_LRT=True):
-        fdr, pval, ELBO_gain = [], [], []
-        cell_coeff, intercept, sigma = [], [], []
-        Psi, Z_std, row_idx, col_idx = [], [], [], []
-        for ii, res in enumerate(model_list):
-            cell_coeff.append(list(res.Wc_loc.numpy()[0, :]))
-            intercept.append(res.intercept[0, 0])
-            sigma.append(res.sigma[0, 0])
-            if do_LRT:
-                fdr.append(list(res.fdr[0, :]))
-                pval.append(list(res.pval[0, :]))
-                ELBO_gain.append(list(res.ELBO_gain[0, :]))
-
-            Psi += list(res.Psi.numpy().transpose()[0, :])
-            Z_std += list(res.Z_std.numpy().transpose()[0, :])
-            col_idx += [ii] * len(res.Wc_loc.shape[1])
-            row_idx += idx_list[ii]
-
-        self.cell_coeff = np.array(cell_coeff, dtype=np.float32)
-        self.intercept = np.array(intercept, dtype=np.float32)
-        self.sigma = np.array(sigma, dtype=np.float32)
-        self.Psi = csc_matrix((Psi, (row_idx, col_idx)), shape=data[0].shape)
-        self.Z_loc = csc_matrix((Z_loc, (row_idx, col_idx)), shape=data[0].shape)
-        if do_LRT:
-            self.fdr = np.array(fdr, dtype=np.float32)
-            self.pval = np.array(pval, dtype=np.float32)
-            self.ELBO_gain = np.array(ELBO_gain, dtype=np.float32)
-            
         
 
-def fit_BRIE_matrix(data, Xc=None, Xg=None, intercept=None, p_ambiguous=None, 
-                    do_LRT=True, LRT_index=None, **keyargs):
+def fit_BRIE_matrix(data, Xc=None, Xg=None, effLen=None, intercept=None, 
+                    intercept_mode='gene', LRT_index=None, **keyargs):
     """Fit a BRIE model with cell and/or gene features
     
     Parameters
@@ -62,32 +32,31 @@ def fit_BRIE_matrix(data, Xc=None, Xg=None, intercept=None, p_ambiguous=None,
     BRIE2 model object.
     """
     if Xc is None:
-        Xc = np.ones((0, data[0].shape[0]), np.float32)
+        Xc = np.ones((_count_layers[0].shape[0], 0), np.float32)
     if Xg is None:
-        Xg = np.ones((data[0].shape[1], 0), np.float32)
+        Xg = np.ones((_count_layers[0].shape[1], 0), np.float32)
                 
-    model = BRIE2(Nc=Xc.shape[1], Ng=Xg.shape[0],
-                  Kc=Xc.shape[0], Kg=Xg.shape[1], 
-                  intercept = intercept, p_ambiguous=p_ambiguous)
+    model = BRIE2(Nc=Xc.shape[0], Ng=Xg.shape[0],
+                  Kc=Xc.shape[1], Kg=Xg.shape[1], 
+                  intercept=intercept, effLen=effLen)
     
     losses = model.fit(data, Xc = Xc, Xg = Xg, **keyargs)
     
-    if do_LRT == False:
-        return model
-    
     ## Perform ELBO gain in the analogy to likelihood ratio
     if LRT_index is None:
-        LRT_index = range(Xc.shape[0])
+        LRT_index = range(Xc.shape[1])
+        
+    if len(LRT_index) == 0:
+        return model
         
     ELBO_gain = np.zeros((data[0].shape[1], len(LRT_index)), dtype=np.float32)
     for ii, idx in enumerate(LRT_index):
-#         if verbosity == 3:
-#             print("Fitting null model with feature %d" %(idx))
-        print("Fitting null model with feature %d" %(idx))
-        Xc_del = np.delete(Xc, idx, 0)
-        model_test = BRIE2(Nc=Xc_del.shape[1], Ng=data[0].shape[1],
-                           Kc=Xc_del.shape[0], Kg=Xg.shape[1],
-                           intercept = intercept, p_ambiguous=p_ambiguous)
+        if verbosity == 3:
+            print("Fitting null model without feature %d" %(idx))
+        Xc_del = np.delete(Xc, idx, 1)
+        model_test = BRIE2(Nc=Xc_del.shape[0], Ng=data[0].shape[1],
+                           Kc=Xc_del.shape[1], Kg=Xg.shape[1],
+                           intercept = intercept, effLen=effLen)
         
         losses = model_test.fit(data, Xc = Xc_del, Xg = Xg, **keyargs)
         ELBO_gain[:, ii] = model.loss_gene - model_test.loss_gene
@@ -105,73 +74,77 @@ def fit_BRIE_matrix(data, Xc=None, Xg=None, intercept=None, p_ambiguous=None,
     return model
 
 
-def show_progress(RV):
-    return RV
-
-
-def fit_BRIE_mproc(data, Xc=None, Xg=None, intercept=None, p_ambiguous=None, 
-                   do_LRT=True, LRT_index=None, nproc=10, **keyargs):
-    """Fit BRIE gene wise, which doesn't support gene feature
+def fitBRIE(adata, Xc=None, Xg=None, intercept=None, intercept_mode='gene', 
+            LRT_index=[], layer_keys=['isoform1', 'isoform2', 'ambiguous'], 
+            **keyargs):
+    """Fit a BRIE model from AnnData with cell and/or gene features
+    
+    Parameters
+    ----------
+    adata : :class:`~anndata.AnnData`, `np.ndarray`, `sp.spmatrix`
+        The (annotated) data matrix of shape `n_obs` × `n_vars`. Rows correspond
+        to cells and columns to genes.
+    Xc : `numpy.array`, (n_feature, n_cell), np.float32, optional
+        Cell features.
+    Xg : `numpy.array`, (n_gene, n_feature), np.float32, optional
+        Gene features.
+    add_intercept : bool
+        If add intecept for cell feature
+    do_LRT : bool
+        If perform likelihood ratio test for each gene
+    layer_keys : list of `str` with length == 2 or 3
+        isoform1, isoform2, [ambiguous]. Ambiguous count is optional.
+        
+    **keyargs : keyargs for BRIE2.fit()
+        
+    Returns
+    -------
+    BRIE2 model object. Also, adds 
+        `Xc` and `weight_g` to `adata.obsm`; 
+        `Xg` and `weight_c` to `adata.varm`;
+        `Psi` and `Psi_var` to `adata.layers`.
     """
+    #TODO: support sparse matrix!!
+    _count_layers = [adata.layers[_key].toarray() for _key in layer_keys]
+    
     if Xc is None:
-        Xc = np.ones((0, data[0].shape[0]), np.float32)
-        
-    Xg = np.ones((data[0].shape[1], 0), np.float32)
-    
-    results = []
-    idx_list = []
-    #pool = multiprocessing.Pool(processes=nproc)
-    executor = concurrent.futures.ProcessPoolExecutor(nproc)
-    for g in range(data[0].shape[1]):
-        _p_ambiguous = None if p_ambiguous is None else p_ambiguous[g:g+1, :]
-        
-        _count = data[0][:, g] + data[1][:, g]
-        # if len(data) > 2 and _p_ambiguous[0] != 0.5:
-        #     _count += data[2][:, g]
+        Xc = np.ones((_count_layers[0].shape[0], 0), np.float32)
+    if Xg is None:
+        Xg = np.ones((_count_layers[0].shape[1], 0), np.float32)
             
-        _idx = _count > 0
-        idx_list.append(_idx)
-        # if sum(idx) <= 10:
-        #     results.append(None)
-        #     continue
-            
-        _data = [x[_idx, g:g+1] for x in data]
-        
-        
-        print(g, sum(_idx))
-        
-#         results.append(fit_BRIE_matrix(_data, Xc=Xc[:, _idx], Xg=None, 
-#                        intercept=intercept, 
-#                        p_ambiguous=_p_ambiguous, do_LRT=do_LRT, 
-#                        LRT_index=LRT_index, verbose=False, **keyargs))
-        
-        
-        results.append(executor.submit(
-            fit_BRIE_matrix, _data, Xc=Xc[:, _idx], Xg=None, 
-            intercept=intercept, p_ambiguous=_p_ambiguous, 
-            do_LRT=do_LRT, LRT_index=LRT_index, verbose=False, **keyargs
-        ))#
-        
-    concurrent.futures.wait(results)
-
-#         results.append(pool.apply_async(fit_BRIE_matrix,
-#                                         (_data, Xc[:, _idx], None, intercept, 
-#                                          _p_ambiguous, do_LRT, LRT_index), 
-#                                         #dict(**keyargs), 
-#                                         callback=show_progress))
-#         pool.close()
-#         pool.join()
-        
-#     results = [res.get() for res in results]
-
-    results = [res.result() for res in results]
-    RV = BRIEresult(resutls, idx_list, do_LRT)
-    RV.Xc = Xc
+    _effLen = adata.varm['effLen'] if 'effLen' in adata.varm else None
     
-    return RV
+    model = fit_BRIE_matrix(_count_layers, Xc=Xc, Xg=Xg, intercept=intercept,
+                            intercept_mode=intercept_mode, LRT_index=LRT_index, 
+                            effLen=_effLen, **keyargs)
     
-
-#         _model = fit_BRIE_model(_data, Xc=Xc[:, _idx], Xg=None, 
-#                                 intercept=intercept, 
-#                                 p_ambiguous=_p_ambiguous, do_LRT=do_LRT, 
-#                                 LRT_index=LRT_index, **keyargs)
+    # update adata
+    if Xc.shape[0] > 0:
+        adata.obsm['Xc'] = Xc
+        adata.varm['cell_coeff'] = model.Wc_loc.numpy().T
+        
+    if Xg.shape[1] > 0:
+        adata.varm['Xg'] = Xg
+        adata.obsm['gene_coeff'] = model.Wg_loc.numpy()
+        
+    if model.intercept_mode == 'gene':
+        adata.varm['intercept'] = model.intercept.numpy().T
+    elif model.intercept_mode == 'cell':
+        adata.obsm['intercept'] = model.intercept.numpy()
+        
+    adata.varm['sigma'] = model.sigma.numpy().T
+        
+    # introduce sparse matrix for this
+    adata.layers['Psi'] = model.Psi.numpy()
+    adata.layers['Z_std'] = np.exp(model.Z_std.numpy())
+    
+    # losses
+    adata.uns['brie_losses'] = model.losses.numpy()
+    
+    if LRT_index is None or len(LRT_index)>1:
+        adata.varm['fdr'] = model.fdr
+        adata.varm['pval'] = model.pval
+        adata.varm['ELBO_gain'] = model.ELBO_gain
+    
+    # return BRIE model
+    return model

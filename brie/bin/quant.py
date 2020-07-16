@@ -4,15 +4,16 @@
 import os
 import sys
 import time
-import pysam
 import numpy as np
-import multiprocessing
 from optparse import OptionParser, OptionGroup
 
 import brie
+import tensorflow as tf
 
-def quant(h5ad_file, cell_file, gene_file=None, out_dir=None, nproc=1, 
-          min_counts=50, min_counts_uniq=10, min_iter=5000, max_iter=20000):
+def quant(in_file, cell_file=None, gene_file=None, out_file=None,
+          LRT_index=[], intercept=None, intercept_mode='gene', nproc=1,
+          min_counts=50, min_counts_uniq=10, min_cells_uniq=30, 
+          min_iter=5000, max_iter=20000):
     """CLI for quantifying splicing isoforms and detecting variable splicing 
     events associated with cell features
     
@@ -26,86 +27,105 @@ def quant(h5ad_file, cell_file, gene_file=None, out_dir=None, nproc=1,
         compressed with gzip
     """
     # Parameter check   
-    if out_dir is None:
-        print("No given out_dir, use the dir for h5ad file.")
-        out_dir = os.path.dirname(os.path.abspath(h5ad_file)) + "/brieQuant"
-    else:
-        out_dir = out_dir
-        
+    if out_file is None:
+        print("No given out_file, use the dir for input file.")
+        out_file = os.path.dirname(os.path.abspath(in_file)) + "/brieQuant.h5ad"
     try:
-        os.stat(os.path.abspath(out_dir))
+        os.stat(os.path.dirname(os.path.abspath(out_file)))
     except:
-        os.mkdir(os.path.abspath(out_dir))
+        os.mkdir(os.path.dirname(os.path.abspath(out_file)))
     
-    ## Load anndata
-    adata = brie.read_h5ad(h5ad_file)
-    print(adata)
+    ## Load input data into anndata
+    if in_file.endswith(".h5ad"):
+        adata = brie.read_h5ad(in_file)
+    if in_file.endswith(".npz"):
+        adata = brie.read_npz(in_file)
     
     ## Filter genes
     brie.pp.filter_genes(adata, min_counts=min_counts, 
-                         min_counts_uniq=min_counts_uniq)
+                         min_counts_uniq=min_counts_uniq, 
+                         min_cells_uniq=min_cells_uniq)
+    
+    print(adata)
     
     ## Match cell featutures
     if cell_file is not None:
-        dat_tmp = np.genfromtxt(gene_file, dtype="str", delimiter="\t")
+        if cell_file.endswith('csv') or cell_file.endswith('csv.gz'):
+            _delimeter = ","
+        else:
+            _delimeter = "\t"
+        dat_tmp = np.genfromtxt(cell_file, dtype="str", delimiter="\t")
         _idx = brie.match(adata.obs.index, dat_tmp[1:, 0])
-        print(np.mean(adata.obs.index == dat_tmp[_idx+1, 0]))
+        print("[quant] %.2f cells are matched with features" 
+              %np.mean(adata.obs.index == dat_tmp[_idx+1, 0]))
 
-        Xc = dat_tmp[_idx+1, :].astype(np.float32).transpose()
+        Xc = dat_tmp[_idx+1, :].astype(np.float32)
         Xc_ids = dat_tmp[0, 1:]
     else:
         Xc = None
     
     ## Match gene features
     if gene_file is not None:
-        dat_tmp = np.genfromtxt(gene_file, dtype="str", delimiter=",")
+        if gene_file.endswith('csv') or gene_file.endswith('csv.gz'):
+            _delimeter = ","
+        else:
+            _delimeter = "\t"
+            
+        dat_tmp = np.genfromtxt(gene_file, dtype="str", delimiter=_delimeter)
         _idx = brie.match(adata.var.index, dat_tmp[1:, 0])
-        print(np.mean(adata.var.index == dat_tmp[_idx+1, 0]))
+        print("[quant] %.2f genes are matched with features" 
+              %np.mean(adata.var.index == dat_tmp[_idx+1, 0]))
 
         Xg = dat_tmp[_idx+1, 1:].astype(np.float32)
         Xg_ids = dat_tmp[0, 1:]
     else:
         Xg = None
     
-    ## Test genes with each features
-    model = brie.tl.fitBRIE(adata, Xc=Xc, Xg=Xg, LRT_index=None, 
+    ## Test genes with each cell features
+    # model = brie.tl.fitBRIE(adata[:, :200])
+    model = brie.tl.fitBRIE(adata, Xc=Xc, Xg=Xg, LRT_index=LRT_index,
+                            intercept=intercept, intercept_mode=intercept_mode,
                             min_iter=min_iter, max_iter=max_iter)
-        
-    adata.write_h5ad(out_dir + "/brie_quant.h5ad")
     
-#     fid = open(out_dir + "/results_brie_detect.tsv", "w")
-#     for out_list in gene_table:
-#         fid.writelines("\t".join(out_list) + "\n")
-#     fid.close()
+    adata.write_h5ad(out_file)
         
     
 def main():
-    import warnings
-    warnings.filterwarnings('error')
+    # import warnings
+    # warnings.filterwarnings('error')
 
     # parse command line options
     parser = OptionParser()
-    parser.add_option("--h5adFile", "-a", dest="h5ad_file", default=None,
-        help="AnnData of read counts in h5ad format.")
+    parser.add_option("--inFile", "-i", dest="in_file", default=None,
+        help="Input read count matrices in AnnData h5ad or brie npz format.")
     parser.add_option("--cellFile", "-c", dest="cell_file", default=None,
         help=("File for cell features in tsv[.gz] with cell and feature ids."))
     parser.add_option("--geneFile", "-g", dest="gene_file", default=None, 
         help=("File for gene features in tsv[.gz] with gene and feature ids."))
-    parser.add_option("--out_dir", "-o", dest="out_dir", default=None, 
-        help="Full path of output directory [default: $h5adFile/brieDetect]")
-
+    parser.add_option("--out_file", "-o", dest="out_file", default=None, 
+        help="Full path of output file for annData in h5ad "
+             "[default: $inFile/brieQuant.h5ad]")
+    parser.add_option("--LRTindex", dest="LRT_index", default="None",
+        help="Index (0-based) of cell features to test with LRT: All, None "
+             "or comma separated integers [default: %default]")
+    parser.add_option("--interceptMode", dest="intercept_mode", default="None",
+        help="Intercept mode: gene, cell or None [default: %default]")
+    
     group = OptionGroup(parser, "Optional arguments")
-    group.add_option("--nproc", "-p", type="int", dest="nproc", default="4",
-        help="Number of subprocesses [default: %default]")
     group.add_option("--minCount", type="int", dest="min_count", default=50,
         help="Minimum total counts for fitltering genes [default: %default]")
-    group.add_option("--minUniqCount", type="int", dest="min_uniq_count", default=10,
-        help="Minimum unique counts for fitltering genes [default: %default]")
+    group.add_option("--minUniqCount", type="int", dest="min_uniq_count",
+        default=10, help="Minimum unique counts for fitltering genes "
+                         "[default: %default]")
+    group.add_option("--minCell", type="int", dest="min_cell", default=30,
+        help="Minimum number of cells with unique count for fitltering genes "
+             "[default: %default]")
     group.add_option("--minIter", type="int", dest="min_iter", default=5000,
         help="Minimum number of iterations [default: %default]")
     group.add_option("--maxIter", type="int", dest="max_iter", default=20000,
         help="Maximum number of iterations [default: %default]")
-
+    # group.add_option("--nproc", "-p", type="int", dest="npoc", default="-1",
+    #     help="Number of processes for computing [default: %default]")
 
     parser.add_option_group(group)
     
@@ -114,14 +134,30 @@ def main():
         print("Welcome to brie-quant in BRIE v%s!\n" %(brie.__version__))
         print("use -h or --help for help on argument.")
         sys.exit(1)
-    if options.h5ad_file == None:
+    if options.in_file == None:
         print("[BRIE2] Error: need --h5adFile for count matrices in annData.")
         sys.exit(1)
         
+    if options.LRT_index.upper() == "NONE":
+        LRT_index = []
+    elif options.LRT_index.upper() == "ALL":
+        LRT_index = None
+    else:
+        LRT_index = np.array(LRT_index.split(","), float).astype(int)
+        
+    intercept = None if options.intercept_mode.upper() in ["GENE", 'CELL'] else 0
+    
+    ## maximum number of threads (to fix)
+    # if options.nproc != -1:
+    #     tf.config.threading.set_inter_op_parallelism_threads(options.nproc)
+    
+    nproc = -1
+            
     # run detection function
-    quant(options.h5ad_file, options.cell_file, options.gene_file, 
-          options.out_dir, options.nproc, options.min_count, 
-          options.min_uniq_count, options.min_iter, options.max_iter)
+    quant(options.in_file, options.cell_file, options.gene_file, 
+          options.out_file, LRT_index, intercept, options.intercept_mode, 
+          nproc, options.min_count, options.min_uniq_count, options.min_cell,
+          options.min_iter, options.max_iter)
 
 if __name__ == "__main__":
     main()

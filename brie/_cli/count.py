@@ -10,7 +10,7 @@ def print_help(ctx, param, value):
 
 @click.command()
 # @click.pass_context
-@click.option("--GFF", "-a", required=True, default=None,
+@click.option("--gffFile", "-a", required=True, default=None,
               type=click.Path(exists=False),
               help="GTF/GFF3 file for gene and transcript annotation")
 @click.option("--samList", "-S", required=True, default=None,

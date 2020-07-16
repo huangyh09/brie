@@ -10,7 +10,7 @@ from optparse import OptionParser, OptionGroup
 
 from ..version import __version__
 from ..utils.io_utils import read_brieMM, read_gff
-from ..utils.count import get_count_matrix, SE_probability
+from ..utils.count import get_count_matrix, SE_effLen
 
 
 FID = None
@@ -115,10 +115,10 @@ def count(gff_file, samList_file, out_dir=None, nproc=1, add_premRNA=False):
         fid.writelines("%s\t%d\n" %(sam_table[i, 1], reads_table[i]))
     fid.close()
     
-    ## Generate isoform probability tensor
-    Prob_tensor = np.zeros((len(genes), 2, 3), dtype=np.float32)
+    ## Generate isoform effective length matrix
+    effLen_tensor = np.zeros((len(genes), 2, 3), dtype=np.float32)
     for ig, _gene in enumerate(genes):
-        Prob_tensor[ig, :, :] = SE_probability(_gene, rlen=76)
+        effLen_tensor[ig, :, :] = SE_effLen(_gene, rlen=76)
     
     ## Load read counts
     print("[BRIE2] loading reads for %d genes in %d sam files with %d cores..." 
@@ -150,7 +150,7 @@ def count(gff_file, samList_file, out_dir=None, nproc=1, add_premRNA=False):
     ## Save data into npz
     Rmat_dict = read_brieMM(out_dir + "/read_count.mtx")
     np.savez(out_dir + "/brie_count.npz", 
-             Rmat_dict=Rmat_dict, Prob_tensor=Prob_tensor, 
+             Rmat_dict=Rmat_dict, effLen_tensor=effLen_tensor, 
              cell_note=cell_table, gene_note=gene_table)
     
     

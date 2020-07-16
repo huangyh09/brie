@@ -10,9 +10,9 @@ import multiprocessing
 from optparse import OptionParser, OptionGroup
 
 # import pyximport; pyximport.install()
-from .utils.gtf_utils import load_genes
-from .utils.run_utils import set_info, map_data, save_data
-from .models.model_brie import brie_MH_Heuristic
+from ..utils.gtf_utils import load_genes
+from ..utils.run_utils import set_info, map_data, save_data
+from .model_brie import brie_MH_Heuristic
 
 PROCESSED = 0
 TOTAL_GENE = 0
