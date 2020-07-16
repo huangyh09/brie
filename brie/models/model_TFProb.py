@@ -70,11 +70,12 @@ class BRIE2():
     @property
     def Z_prior(self):
         """Predicted informative prior for Z"""
-        _zz_loc = tf.zeros((self.Nc, self.Ng)) + self.intercept
+        _zz_loc = tf.zeros((self.Nc, self.Ng))
         if self.Kc > 0 and self.Xc is not None:
             _zz_loc = tf.matmul(self.Xc, self.Wc_loc) 
         if self.Kg > 0 and self.Xg is not None:
             _zz_loc += tf.matmul(self.Wg_loc, self.Xg.T)
+        _zz_loc += self.intercept
         return tfd.Normal(_zz_loc, self.sigma)
     
         

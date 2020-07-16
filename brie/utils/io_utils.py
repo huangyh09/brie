@@ -9,12 +9,9 @@ from anndata import read_h5ad
 from .gtf_utils import load_genes as read_gff
 
 
-def read_npz(path):
-    """Read count data in the npz format into anaData
+def convert_to_annData(Rmat_dict, effLen_tensor, cell_note, gene_note):
+    """Convert matrices and annotation to annData
     """
-    brie_dat = np.load(path, allow_pickle=True)
-    
-    Rmat_dict = brie_dat['Rmat_dict'].item()
     Rmat = {}
     for _key in Rmat_dict:
         Rmat[_key] = Rmat_dict[_key].astype(np.float32)#.toarray()
@@ -27,16 +24,14 @@ def read_npz(path):
     layers['ambiguous'] = Rmat['3']
     layers['poorQual']  = Rmat['0']
     
-    obs = pd.DataFrame(brie_dat['cell_note'][1:, :],
-                       index = brie_dat['cell_note'][1:, 0],
-                       columns=brie_dat['cell_note'][0, :])
+    obs = pd.DataFrame(cell_note[1:, :],
+                       index = cell_note[1:, 0],
+                       columns = cell_note[0, :])
     
-    var = pd.DataFrame(brie_dat['gene_note'][1:, :],
-                       index = brie_dat['gene_note'][1:, 0],
-                       columns=brie_dat['gene_note'][0, :])
+    var = pd.DataFrame(gene_note[1:, :],
+                       index = gene_note[1:, 0],
+                       columns = gene_note[0, :])
     
-    
-    effLen_tensor = brie_dat['effLen_tensor']
     Prob_tensor = effLen_tensor / effLen_tensor.sum(2, keepdims=True)
     
     varm = {}
@@ -46,6 +41,19 @@ def read_npz(path):
     
     adata = anndata.AnnData(X=X, obs=obs, var=var, varm=varm,
                             layers=layers, dtype='float32')
+    return adata
+
+
+def read_npz(path):
+    """Read count data in the npz format into anaData
+    """
+    brie_dat = np.load(path, allow_pickle=True)
+    cell_note = brie_dat['cell_note']
+    gene_note = brie_dat['gene_note']
+    Rmat_dict = brie_dat['Rmat_dict'].item()
+    effLen_tensor = brie_dat['effLen_tensor']
+    
+    adata = convert_to_annData(Rmat_dict, effLen_tensor, cell_note, gene_note)
     return adata
 
 
@@ -81,9 +89,6 @@ def read_brieMM(path):
         
     return mat_dict
 
-
-def load_gene_info():
-    pass
 
 def fetch_gene_info(genes, fraglen=None, out_file=None):
     """

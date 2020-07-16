@@ -38,7 +38,8 @@ def fit_BRIE_matrix(data, Xc=None, Xg=None, effLen=None, intercept=None,
                 
     model = BRIE2(Nc=Xc.shape[0], Ng=Xg.shape[0],
                   Kc=Xc.shape[1], Kg=Xg.shape[1], 
-                  intercept=intercept, effLen=effLen)
+                  intercept=intercept, intercept_mode=intercept_mode, 
+                  effLen=effLen)
     
     losses = model.fit(data, Xc = Xc, Xg = Xg, **keyargs)
     
@@ -59,7 +60,7 @@ def fit_BRIE_matrix(data, Xc=None, Xg=None, effLen=None, intercept=None,
                            intercept = intercept, effLen=effLen)
         
         losses = model_test.fit(data, Xc = Xc_del, Xg = Xg, **keyargs)
-        ELBO_gain[:, ii] = model.loss_gene - model_test.loss_gene
+        ELBO_gain[:, ii] = model_test.loss_gene - model.loss_gene
             
     model.ELBO_gain = ELBO_gain # H1 vs NUll
     model.pval = chi2.sf(2 * ELBO_gain, df = 1)

@@ -9,7 +9,7 @@ import multiprocessing
 from optparse import OptionParser, OptionGroup
 
 from ..version import __version__
-from ..utils.io_utils import read_brieMM, read_gff
+from ..utils.io_utils import read_brieMM, read_gff, convert_to_annData
 from ..utils.count import get_count_matrix, SE_effLen
 
 
@@ -147,11 +147,19 @@ def count(gff_file, samList_file, out_dir=None, nproc=1, add_premRNA=False):
     FID.close()
     print("")
     
-    ## Save data into npz
+    ## Save data into h5ad
+    print("[BRIE2] save matrix into h5ad ...")
     Rmat_dict = read_brieMM(out_dir + "/read_count.mtx")
-    np.savez(out_dir + "/brie_count.npz", 
-             Rmat_dict=Rmat_dict, effLen_tensor=effLen_tensor, 
-             cell_note=cell_table, gene_note=gene_table)
+    adata = convert_to_annData(Rmat_dict=Rmat_dict, 
+                               effLen_tensor=effLen_tensor, 
+                               cell_note=np.array(cell_table, dtype='str'), 
+                               gene_note=np.array(gene_table, dtype='str'))
+    adata.write_h5ad(out_dir + "/brie_count.h5ad")
+    
+    ## Save data into npz
+    # np.savez(out_dir + "/brie_count.npz", 
+    #         Rmat_dict=Rmat_dict, effLen_tensor=effLen_tensor, 
+    #         cell_note=cell_table, gene_note=gene_table)
     
     
 def main():

@@ -29,7 +29,7 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
     # Parameter check   
     if out_file is None:
         print("No given out_file, use the dir for input file.")
-        out_file = os.path.dirname(os.path.abspath(in_file)) + "/brieQuant.h5ad"
+        out_file = os.path.dirname(os.path.abspath(in_file)) + "/brie_quant.h5ad"
     try:
         os.stat(os.path.dirname(os.path.abspath(out_file)))
     except:
@@ -54,12 +54,12 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
             _delimeter = ","
         else:
             _delimeter = "\t"
-        dat_tmp = np.genfromtxt(cell_file, dtype="str", delimiter="\t")
+        dat_tmp = np.genfromtxt(cell_file, dtype="str", delimiter=_delimeter)
         _idx = brie.match(adata.obs.index, dat_tmp[1:, 0])
-        print("[quant] %.2f cells are matched with features" 
-              %np.mean(adata.obs.index == dat_tmp[_idx+1, 0]))
+        print("[BRIE2] %.1f%% cells are matched with features" 
+              %(np.mean(adata.obs.index == dat_tmp[_idx+1, 0]) * 100))
 
-        Xc = dat_tmp[_idx+1, :].astype(np.float32)
+        Xc = dat_tmp[_idx+1, 1:].astype(np.float32)
         Xc_ids = dat_tmp[0, 1:]
     else:
         Xc = None
@@ -73,14 +73,14 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
             
         dat_tmp = np.genfromtxt(gene_file, dtype="str", delimiter=_delimeter)
         _idx = brie.match(adata.var.index, dat_tmp[1:, 0])
-        print("[quant] %.2f genes are matched with features" 
-              %np.mean(adata.var.index == dat_tmp[_idx+1, 0]))
+        print("[BRIE2] %.1f%% genes are matched with features" 
+              %(np.mean(adata.var.index == dat_tmp[_idx+1, 0]) * 100))
 
         Xg = dat_tmp[_idx+1, 1:].astype(np.float32)
         Xg_ids = dat_tmp[0, 1:]
     else:
         Xg = None
-    
+        
     ## Test genes with each cell features
     # model = brie.tl.fitBRIE(adata[:, :200])
     model = brie.tl.fitBRIE(adata, Xc=Xc, Xg=Xg, LRT_index=LRT_index,
@@ -104,7 +104,7 @@ def main():
         help=("File for gene features in tsv[.gz] with gene and feature ids."))
     parser.add_option("--out_file", "-o", dest="out_file", default=None, 
         help="Full path of output file for annData in h5ad "
-             "[default: $inFile/brieQuant.h5ad]")
+             "[default: $inFile/brie_quant.h5ad]")
     parser.add_option("--LRTindex", dest="LRT_index", default="None",
         help="Index (0-based) of cell features to test with LRT: All, None "
              "or comma separated integers [default: %default]")
@@ -143,7 +143,7 @@ def main():
     elif options.LRT_index.upper() == "ALL":
         LRT_index = None
     else:
-        LRT_index = np.array(LRT_index.split(","), float).astype(int)
+        LRT_index = np.array(options.LRT_index.split(","), float).astype(int)
         
     intercept = None if options.intercept_mode.upper() in ["GENE", 'CELL'] else 0
     
