@@ -36,7 +36,7 @@ class BRIE2():
         elif intercept_mode == 'cell':
             _intercept_shape = (Nc, 1)
         else:
-            print("Error: intercept_mode only supports gene or cell")
+            print("[BIRE2] Error: intercept_mode only supports gene or cell")
             
         if intercept is None:
             self.intercept = tf.Variable(tf.random.normal(_intercept_shape), 
@@ -201,7 +201,7 @@ class BRIE2():
         self.losses = losses
         
         if verbose:
-            print("BRIE2 model fit with %d steps in %.2f min, loss: %.2f" %(
+            print("[BRIE2] model fit with %d steps in %.2f min, loss: %.2f" %(
                 n_iter, (time.time() - start_time) / 60, 
                 tf.reduce_sum(self.loss_gene)))
             

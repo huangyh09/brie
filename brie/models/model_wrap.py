@@ -10,7 +10,69 @@ from ..settings import verbosity
 from scipy.stats import chi2
 from scipy.sparse import csc_matrix
 from statsmodels.stats.multitest import multipletests
+
+
+class BRIE_RV():
+    """Return value object for BRIE2 model
+    """
+    def __init__(self, model):
+        """Initialization with BRIE2 model
+        """
+        self.Nc = model.Nc
+        self.Ng = model.Ng
+        self.Kc = model.Kc
+        self.Kg = model.Kg
+        self.shape = (self.Nc, self.Ng)
         
+        self.Xc = model.Xc
+        self.Xg = model.Xg
+        self.sigma = model.sigma.numpy()
+        self.intercept = model.intercept.numpy()
+        self.cell_coeff = model.Wc_loc.numpy()
+        self.gene_coeff = model.Wg_loc.numpy()
+        
+        self.Psi = model.Psi.numpy()
+        self.Z_std = model.Z_std.numpy()
+        self.losses = model.losses.numpy()
+        self.intercept_mode = model.intercept_mode
+        
+        
+    def __str__(self):
+        return "BRIE2 results for %d cells and %d genes" %(self.Nc, self.Ng)
+        
+    def concate(self, new_RV, axis=1):
+        """
+        """
+        if axis != 1:
+            print("Warning: only suppoting gene level concate!")
+            return None
+        
+        self.Ng += new_RV.Ng
+        self.losses = np.append(self.losses, new_RV.losses)
+        
+        self.sigma = np.append(self.sigma, new_RV.sigma, axis=1)
+        self.intercept = np.append(self.intercept, new_RV.intercept, axis=1)
+        self.cell_coeff = np.append(self.cell_coeff, new_RV.cell_coeff, axis=1)
+        self.Psi = np.append(self.Psi, new_RV.Psi, axis=1)
+        self.Z_std = np.append(self.Z_std, new_RV.Psi, axis=1)
+        
+        try:
+            self.fdr = np.append(self.fdr, new_RV.fdr, axis=0)
+            self.pval = np.append(self.pval, new_RV.pval, axis=0)
+            self.ELBO_gain = np.append(self.ELBO_gain, new_RV.ELBO_gain, axis=0)
+        except:
+            pass
+        
+
+def concate(BRIE_RV_list):
+    """Concate a list of BRIE results
+    """
+    res_merge = BRIE_RV_list[0]
+    for _res in BRIE_RV_list[1:]:
+        res_merge.concate(_res)
+        
+    return res_merge
+
 
 def fit_BRIE_matrix(data, Xc=None, Xg=None, effLen=None, intercept=None, 
                     intercept_mode='gene', LRT_index=None, **keyargs):
@@ -32,28 +94,30 @@ def fit_BRIE_matrix(data, Xc=None, Xg=None, effLen=None, intercept=None,
     BRIE2 model object.
     """
     if Xc is None:
-        Xc = np.ones((_count_layers[0].shape[0], 0), np.float32)
+        Xc = np.ones((data[0].shape[0], 0), np.float32)
     if Xg is None:
-        Xg = np.ones((_count_layers[0].shape[1], 0), np.float32)
+        Xg = np.ones((data[0].shape[1], 0), np.float32)
                 
     model = BRIE2(Nc=Xc.shape[0], Ng=Xg.shape[0],
                   Kc=Xc.shape[1], Kg=Xg.shape[1], 
-                  intercept=intercept, intercept_mode=intercept_mode, 
-                  effLen=effLen)
+                  effLen=effLen, intercept=intercept,
+                  intercept_mode=intercept_mode)
     
     losses = model.fit(data, Xc = Xc, Xg = Xg, **keyargs)
+    
+    brie_results = BRIE_RV(model)
     
     ## Perform ELBO gain in the analogy to likelihood ratio
     if LRT_index is None:
         LRT_index = range(Xc.shape[1])
         
     if len(LRT_index) == 0:
-        return model
+        return brie_results
         
     ELBO_gain = np.zeros((data[0].shape[1], len(LRT_index)), dtype=np.float32)
     for ii, idx in enumerate(LRT_index):
         if verbosity == 3:
-            print("Fitting null model without feature %d" %(idx))
+            print("[BRIE2] fitting null model without feature %d" %(idx))
         Xc_del = np.delete(Xc, idx, 1)
         model_test = BRIE2(Nc=Xc_del.shape[0], Ng=data[0].shape[1],
                            Kc=Xc_del.shape[1], Kg=Xg.shape[1],
@@ -62,22 +126,22 @@ def fit_BRIE_matrix(data, Xc=None, Xg=None, effLen=None, intercept=None,
         losses = model_test.fit(data, Xc = Xc_del, Xg = Xg, **keyargs)
         ELBO_gain[:, ii] = model_test.loss_gene - model.loss_gene
             
-    model.ELBO_gain = ELBO_gain # H1 vs NUll
-    model.pval = chi2.sf(2 * ELBO_gain, df = 1)
+    brie_results.ELBO_gain = ELBO_gain # H1 vs NUll
+    brie_results.pval = chi2.sf(2 * ELBO_gain, df = 1)
     # model_real.pval_log10 = chi2.logsf(-2 * LR, df = 1) * np.log10(np.exp(1))
     
     fdr = np.zeros(ELBO_gain.shape)
     for i in range(fdr.shape[1]):
-        fdr[:, i] = multipletests(model.pval[:, i], method="fdr_bh")[1]
-    model.fdr = fdr
+        fdr[:, i] = multipletests(brie_results.pval[:, i], method="fdr_bh")[1]
+    brie_results.fdr = fdr
     
     # return BRIE model
-    return model
+    return brie_results
 
 
 def fitBRIE(adata, Xc=None, Xg=None, intercept=None, intercept_mode='gene', 
             LRT_index=[], layer_keys=['isoform1', 'isoform2', 'ambiguous'], 
-            **keyargs):
+            batch_size=500000, **keyargs):
     """Fit a BRIE model from AnnData with cell and/or gene features
     
     Parameters
@@ -106,46 +170,65 @@ def fitBRIE(adata, Xc=None, Xg=None, intercept=None, intercept_mode='gene',
         `Psi` and `Psi_var` to `adata.layers`.
     """
     #TODO: support sparse matrix!!
-    _count_layers = [adata.layers[_key].toarray() for _key in layer_keys]
-    
     if Xc is None:
-        Xc = np.ones((_count_layers[0].shape[0], 0), np.float32)
+        Xc = np.ones((adata.shape[0], 0), np.float32)
     if Xg is None:
-        Xg = np.ones((_count_layers[0].shape[1], 0), np.float32)
+        Xg = np.ones((adata.shape[1], 0), np.float32)
+        
+    if (Xg is None or Xg.shape[1] == 0) and intercept_mode == 'gene':
+        _n_gene = int(np.ceil(batch_size / adata.shape[0]))
+        _n_batch = int(np.ceil(adata.shape[1] / _n_gene))
+        res_list = []
+        for i in range(_n_batch):
+            _idx = range(_n_gene * i, min(_n_gene * (i+1), adata.shape[1]))
+            _count_layers = [adata.layers[_key][:, _idx].toarray() for _key in layer_keys]
+            _effLen = adata.varm['effLen'][_idx, :] if 'effLen' in adata.varm else None
+
+            _ResVal = fit_BRIE_matrix(
+                _count_layers, Xc=Xc, Xg=Xg[_idx, :], effLen=_effLen, 
+                intercept=intercept, intercept_mode=intercept_mode, 
+                LRT_index=LRT_index, **keyargs)
             
-    _effLen = adata.varm['effLen'] if 'effLen' in adata.varm else None
-    
-    model = fit_BRIE_matrix(_count_layers, Xc=Xc, Xg=Xg, intercept=intercept,
-                            intercept_mode=intercept_mode, LRT_index=LRT_index, 
-                            effLen=_effLen, **keyargs)
+            res_list.append(_ResVal)
+            print("[BRIE2] %d out %d genes done" 
+                  %(min(_n_gene * (i + 1), adata.shape[1]), adata.shape[1]))
+            
+        ResVal = concate(res_list)
+    else:
+        _count_layers = [adata.layers[_key].toarray() for _key in layer_keys]
+        _effLen = adata.varm['effLen'] if 'effLen' in adata.varm else None
+
+        ResVal = fit_BRIE_matrix(
+            _count_layers, Xc=Xc, Xg=Xg, effLen=_effLen, intercept=intercept, 
+            intercept_mode=intercept_mode, LRT_index=LRT_index, **keyargs)
     
     # update adata
     if Xc.shape[0] > 0:
         adata.obsm['Xc'] = Xc
-        adata.varm['cell_coeff'] = model.Wc_loc.numpy().T
+        adata.varm['cell_coeff'] = ResVal.cell_coeff.T
         
     if Xg.shape[1] > 0:
         adata.varm['Xg'] = Xg
-        adata.obsm['gene_coeff'] = model.Wg_loc.numpy()
+        adata.obsm['gene_coeff'] = ResVal.gene_coeff
         
-    if model.intercept_mode == 'gene':
-        adata.varm['intercept'] = model.intercept.numpy().T
-    elif model.intercept_mode == 'cell':
-        adata.obsm['intercept'] = model.intercept.numpy()
+    if ResVal.intercept_mode == 'gene':
+        adata.varm['intercept'] = ResVal.intercept.T
+    elif ResVal.intercept_mode == 'cell':
+        adata.obsm['intercept'] = ResVal.intercept
         
-    adata.varm['sigma'] = model.sigma.numpy().T
+    adata.varm['sigma'] = ResVal.sigma.T
         
     # introduce sparse matrix for this
-    adata.layers['Psi'] = model.Psi.numpy()
-    adata.layers['Z_std'] = np.exp(model.Z_std.numpy())
+    adata.layers['Psi'] = ResVal.Psi
+    adata.layers['Z_std'] = np.exp(ResVal.Z_std)
     
     # losses
-    adata.uns['brie_losses'] = model.losses.numpy()
+    adata.uns['brie_losses'] = ResVal.losses
     
     if LRT_index is None or len(LRT_index)>1:
-        adata.varm['fdr'] = model.fdr
-        adata.varm['pval'] = model.pval
-        adata.varm['ELBO_gain'] = model.ELBO_gain
+        adata.varm['fdr'] = ResVal.fdr
+        adata.varm['pval'] = ResVal.pval
+        adata.varm['ELBO_gain'] = ResVal.ELBO_gain
     
-    # return BRIE model
-    return model
+    # return BRIE model result value
+    return ResVal

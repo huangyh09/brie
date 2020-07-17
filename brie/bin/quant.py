@@ -13,7 +13,7 @@ import tensorflow as tf
 def quant(in_file, cell_file=None, gene_file=None, out_file=None,
           LRT_index=[], intercept=None, intercept_mode='gene', nproc=1,
           min_counts=50, min_counts_uniq=10, min_cells_uniq=30, 
-          min_iter=5000, max_iter=20000):
+          min_iter=5000, max_iter=20000, batch_size=500000):
     """CLI for quantifying splicing isoforms and detecting variable splicing 
     events associated with cell features
     
@@ -41,13 +41,6 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
     if in_file.endswith(".npz"):
         adata = brie.read_npz(in_file)
     
-    ## Filter genes
-    brie.pp.filter_genes(adata, min_counts=min_counts, 
-                         min_counts_uniq=min_counts_uniq, 
-                         min_cells_uniq=min_cells_uniq)
-    
-    print(adata)
-    
     ## Match cell featutures
     if cell_file is not None:
         if cell_file.endswith('csv') or cell_file.endswith('csv.gz'):
@@ -55,12 +48,17 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
         else:
             _delimeter = "\t"
         dat_tmp = np.genfromtxt(cell_file, dtype="str", delimiter=_delimeter)
-        _idx = brie.match(adata.obs.index, dat_tmp[1:, 0])
+        _idx = brie.match(adata.obs.index, dat_tmp[1:, 0]).astype(float)
+        mm1 = _idx == _idx
+        mm2 = _idx[mm1].astype(int)
+        
         print("[BRIE2] %.1f%% cells are matched with features" 
-              %(np.mean(adata.obs.index == dat_tmp[_idx+1, 0]) * 100))
+              %(np.mean(mm1) * 100))
 
-        Xc = dat_tmp[_idx+1, 1:].astype(np.float32)
+        Xc = dat_tmp[mm2+1, 1:].astype(np.float32)
         Xc_ids = dat_tmp[0, 1:]
+        
+        adata = adata[mm1, :]
     else:
         Xc = None
     
@@ -72,20 +70,32 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
             _delimeter = "\t"
             
         dat_tmp = np.genfromtxt(gene_file, dtype="str", delimiter=_delimeter)
-        _idx = brie.match(adata.var.index, dat_tmp[1:, 0])
+        _idx = brie.match(adata.var.index, dat_tmp[1:, 0]).astype(float)
+        mm1 = _idx == _idx
+        mm2 = _idx[mm1].astype(int)
+        
         print("[BRIE2] %.1f%% genes are matched with features" 
-              %(np.mean(adata.var.index == dat_tmp[_idx+1, 0]) * 100))
+              %(np.mean(mm1) * 100))
 
-        Xg = dat_tmp[_idx+1, 1:].astype(np.float32)
+        Xg = dat_tmp[mm2+1, 1:].astype(np.float32)
         Xg_ids = dat_tmp[0, 1:]
+        
+        adata = adata[:, mm1]
     else:
         Xg = None
+        
+    ## Filter genes
+    adata = brie.pp.filter_genes(adata, min_counts=min_counts, 
+                         min_counts_uniq=min_counts_uniq, 
+                         min_cells_uniq=min_cells_uniq, copy=True)    
+    print(adata)
         
     ## Test genes with each cell features
     # model = brie.tl.fitBRIE(adata[:, :200])
     model = brie.tl.fitBRIE(adata, Xc=Xc, Xg=Xg, LRT_index=LRT_index,
                             intercept=intercept, intercept_mode=intercept_mode,
-                            min_iter=min_iter, max_iter=max_iter)
+                            min_iter=min_iter, max_iter=max_iter, 
+                            batch_size=batch_size)
     
     adata.write_h5ad(out_file)
         
@@ -124,6 +134,8 @@ def main():
         help="Minimum number of iterations [default: %default]")
     group.add_option("--maxIter", type="int", dest="max_iter", default=20000,
         help="Maximum number of iterations [default: %default]")
+    group.add_option("--batchSize", type=int, dest="batch_size", default=500000, 
+        help="Element size per batch: n_gene * total cell [default: %default]")
     # group.add_option("--nproc", "-p", type="int", dest="npoc", default="-1",
     #     help="Number of processes for computing [default: %default]")
 
@@ -157,7 +169,7 @@ def main():
     quant(options.in_file, options.cell_file, options.gene_file, 
           options.out_file, LRT_index, intercept, options.intercept_mode, 
           nproc, options.min_count, options.min_uniq_count, options.min_cell,
-          options.min_iter, options.max_iter)
+          options.min_iter, options.max_iter, options.batch_size)
 
 if __name__ == "__main__":
     main()
