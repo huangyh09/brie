@@ -56,12 +56,10 @@ class BRIE_RV():
         self.Psi = np.append(self.Psi, new_RV.Psi, axis=1)
         self.Z_std = np.append(self.Z_std, new_RV.Psi, axis=1)
         
-        try:
+        if hasattr(new_RV, 'ELBO_gain'):
             self.fdr = np.append(self.fdr, new_RV.fdr, axis=0)
             self.pval = np.append(self.pval, new_RV.pval, axis=0)
             self.ELBO_gain = np.append(self.ELBO_gain, new_RV.ELBO_gain, axis=0)
-        except:
-            pass
         
 
 def concate(BRIE_RV_list):
@@ -224,8 +222,8 @@ def fitBRIE(adata, Xc=None, Xg=None, intercept=None, intercept_mode='gene',
     
     # losses
     adata.uns['brie_losses'] = ResVal.losses
-    
-    if LRT_index is None or len(LRT_index)>1:
+        
+    if LRT_index is None or len(LRT_index) >= 1:
         adata.varm['fdr'] = ResVal.fdr
         adata.varm['pval'] = ResVal.pval
         adata.varm['ELBO_gain'] = ResVal.ELBO_gain
