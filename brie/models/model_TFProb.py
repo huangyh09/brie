@@ -79,7 +79,7 @@ class BRIE2():
         return tfd.Normal(_zz_loc, self.sigma)
     
         
-    def logLik_MC(self, count_layers, effLen=None, mode="ELBO", size=10):
+    def logLik_MC(self, count_layers, target="ELBO", size=10):
         """Get marginal logLikelihood on variational or prior distribution
         with Monte Carlo sampling
         """
@@ -102,7 +102,7 @@ class BRIE2():
         
         
         ## Build-in re-parametrized: Gaussian is FULLY_REPARAMETERIZED
-        if mode == "marginLik":
+        if target == "marginLik":
             _Z = self.Z_prior.sample(size)      # (size, Nc, Ng)
         else:
             _Z = self.Z.sample(size)            # (size, Nc, Ng)
@@ -134,7 +134,7 @@ class BRIE2():
                 _logLik_S += _re1(count_layers[2]) * phi_log[:, :, :, 2]
                 
         ## return the mean over the sampling
-        if mode == "marginLik":
+        if target == "marginLik":
             return tfp.math.reduce_logmeanexp(_logLik_S, axis=0)
         else:
             return tf.reduce_mean(_logLik_S, axis=0)
@@ -150,13 +150,13 @@ class BRIE2():
         ## target function
         if target == "marginLik":
             return -tf.reduce_sum(
-                self.logLik_MC(count_layers, mode="marginLik", **kwargs), 
+                self.logLik_MC(count_layers, target="marginLik", **kwargs), 
                 axis=axis)
         else:
             return (
                 tf.reduce_sum(tfd.kl_divergence(self.Z, self.Z_prior), 
                               axis=axis) -
-                tf.reduce_sum(self.logLik_MC(count_layers, mode="ELBO", 
+                tf.reduce_sum(self.logLik_MC(count_layers, target="ELBO", 
                                              **kwargs), axis=axis))
 
     
@@ -195,8 +195,7 @@ class BRIE2():
             ], axis=0)
             
         
-        self.loss_gene = self.get_loss(count_layers, target, axis=0, 
-                                       size=1000, **kwargs)
+        self.loss_gene = self.get_loss(count_layers, target, axis=0, size=1000)
         
         self.losses = losses
         
