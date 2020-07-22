@@ -118,7 +118,7 @@ class BRIE2():
             _Z = tf.expand_dims(_Z, 3)
             Psi_logs = tf.concat(
                 (tf.math.log_sigmoid(_Z), 
-                 -tf.math.log_sigmoid(_Z), 
+                 tf.math.log_sigmoid(0 - _Z), 
                  tf.zeros(_Z.shape)), axis=3)
     
             effLen = np.expand_dims(self.effLen, (0, 1)) # (1, 1, Ng, 3 * 2)
