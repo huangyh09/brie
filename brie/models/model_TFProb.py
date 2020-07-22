@@ -31,12 +31,13 @@ class BRIE2():
         self.Wc_loc = tf.Variable(tf.random.normal([Kc, Ng]), name='Wc_loc')
         self.Wg_loc = tf.Variable(tf.random.normal([Nc, Kg]), name='Wg_loc')
         
-        if intercept_mode == 'gene':
+        if intercept_mode.upper() == 'GENE':
             _intercept_shape = (1, Ng)
-        elif intercept_mode == 'cell':
+        elif intercept_mode.upper() == 'CELL':
             _intercept_shape = (Nc, 1)
         else:
-            print("[BIRE2] Error: intercept_mode only supports gene or cell")
+            # print("[BIRE2] Error: intercept_mode only supports gene or cell")
+            _intercept_shape = (1, Ng)
             
         if intercept is None:
             self.intercept = tf.Variable(tf.random.normal(_intercept_shape), 

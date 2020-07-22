@@ -61,6 +61,11 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
         adata = adata[mm1, :]
     else:
         Xc = None
+        
+    ## Filter genes
+    adata = brie.pp.filter_genes(adata, min_counts=min_counts,
+                                 min_counts_uniq=min_counts_uniq, 
+                                 min_cells_uniq=min_cells_uniq, copy=True)
     
     ## Match gene features
     if gene_file is not None:
@@ -83,11 +88,7 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
         adata = adata[:, mm1]
     else:
         Xg = None
-        
-    ## Filter genes
-    adata = brie.pp.filter_genes(adata, min_counts=min_counts, 
-                         min_counts_uniq=min_counts_uniq, 
-                         min_cells_uniq=min_cells_uniq, copy=True)    
+    
     print(adata)
         
     ## Test genes with each cell features
