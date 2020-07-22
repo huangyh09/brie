@@ -26,6 +26,10 @@ def counts(adata, genes, size='Psi', color=None, gene_key='index',
     import pandas as pd
     import seaborn as sns
     
+    # support a single gene input
+    if type(genes) == str:
+        genes = [genes]
+            
     if ncol is None:
         ncol = min(4, len(genes))
     if nrow is None:
@@ -45,7 +49,12 @@ def counts(adata, genes, size='Psi', color=None, gene_key='index',
     
     for i in range(len(genes)):
         plt.subplot(nrow, ncol, i + 1)
-        adata_use = adata[:, adata.var[gene_key] == genes[i]]
+        if gene_key is None or gene_key == 'index':
+            idx = adata.var.index == genes[i]
+        else:
+            idx = adata.var[gene_key] == genes[i]
+            
+        adata_use = adata[:, idx]
         
         x_mat = adata_use.layers[layers[0]]
         y_mat = adata_use.layers[layers[1]]
@@ -65,10 +74,12 @@ def counts(adata, genes, size='Psi', color=None, gene_key='index',
 
         plt.xlabel("n_reads: %s" %(layers[0]))
         plt.ylabel("n_reads: %s" %(layers[1]))
-        _title = adata_use.var[show_key][0]
+        if show_key is None or show_key == 'index':
+            _title = adata_use.var.index[0]
+        else:
+            _title = adata_use.var[show_key][0]
         if add_val in adata_use.varm:
             _title += "; %s: %s" %(add_val, adata_use.varm[add_val][0, 0])
-        plt.title(list(adata_use.var[show_key])[0])
         plt.title(_title)
         #print(-res_md.pval_log10[sig_idx[i], 0])
 
