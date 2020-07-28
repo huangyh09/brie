@@ -1,55 +1,65 @@
 ## simulator for BRIE2
 
 import numpy as np
-import tensorflow as tf
-import tensorflow_probability as tfp
+from scipy.special import expit
 from tensorflow_probability import distributions as tfd
 
-def simulator(model, adata):
+def simulator(adata, Psi=None, effLen=None, mode="posterior",
+              layer_keys=['isoform1', 'isoform2', 'ambiguous']):
     """Simulate read counts for BRIE model
     """
-    # generating Psi
-#     _Psi = tf.sigmoid(model.Z_prior.sample()).numpy()
-#     _Psi_tensor = np.expand_dims(_Psi, 2), 
-#     Prob_iso = np.zeros((n, 3, 2))
+    # Check Psi
+    if Psi is None and "Psi" not in adata.layers:
+        print("Error: no Psi available in adata.layers.")
+        exit()
+    elif Psi is None:
+        if mode == "posterior":
+            Psi = adata.layers['Psi'].copy()
+        else:
+            Psi = np.zeros((adata.shape), np.float32)
+            if 'Xc' in adata.obsm and adata.obsm['Xc'].shape[1] > 0:
+                Psi += np.dot(adata.obsm['Xc'], adata.varm['cell_coeff'].T)
+            if 'Xg' in adata.varm and adata.varm['Xg'].shape[1] > 0:
+                Psi += np.dot(adata.obsm['gene_coeff'], adata.varm['Xg'].T)
+            if 'intercept' in adata.varm and adata.varm['intercept'].shape[1] > 0:
+                Psi += adata.varm['intercept'].T
+            if 'intercept' in adata.obsm and adata.obsm['intercept'].shape[1] > 0:
+                Psi += adata.obsm['intercept']
+            Psi[Psi > 9] = 9
+            Psi[Psi < -9] = -9
+            Psi = expit(Psi)
+    adata.layers['Psi_sim'] = Psi
 
-    layer_keys=['isoform1', 'isoform2', 'ambiguous']
+    # Check effective length for isoform specific positions
+    if effLen is None and 'effLen' not in adata.varm:
+        print("Error: no effLen available in adata.varm.")
+        exit()
+    elif effLen is None:
+        effLen = adata.varm['effLen'][:, [0, 4, 5]]
+    else:
+        effLen = effLen[:, [0, 4, 5]].copy()
+    effLen = np.expand_dims(effLen, 0)
     
+    Psi_tensor = np.concatenate((
+        np.expand_dims(Psi, 2), 
+        1-np.expand_dims(Psi, 2), 
+        np.ones((Psi.shape[0], Psi.shape[1], 1), np.float32)
+    ), axis=2)
+    
+    Phi = Psi_tensor * effLen
+    Phi = Phi / np.sum(Phi, axis=2, keepdims=True)
+
     adata = adata.copy()
-    total_counts = (adata.layers[layer_keys[0]] + 
-                    adata.layers[layer_keys[1]] + 
-                    adata.layers[layer_keys[2]]).transpose()
+    total_counts = np.zeros(adata.shape, np.float32)
+    for i in range(len(layer_keys)):
+        total_counts += adata.layers[layer_keys[i]]
         
-    _Psi = tf.sigmoid(model.Z_prior.sample()).numpy()
-    _binom = tfd.Binomial(total_counts, probs=_Psi) ## accounting for tranL
-    N1 = _binom.sample().numpy()
-    N2 = total_counts - N1
-    
-    _binom = tfd.Binomial(N1, probs=model.p_ambiguous[:, :1])
-    N13 = _binom.sample().numpy()
-    N11 = N1 - N13
-    
-    _binom = tfd.Binomial(N2, probs=model.p_ambiguous[:, 1:])
-    N23 = _binom.sample().numpy()
-    N22 = N2 - N23
-    
-    adata.layers[layer_keys[0]] = N11.transpose()
-    adata.layers[layer_keys[1]] = N22.transpose()
-    adata.layers[layer_keys[2]] = (N13 + N23).transpose()
+    model = tfd.Multinomial(total_counts, probs=Phi)
+    count_sim = model.sample().numpy()
         
-    # update adata
-    if model.Xc is not None and model.Xc.shape[0] > 0:
-        adata.obsm['Xc_sim'] = model.Xc.transpose()
-        adata.varm['cell_coeff_sim'] = model.Wc_loc.numpy()
-        
-    if model.Xg is not None and model.Xg.shape[1] > 0:
-        adata.varm['Xg_sim'] = Xg
-        adata.obsm['gene_coeff_sim'] = model.Wg_loc.numpy().transpose()
-        
-    adata.varm['intercept_sim'] = model.intercept.numpy()
-    adata.varm['sigma_sim'] = model.sigma.numpy()
-        
-    adata.layers['Psi_sim'] = _Psi.transpose()
+    adata.layers[layer_keys[0]] = count_sim[:, :, 0]
+    adata.layers[layer_keys[1]] = count_sim[:, :, 1]
+    adata.layers[layer_keys[2]] = count_sim[:, :, 2]
     
     return adata
     

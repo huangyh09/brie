@@ -2,6 +2,8 @@
 
 import time
 import numpy as np
+from scipy.sparse import issparse
+
 import tensorflow as tf
 import tensorflow_probability as tfp
 from tensorflow_probability import distributions as tfd
@@ -84,7 +86,10 @@ class BRIE2():
         """Get marginal logLikelihood on variational or prior distribution
         with Monte Carlo sampling
         """
-        # TODO: introduce sparse tensor here
+        # TODO: introduce sparse tensor in new development
+        for i in range(len(count_layers)):
+            if issparse(count_layers[i]):
+                count_layers[i] = count_layers[i].toarray()
         
         # Reshape the tensors
         def _re1(x):

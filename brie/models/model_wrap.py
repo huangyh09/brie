@@ -5,6 +5,7 @@ import numpy as np
 import concurrent
 import multiprocessing
 from .model_TFProb import BRIE2
+from .base_model import get_CI95
 from ..settings import verbosity
 
 from scipy.stats import chi2
@@ -179,7 +180,7 @@ def fitBRIE(adata, Xc=None, Xg=None, intercept=None, intercept_mode='gene',
         res_list = []
         for i in range(_n_batch):
             _idx = range(_n_gene * i, min(_n_gene * (i+1), adata.shape[1]))
-            _count_layers = [adata.layers[_key][:, _idx].toarray() for _key in layer_keys]
+            _count_layers = [adata.layers[_key][:, _idx] for _key in layer_keys]
             _effLen = adata.varm['effLen'][_idx, :] if 'effLen' in adata.varm else None
 
             _ResVal = fit_BRIE_matrix(
@@ -193,7 +194,7 @@ def fitBRIE(adata, Xc=None, Xg=None, intercept=None, intercept_mode='gene',
             
         ResVal = concate(res_list)
     else:
-        _count_layers = [adata.layers[_key].toarray() for _key in layer_keys]
+        _count_layers = [adata.layers[_key] for _key in layer_keys]
         _effLen = adata.varm['effLen'] if 'effLen' in adata.varm else None
 
         ResVal = fit_BRIE_matrix(
@@ -216,9 +217,11 @@ def fitBRIE(adata, Xc=None, Xg=None, intercept=None, intercept_mode='gene',
         
     adata.varm['sigma'] = ResVal.sigma.T
         
-    # introduce sparse matrix for this
+    # TODO: introduce sparse matrix for this
     adata.layers['Psi'] = ResVal.Psi
     adata.layers['Z_std'] = np.exp(ResVal.Z_std)
+    Psi_low, Psi_high = get_CI95(adata.layers['Psi'], adata.layers['Z_std'] )
+    adata.layers['Psi_95CI'] = Psi_high - Psi_low
     
     # losses
     adata.uns['brie_losses'] = ResVal.losses
