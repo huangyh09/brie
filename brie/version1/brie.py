@@ -148,14 +148,13 @@ def main():
 
     two_isoform = True
     if options.factor_file == None:
-        feature_all = np.ones((len(tran_ids), 6))
-        feature_ids = ["random%d" %i for i in range(1,6)] + ["intercept"]
+        feature_all = np.zeros((len(tran_ids), 1))
+        feature_ids = ["zero"]
         if two_isoform: 
             idxF = np.arange(0, len(tran_ids), 2)
             feature_all[idxF+1,:] = None
         else:
             idxF = np.arange(0, len(tran_ids))
-        feature_all[idxF,:-1] = np.random.rand(len(idxF), 5)
     else:
         feature_all, feature_ids, idxF = map_data(options.factor_file,
             tran_ids, False) #options.feature_log
