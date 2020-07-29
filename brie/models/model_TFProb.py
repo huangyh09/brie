@@ -201,7 +201,10 @@ class BRIE2():
             ], axis=0)
             
         
-        self.loss_gene = self.get_loss(count_layers, target, axis=0, size=1000)
+        self.loss_gene = self.get_loss(count_layers, target, axis=0).numpy()
+        for it in range(99):
+            self.loss_gene += self.get_loss(count_layers, target, axis=0).numpy()
+        self.loss_gene = tf.constant(self.loss_gene / 100)
         
         self.losses = losses
         

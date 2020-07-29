@@ -95,7 +95,7 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
     # model = brie.tl.fitBRIE(adata[:, :200])
     model = brie.tl.fitBRIE(adata, Xc=Xc, Xg=Xg, LRT_index=LRT_index,
                             intercept=intercept, intercept_mode=intercept_mode,
-                            min_iter=min_iter, max_iter=max_iter, 
+                            min_iter=min_iter, max_iter=max_iter,
                             batch_size=batch_size)
     
     adata.write_h5ad(out_file)

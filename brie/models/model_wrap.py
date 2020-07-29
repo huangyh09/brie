@@ -174,7 +174,7 @@ def fitBRIE(adata, Xc=None, Xg=None, intercept=None, intercept_mode='gene',
     if Xg is None:
         Xg = np.ones((adata.shape[1], 0), np.float32)
         
-    if (Xg is None or Xg.shape[1] == 0) and intercept_mode == 'gene':
+    if (Xg is None or Xg.shape[1] == 0) and intercept_mode.upper() != 'CELL':
         _n_gene = int(np.ceil(batch_size / adata.shape[0]))
         _n_batch = int(np.ceil(adata.shape[1] / _n_gene))
         res_list = []
