@@ -1,21 +1,74 @@
-## BRIE model
+## BRIE-Beta model
 
 import time
 import numpy as np
+from scipy. special import betaln
 from scipy.sparse import issparse
 
 import tensorflow as tf
 import tensorflow_probability as tfp
+from tensorflow.math import digamma, polygamma
 from tensorflow_probability import distributions as tfd
 
 
+# def Binomial_constant_ln(X_a, X_b, is_sparse):
+#     """Calculate the constant difference from Binomial to Beta
+#     """
+#     if is_sparse:
+#         RV = X_a.copy() * 0
+#         idx = (X_a > 0).multiply(X_b > 0)
+#         _A = np.array(X_a[idx]).reshape(-1)
+#         _B = np.array(X_b[idx]).reshape(-1)
+        
+#         RV[idx] = (gammaln(_A + _B + 1) - gammaln(_A + 1) - gammaln(_B + 1) - 
+#                    betaln(_A + 1, _B + 1))
+#     else:
+#         RV = (gammaln(X_a + X_b + 1) - gammaln(X_a + 1) - gammaln(X_b + 1) - 
+#               betaln(X_a + 1, X_b + 1))
+        
+#     return RV
 
-class BRIE2():
+
+def entropy_Beta_LogitNormal(Z_a, Z_b, Y_mu, Y_std):
+    """Calculate KL divergence between Beta distribution and LogitNormal
+    
+    https://en.wikipedia.org/wiki/Beta_distribution#Other_moments
+    https://en.wikipedia.org/wiki/Logit-normal_distribution
+    """    
+    E_logit = digamma(Z_a) - digamma(Z_b)
+    E_logit_sqr = (
+        digamma(Z_a)**2 + polygamma(tf.constant(3, tf.float32), Z_a) + 
+        digamma(Z_b)**2 + polygamma(tf.constant(3, tf.float32), Z_b) -
+        digamma(Z_a) * digamma(Z_b) * 2
+    )
+    
+    _RV_part1 = - tf.constant(0.5*np.log(2 * np.pi), tf.float32) - tf.math.log(Y_std)
+    _RV_part2 = - digamma(Z_a) - digamma(Z_b) + 2 * digamma(Z_a + Z_b)
+    _RV_part3 = - (E_logit_sqr - 2 * Y_mu * E_logit + Y_mu **2) / (2 * Y_std**2)
+    
+    return _RV_part1 + _RV_part2 + _RV_part3
+
+
+def KL_Beta_Binomial(Z_a, Z_b, X_a, X_b):
+    """Calculate KL divergence between Beta distribution and Binomial likelihood
+    See the relationship between Beta function and binomial coefficient:
+    https://en.wikipedia.org/wiki/Beta_function#Properties
+    """
+    # TODO: introduce sparse matrix
+    _KL = tfd.kl_divergence(tfd.Beta(Z_a, Z_b), tfd.Beta(X_a + 1, X_b + 1))
+    _diff_binomLik_to_beta = -tf.math.log(X_a + X_b + 1)
+    return _KL + _diff_binomLik_to_beta
+
+
+class BRIE2_Beta():
     """
     Ng : number of genes
     Nc : number of cells
     Kg : number of gene features
     Kc : number of cell features
+    
+    Note, as the prior is LogitNormal, but posterior is Beta. The KL can never 
+    be zero, so may introduce unwanted non-zero values for empty genes.
     """
     def __init__(self, Nc, Ng, Kc=0, Kg=0, effLen=None,
                  intercept=None, intercept_mode='gene',
@@ -26,10 +79,9 @@ class BRIE2():
         self.Kg = Kg
         self.effLen = effLen # (Ng, 3 * 2)
         self.intercept_mode = intercept_mode
-        
-        self.Z_loc = tf.Variable(tf.random.normal([Nc, Ng]), name='Z_loc',
-            constraint=lambda t: tf.clip_by_value(t, -9, 9))
-        self.Z_std_log = tf.Variable(tf.random.normal([Nc, Ng]), name='Z_var')
+
+        self.Z_a_log = tf.Variable(tf.random.uniform([Nc, Ng]), name='Z_alpha')
+        self.Z_b_log = tf.Variable(tf.random.uniform([Nc, Ng]), name='Z_beta')
         
         self.Wc_loc = tf.Variable(tf.random.normal([Kc, Ng]), name='Wc_loc')
         self.Wg_loc = tf.Variable(tf.random.normal([Nc, Kg]), name='Wg_loc')
@@ -56,34 +108,40 @@ class BRIE2():
             self.sigma_log = tf.constant(tf.math.log(_sigma), name='sigma_log')
 
     @property
+    def Z_a(self):
+        return tf.math.exp(self.Z_a_log)
+    
+    @property
+    def Z_b(self):
+        return tf.math.exp(self.Z_b_log)
+    
+    @property
     def Z_std(self):
-        return tf.math.exp(self.Z_std_log)
+        return 1 / (self.Z_a + self.Z_b)
     
     @property
     def Psi(self):
         """Mean value of Psi in variational posterior"""
-        return tf.sigmoid(self.Z_loc)
+        return self.Z_a / (self.Z_a + self.Z_b)
     
     @property
     def PsiDist(self):
-        """Variational logitNormal distribution of Psi"""
-        return tfd.LogitNormal(self.Z_loc, self.Z_std)
+        """Variational Beta distribution for Psi"""
+        return tfd.Beta(self.Z_a, self.Z_b)
     
     @property
     def Psi95CI(self):
         """95% confidence interval around mean"""
-        return (self.PsiDist.quantile(0.975).numpy() - 
-                self.PsiDist.quantile(0.025).numpy())
-
+        #return self.PsiDist.quantile(0.975) - self.PsiDist.quantile(0.025)
+        
+        from scipy.stats import beta
+        return (beta.ppf(0.975, self.Z_a.numpy(), self.Z_b.numpy()) - 
+                beta.ppf(0.025, self.Z_a.numpy(), self.Z_b.numpy()))
+    
     @property
     def sigma(self):
         """Standard deviation of predicted Z"""
         return tf.exp(self.sigma_log)
-
-    @property
-    def Z(self):
-        """Variational posterior for the logit Psi"""
-        return tfd.Normal(self.Z_loc, self.Z_std)
     
     @property
     def Z_prior(self):
@@ -94,96 +152,35 @@ class BRIE2():
         if self.Kg > 0 and self.Xg is not None:
             _zz_loc += tf.matmul(self.Wg_loc, self.Xg.T)
         _zz_loc += self.intercept
-        return tfd.Normal(_zz_loc, self.sigma)
-    
-        
-    def logLik_MC(self, count_layers, target="ELBO", size=10):
-        """Get marginal logLikelihood on variational or prior distribution
-        with Monte Carlo sampling
-        """
-        # TODO: introduce sparse tensor in new development
-        for i in range(len(count_layers)):
-            if issparse(count_layers[i]):
-                count_layers[i] = count_layers[i].toarray()
-        
-        # Reshape the tensors
-        def _re1(x):
-            return tf.expand_dims(x, 0)      #(1, Nc, Ng)
-        def _re2(x): 
-            return tf.expand_dims(x, (0, 1)) #(1, 1, Ng)
-        
-        
-        ## Manual re-parametrization (VAE) - works similarly well as build-in
-        ## https://gregorygundersen.com/blog/2018/04/29/reparameterization/
-        # _zzz = tfd.Normal(0, 1).sample((size, self.Ng, self.Nc)) #(size, 1, 1)
-        # if mode == "prior":
-        #     _Z = _re1(self.sigma) * _zzz + _re1(self.Z_prior.parameters['loc'])
-        # else:
-        #     _Z = _re1(self.Z_std) * _zzz + _re1(self.Z_loc)
-        
-        
-        ## Build-in re-parametrized: Gaussian is FULLY_REPARAMETERIZED
-        if target == "marginLik":
-            _Z = self.Z_prior.sample(size)      # (size, Nc, Ng)
-        else:
-            _Z = self.Z.sample(size)            # (size, Nc, Ng)
-        
-        ## Calculate element wise logLikelihood
-        if self.effLen is None:
-            Psi1_log = tf.math.log_sigmoid(_Z)
-            Psi2_log = tf.math.log_sigmoid(0 - _Z)
-            _logLik_S = (
-                _re1(count_layers[0]) * Psi1_log + 
-                _re1(count_layers[1]) * Psi2_log)
-        else:
-            _Z = tf.expand_dims(_Z, 3)
-            Psi_logs = tf.concat(
-                (tf.math.log_sigmoid(_Z), 
-                 tf.math.log_sigmoid(0 - _Z), 
-                 tf.zeros(_Z.shape)), axis=3)
-    
-            effLen = np.expand_dims(self.effLen, (0, 1)) # (1, 1, Ng, 3 * 2)
-            phi_log = Psi_logs + tf.math.log(effLen[:, :, :, [0, 4, 5]])
-            phi_log = phi_log - tf.math.reduce_logsumexp(phi_log, axis=3, 
-                                                         keepdims=True)
-            
-            _logLik_S = (
-                _re1(count_layers[0]) * phi_log[:, :, :, 0] + 
-                _re1(count_layers[1]) * phi_log[:, :, :, 1])
-            
-            if len(count_layers) > 2:
-                _logLik_S += _re1(count_layers[2]) * phi_log[:, :, :, 2]
-                
-        ## return the mean over the sampling
-        if target == "marginLik":
-            return tfp.math.reduce_logmeanexp(_logLik_S, axis=0)
-        else:
-            return tf.reduce_mean(_logLik_S, axis=0)
+        return _zz_loc
     
 
-    def get_loss(self, count_layers, target="ELBO", axis=None, **kwargs):
+    def get_loss(self, count_layers, target="ELBO", axis=None):
         """Loss function per gene (axis=0) or all genes
         
         Please be careful: for loss function, you should reduce_sum of each 
         module first then add them up!!! Otherwise, it doesn't work propertly
         by adding modules first and then reduce_sum.
         """
+        for i in range(len(count_layers)):
+            if issparse(count_layers[i]):
+                count_layers[i] = count_layers[i].toarray()
+        
         ## target function
-        if target == "marginLik":
-            return -tf.reduce_sum(
-                self.logLik_MC(count_layers, target="marginLik", **kwargs), 
-                axis=axis)
-        else:
-            return (
-                tf.reduce_sum(tfd.kl_divergence(self.Z, self.Z_prior), 
-                              axis=axis) -
-                tf.reduce_sum(self.logLik_MC(count_layers, target="ELBO", 
-                                             **kwargs), axis=axis))
+        loss = (
+            tf.reduce_sum(KL_Beta_Binomial(self.Z_a, self.Z_b,
+                                           count_layers[0], count_layers[1]),
+                          axis=axis) -
+            tf.reduce_sum(entropy_Beta_LogitNormal(self.Z_a, self.Z_b, 
+                                              self.Z_prior, self.sigma), 
+                          axis=axis)
+        )
+        return loss
 
     
     def fit(self, count_layers, Xc=None, Xg=None, target="ELBO", optimizer=None, 
             learn_rate=0.05, min_iter=200, max_iter=5000, add_iter=100, 
-            epsilon_conv=1e-2, verbose=True, **kwargs):
+            epsilon_conv=1e-2, verbose=True):
         """Fit the model's parameters"""
         start_time = time.time()
         
@@ -192,7 +189,7 @@ class BRIE2():
         self.target = target
         
         ## target function
-        loss_fn = lambda: self.get_loss(count_layers, target, **kwargs)
+        loss_fn = lambda: self.get_loss(count_layers, target)
             
         ## optimization
         if optimizer is None:
@@ -217,9 +214,6 @@ class BRIE2():
             
         
         self.loss_gene = self.get_loss(count_layers, target, axis=0).numpy()
-        for it in range(99):
-            self.loss_gene += self.get_loss(count_layers, target, axis=0).numpy()
-        self.loss_gene = tf.constant(self.loss_gene / 100)
         
         self.losses = losses
         

@@ -5,7 +5,6 @@ import numpy as np
 import concurrent
 import multiprocessing
 from .model_TFProb import BRIE2
-from .base_model import get_CI95
 from ..settings import verbosity
 
 from scipy.stats import chi2
@@ -33,6 +32,7 @@ class BRIE_RV():
         self.gene_coeff = model.Wg_loc.numpy()
         
         self.Psi = model.Psi.numpy()
+        self.Psi95CI = model.Psi95CI
         self.Z_std = model.Z_std.numpy()
         self.losses = model.losses.numpy()
         self.intercept_mode = model.intercept_mode
@@ -55,7 +55,8 @@ class BRIE_RV():
         self.intercept = np.append(self.intercept, new_RV.intercept, axis=1)
         self.cell_coeff = np.append(self.cell_coeff, new_RV.cell_coeff, axis=1)
         self.Psi = np.append(self.Psi, new_RV.Psi, axis=1)
-        self.Z_std = np.append(self.Z_std, new_RV.Psi, axis=1)
+        self.Psi95CI = np.append(self.Psi95CI, new_RV.Psi95CI, axis=1)
+        self.Z_std = np.append(self.Z_std, new_RV.Z_std, axis=1)
         
         if hasattr(new_RV, 'ELBO_gain'):
             self.fdr = np.append(self.fdr, new_RV.fdr, axis=0)
@@ -96,7 +97,13 @@ def fit_BRIE_matrix(data, Xc=None, Xg=None, effLen=None, intercept=None,
         Xc = np.ones((data[0].shape[0], 0), np.float32)
     if Xg is None:
         Xg = np.ones((data[0].shape[1], 0), np.float32)
-                
+    
+    # if len(data) > 2:
+    #     from .model_TFProb import BRIE2
+    # else:
+    #    print("BRIE2-Beta in use")
+    #    from .model_Beta import BRIE2_Beta as BRIE2
+    
     model = BRIE2(Nc=Xc.shape[0], Ng=Xg.shape[0],
                   Kc=Xc.shape[1], Kg=Xg.shape[1], 
                   effLen=effLen, intercept=intercept,
@@ -219,9 +226,8 @@ def fitBRIE(adata, Xc=None, Xg=None, intercept=None, intercept_mode='gene',
         
     # TODO: introduce sparse matrix for this
     adata.layers['Psi'] = ResVal.Psi
-    adata.layers['Z_std'] = np.exp(ResVal.Z_std)
-    Psi_low, Psi_high = get_CI95(adata.layers['Psi'], adata.layers['Z_std'] )
-    adata.layers['Psi_95CI'] = Psi_high - Psi_low
+    adata.layers['Z_std'] = ResVal.Z_std
+    adata.layers['Psi_95CI'] = ResVal.Psi95CI
     
     # losses
     adata.uns['brie_losses'] = ResVal.losses

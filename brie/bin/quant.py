@@ -11,7 +11,8 @@ import brie
 import tensorflow as tf
 
 def quant(in_file, cell_file=None, gene_file=None, out_file=None,
-          LRT_index=[], intercept=None, intercept_mode='gene', nproc=1,
+          LRT_index=[], layer_keys=['isoform1', 'isoform2', 'ambiguous'],
+          intercept=None, intercept_mode='gene', nproc=1,
           min_counts=50, min_counts_uniq=10, min_cells_uniq=30, 
           min_iter=5000, max_iter=20000, batch_size=500000):
     """CLI for quantifying splicing isoforms and detecting variable splicing 
@@ -65,7 +66,9 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
     ## Filter genes
     adata = brie.pp.filter_genes(adata, min_counts=min_counts,
                                  min_counts_uniq=min_counts_uniq, 
-                                 min_cells_uniq=min_cells_uniq, copy=True)
+                                 min_cells_uniq=min_cells_uniq, 
+                                 uniq_layers=layer_keys[:2],
+                                 ambg_layers=layer_keys[2:], copy=True)
     
     ## Match gene features
     if gene_file is not None:
@@ -93,7 +96,8 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
         
     ## Test genes with each cell features
     # model = brie.tl.fitBRIE(adata[:, :200])
-    model = brie.tl.fitBRIE(adata, Xc=Xc, Xg=Xg, LRT_index=LRT_index,
+    model = brie.tl.fitBRIE(adata, Xc=Xc, Xg=Xg, 
+                            LRT_index=LRT_index, layer_keys=layer_keys, 
                             intercept=intercept, intercept_mode=intercept_mode,
                             min_iter=min_iter, max_iter=max_iter,
                             batch_size=batch_size)
@@ -121,6 +125,10 @@ def main():
              "or comma separated integers [default: %default]")
     parser.add_option("--interceptMode", dest="intercept_mode", default="None",
         help="Intercept mode: gene, cell or None [default: %default]")
+    parser.add_option("--layers", dest="layers", 
+        default="isoform1,isoform2,ambiguous",
+        help="Comma separated layers two or three for estimating Psi "
+             "[default: %default]")
     
     group = OptionGroup(parser, "Optional arguments")
     group.add_option("--minCount", type="int", dest="min_count", default=50,
@@ -168,7 +176,8 @@ def main():
             
     # run detection function
     quant(options.in_file, options.cell_file, options.gene_file, 
-          options.out_file, LRT_index, intercept, options.intercept_mode, 
+          options.out_file, LRT_index, options.layers.split(','),
+          intercept, options.intercept_mode, 
           nproc, options.min_count, options.min_uniq_count, options.min_cell,
           options.min_iter, options.max_iter, options.batch_size)
 

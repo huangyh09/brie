@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.stats import multinomial
-from scipy.special import logit, expit
+from scipy.special import logit, expit, gammaln
 
 def BRIE_base_lik(psi, counts, lengths):
     """Base likelihood function of BRIE model
@@ -19,3 +19,22 @@ def get_CI95(Psi, Z_std):
     Z_high = Z + 1.96 * Z_std
     
     return expit(Z_low), expit(Z_high)
+
+
+def logbincoeff(n, k, is_sparse=False):
+    """
+    Ramanujan's approximation of log [n! / (k! (n-k)!)]
+    This is mainly for convinience with pen. Please use betaln or gammaln
+    """
+    if is_sparse:
+        RV_sparse = n.copy() * 0
+        idx = (k > 0).multiply(k < n)
+        n = np.array(n[idx]).reshape(-1)
+        k = np.array(k[idx]).reshape(-1)
+        
+    RV = gammaln(n + 1) - gammaln(k + 1) - gammaln(n - k + 1)
+    
+    if is_sparse:
+        RV_sparse[idx] += RV
+        RV = RV_sparse
+    return RV
