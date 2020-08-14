@@ -133,7 +133,7 @@ html_theme_options = {
     # an arbitrary url.
     'navbar_links': [
         ("Install", "install"),
-        ("Manual", "manual"),
+        ("BRIEv1", "manual_brie1"),
         ("Preprocess", "briekit"),
         # ("Tutorial", "manual"),
         # ("API", "manual"),

@@ -2,67 +2,85 @@
 Installation
 ============
 
+Environment setting
+===================
+We recommend to create a separated `conda environment`_ for running BRIE2, which
+heavily depends on TensorFlow and TensorFlow-probability.
+
+.. code-block:: bash
+  
+  conda create -n TFProb python=3.7 scikit-learn
+
+replace `-n TFProb` with `-p ANY_PATH/TFProb` to specify the path for conda 
+environment. Then activate the environment by `conda activate TFProb` or the 
+full path, before install more packages.
+
+.. code-block:: bash
+
+  pip install -U tensorflow tensorflow-probability
+
+.. _conda environment: https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
+
+
 Easy install
 ============
 
-* Required packages in python: `numpy`, `matplotlib`, `pysam`, `h5py`
+BRIE2 is available through `pypi`_. To install, type the following command 
+line, and add ``-U`` for upgrading:
 
-  * we suggest using Anaconda_ distribute, which includes most packages (except 
-    `pysam` here), and provides you a user specific environment, i.e., all your 
-    python packages go to a single folder. Thus, you don't need the root to 
-    install packages.
+.. code-block:: bash
 
-  * you could install `pysam` by pypi in terminal, or download_ and install it 
-    in the same way as `BRIE`.
+  pip install -U brie
 
-  .. _Anaconda: http://continuum.io/downloads
-  .. _download: https://github.com/pysam-developers/pysam
+Alternatively, you can install from this GitHub repository for latest (often 
+development) version by following command line
 
-* You can install `BRIE` simply via pypi in terminal (suggested), or upgrade 
-  by add ``--upgrade`` as follows:
+.. code-block:: bash
 
-  ::
+  pip install -U git+https://github.com/huangyh09/brie
 
-    pip install brie
+In either case, if you don't have write permission for your current Python 
+environment, add ``--user``, but check the previous section on create your own
+conda environment.
 
-    pip install --upgrade --no-deps brie
+.. _pypi: https://pypi.org/project/brie
 
 
-Source code
-===========
+GPU usage
+=========
+With TensorFlow backend, BRIE2 can benefit from using GPUs. Here is one way to 
+set up GPU configurations with NVIDIA GPU on Ubuntu:
 
-* Alternatively, you also could download the source code via GitHub (latest 
-  version, suggested) or Sourceforge (any version) and run python setup in 
-  terminal:
+.. code-block:: bash
 
-  * GitHub: https://github.com/huangyh09/brie
+  pip install -U tensorflow-gpu
+  conda install -c anaconda cupti 
+  conda install -c anaconda cudnn
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/extras/CUPTI/lib64
 
-  * Sourceforge: http://sourceforge.net/projects/brie-rna/
+For more information on GPU configuration, please refer to the 
+`Tensorflow documentation`_, or `anaconda GPU`_.
 
-  ::
-
-    python setup.py install
-
-* In any case, if had the permission error for installation as you are not 
-  root, add ``--user``.
+.. _TF documentation: https://www.tensorflow.org/guide/gpu
+.. _anaconda GPU: https://docs.anaconda.com/anaconda/user-guide/tasks/gpu-packages/
 
 
 Test
 ====
 
-In order to test the installation, you could type ``brie``. If successful, you
-will see the following output.
+In order to test the installation, you could type ``brie-quant``. If successful,
+you will see the following output.
 
-.. code-block:: html
+.. code-block:: bash
 
-  Welcome to Brie!
+  Welcome to brie-quant in BRIE v2.0.0!
 
   use -h or --help for help on argument.
 
 If installation is sucessful, but can't run it, then check whether the directory 
 which contains the executable binary file is added to PATH environment. 
 
-.. code-block:: html
+.. code-block:: bash
 
   brie: command not found
 
@@ -70,6 +88,12 @@ Usually the directory is ``~/.local/bin`` if you don't use Anaconda. You could a
 the path into PATH environment variable, by write the following line into ``.profile`` 
 or ``.bashrc`` file.
 
-:: 
+.. code-block:: bash
   
   export PATH="~/.local/bin:$PATH"
+
+
+If you have any issue, please report it to the issue on `brie issues`_.
+
+.. _brie issues: https://github.com/huangyh09/brie/issues
+

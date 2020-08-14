@@ -3,34 +3,26 @@ Home
 ====
 
 .. :Author: Yuanhua Huang
-.. :Version: 0.2.0
-.. :Last viewed: Jun 3, 2018
+.. :Version: 2.0.0
+.. :Last viewed: Aug 14, 2020
 
 About BRIE
 ==========
 
-BRIE (Bayesian regression for isoform estimate) is a Bayesian method to 
-estimate isoform proportions from RNA-seq data. Currently, BRIE could take 
-sequence features to automatically learn informative prior of exon inclusion 
-ratio in  exon-skippiing events. This informative prior is very important when 
-limited data is available. In Bulk RNA-seq experiment, we could easily increase 
-the amplification to get more sequencing reads to improve the accuracy of 
-isoform estimate. However, in single cell RNA-seq (scRNA-seq) experiments, the 
-initial molecular is very limited, which always results some genes with very 
-low coverage or even drop-out. In scRNA-seq, the BRIE method, by integrating 
-informative prior, e.g. learned from sequence feature, could provide accurate 
-and reproducible estimates of splicing in single cells, as well as sensitive 
-differential analyses.
+BRIE2 (Bayesian regression for isoform estimate, v2) is a scalable Bayesian 
+method to robustly identify splicing phenotypes in single cells RNA-seq designs 
+and accurately estimate isoform proportions and its uncertainty. 
 
+BRIE2 supports isoform quantification for different needs:
 
-BRIE provides following functions through command line:
+1. likelihood based: without learning informative prior from any features
 
-1. ``brie``: Estimate isoform proportions and FPKM, and calculate weights for 
-regulatory features.
+2. gene features: informative prior is learned from shared gene regulatory 
+   features, e.g., sequences and RNA protein binding
 
-2. ``brie-diff``: Calculate Bayes factor of differential splicing between 
-multiple cells pair-wisely. 
-
+3. cell features: informative prior is learned from shared cell processes. It 
+   also allows to effectively detect splicing phenotypes by using Evidence Lower
+   Bound gain, an approximate of Bayes factor.
 
 
 Quick Resources
