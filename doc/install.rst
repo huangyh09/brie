@@ -71,7 +71,7 @@ Test
 In order to test the installation, you could type ``brie-quant``. If successful,
 you will see the following output.
 
-.. code-block:: bash
+.. code-block:: html
 
   Welcome to brie-quant in BRIE v2.0.0!
 
@@ -80,15 +80,15 @@ you will see the following output.
 If installation is sucessful, but can't run it, then check whether the directory 
 which contains the executable binary file is added to PATH environment. 
 
-.. code-block:: bash
+.. code-block:: html
 
-  brie: command not found
+  brie-quant: command not found
 
 Usually the directory is ``~/.local/bin`` if you don't use Anaconda. You could add 
 the path into PATH environment variable, by write the following line into ``.profile`` 
 or ``.bashrc`` file.
 
-.. code-block:: bash
+.. code-block:: html
   
   export PATH="~/.local/bin:$PATH"
 
