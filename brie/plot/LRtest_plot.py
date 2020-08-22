@@ -20,19 +20,33 @@ def LRT_basic(LRT_res):
     plt.show()
 
 
-def volcano(adata, index, x="cell_coeff", y="pval", pval_red=0.0001):
+def volcano(adata, x="cell_coeff", y="pval", index=0, score_red=0.0001, 
+            n_anno=10, anno_id='index', log_y=True, adjust=True):
     """Volcano plot for p values and weights
     """
+    xval = adata.varm[x][:, index]
     yval = adata.varm[y][:, index]
-    idx = yval < pval_red
+    idx = yval < score_red
+    idx_anno = np.argsort(yval)[:n_anno]
+    if log_y:
+        yval = -np.log10(yval)
+        
+    plt.scatter(xval[~idx], yval[~idx], color="gray")
+    plt.scatter(xval[idx], yval[idx], color="firebrick")
     
-    #pval_log10[pval_log10 < -10] = -10
-    plt.scatter(adata.varm[x][:, index][~idx], 
-                -np.log10(adata.varm[y][:, index][~idx]),
-               color="gray")
-    plt.scatter(adata.varm[x][:, index][idx], 
-                -np.log10(adata.varm[y][:, index][idx]), 
-                color="firebrick")
+    lable = adata.var.index if anno_id is 'index' else adata.var[anno_id]
+    
+    texts = []
+    for i in idx_anno:
+        _label = lable[i]
+        _xx = xval[i]
+        _yy = yval[i]
+        texts.append(plt.text(_xx, _yy, _label, size=8))
+    
+    if adjust and n_anno > 0:
+        from adjustText import adjust_text
+        adjust_text(texts, arrowprops=dict(arrowstyle="-", color='k', lw=0.5))
+    
     plt.xlabel(x)
     plt.ylabel("-log10(%s)" %(y))
     
@@ -45,8 +59,8 @@ def qqplot(pval):
     plt.plot(-np.log10(pval_exp), -np.log10(pval_exp), color="darkgrey")
     plt.scatter(-np.log10(pval_exp), -np.log10(pval_obs), 
                 facecolors='none', edgecolors='dimgrey')
-    plt.xlabel("expected -log10(p)")
-    plt.ylabel("observed -log10(p)")
+    plt.xlabel("-log10(p), expected")
+    plt.ylabel("-log10(p), observed")
     
     
 # def power_plot(score, group, threshold=0.05):
