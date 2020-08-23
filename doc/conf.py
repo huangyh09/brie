@@ -60,7 +60,7 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinx_autodoc_typehints",
     "nbsphinx",
-    "edit_on_github",
+    # "edit_on_github",
 ]
 
 # Add any paths that contain templates here, relative to this directory.

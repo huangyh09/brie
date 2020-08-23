@@ -11,8 +11,8 @@ heavily depends on TensorFlow and TensorFlow-probability.
   
   conda create -n TFProb python=3.7 scikit-learn
 
-replace `-n TFProb` with `-p ANY_PATH/TFProb` to specify the path for conda 
-environment. Then activate the environment by `conda activate TFProb` or the 
+replace ``-n TFProb`` with ``-p ANY_PATH/TFProb`` to specify the path for conda 
+environment. Then activate the environment by ``conda activate TFProb`` or the 
 full path, before install more packages.
 
 .. code-block:: bash
@@ -61,7 +61,7 @@ set up GPU configurations with NVIDIA GPU on Ubuntu:
 For more information on GPU configuration, please refer to the 
 `Tensorflow documentation`_, or `anaconda GPU`_.
 
-.. _TF documentation: https://www.tensorflow.org/guide/gpu
+.. _Tensorflow documentation: https://www.tensorflow.org/guide/gpu
 .. _anaconda GPU: https://docs.anaconda.com/anaconda/user-guide/tasks/gpu-packages/
 
 

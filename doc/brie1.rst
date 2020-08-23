@@ -1,6 +1,6 @@
-==============================
-Manual for BRIE1 (upto v0.2.2)
-==============================
+============
+BRIE1 Manual
+============
 
 After properly installed BRIE Python package, two excutable binary files could 
 be run from command line directly: ``brie1``, ``brie1-diff``. From version 0.2.0, 

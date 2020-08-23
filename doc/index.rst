@@ -31,6 +31,15 @@ BRIE2 supports isoform quantification for different needs:
    also allows to effectively detect splicing phenotypes by using Evidence Lower
    Bound gain, an approximate of Bayes factor.
 
+Questions or Bugs
+=================
+If you find any error or suspicious bug, we will appreciate your report.
+Please write them in the github issues: 
+https://github.com/huangyh09/brie/issues
+
+If you have questions on using BRIE, feel free get in touch with us: 
+yuanhua <at> hku.hk
+
 
 Quick Resources
 ===============
@@ -70,10 +79,12 @@ quantification in single cells
    :maxdepth: 1
    :hidden:
    
+   index
    install
-   manual
-   manual_brie1
-   releases
+   brie_count
+   brie_quant
+   brie1
+   release
 
 .. toctree::
    :caption: Examples
