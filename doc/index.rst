@@ -4,7 +4,7 @@ Home
 
 .. :Author: Yuanhua Huang
 .. :Version: 2.0.0
-.. :Last viewed: Aug 14, 2020
+.. :Last viewed: Aug 23, 2020
 
 About BRIE
 ==========

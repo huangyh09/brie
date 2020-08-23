@@ -2,6 +2,19 @@
 History
 =======
 
+Release v2.0.0 (23/08/2020)
+===========================
+* Change the whole BRIE model from MCMC sampler (v1) to variational inference (v2)
+* Change the usage of each read to a summarised read counts for speedup
+* Support splicing quantification without any feature or cell features or gene 
+  features or both types of features.
+* Support detection of variable splicing event associated with cell features
+* Support acceleration with Graphic card (Nvidia GPU)
+* Compatible with Scanpy analysis suite with a variety of plotting functions
+* Restructure the whole package
+* BRIE earlier version is still avaible with `brie1`
+
+
 Release v0.2.2 (15/01/2019)
 ===========================
 * move __version__ into a separate file, so import brie is not required before

@@ -1,9 +1,9 @@
-======
-Manual
-======
+==============================
+Manual for BRIE1 (upto v0.2.2)
+==============================
 
 After properly installed BRIE Python package, two excutable binary files could 
-be run from command line directly: ``brie``, ``brie-diff``. From version 0.2.0, 
+be run from command line directly: ``brie1``, ``brie1-diff``. From version 0.2.0, 
 all preprocessing are divided and moved into BRIE-kit_ package, which is aimed
 to be used in Python2 only. 
 
@@ -21,7 +21,7 @@ required. There are two ways to get the annotation and sequence features:
    We suggest align RNA-seq reads to the according version of reference genome.
 
 2. generate the annotation and fetch the sequence features with the help of 
-   brie-event_ and brie-factor_ by yourself
+   briekit-event_ and briekit-factor_ by yourself
 
 .. _here: https://sourceforge.net/projects/brie-rna/files/annotation/
 .. _human: https://sourceforge.net/projects/brie-rna/files/annotation/human/gencode.v25/
@@ -34,7 +34,7 @@ Then you could input the feature file obtained above, and run it like this:
 
 ::
 
-  brie -a AS_events/SE.gold.gtf -s Cell1.sorted.bam -f mouse_features.csv.gz -o out_dir -p 15
+  brie1 -a AS_events/SE.gold.gtf -s Cell1.sorted.bam -f mouse_features.csv.gz -o out_dir -p 15
 
 By default, you will have three output files in the out_dir: ``fractions.tsv``, 
 ``weights.tsv`` and ``samples.csv.gz``. 
@@ -64,7 +64,7 @@ are using)
 
 .. code-block:: html
 
-  Usage: brie [options]
+  Usage: brie1 [options]
 
   Options:
     -h, --help            show this help message and exit
@@ -126,7 +126,7 @@ For two cells (``-p 1 --minBF 0`` gives all events in the same order. Speed:
 
 ::
 
-  brie-diff -i cell1/samples.csv.gz,cell2/samples.csv.gz -o c1_c2.diff.tsv -p 1 --minBF 0
+  brie1-diff -i cell1/samples.csv.gz,cell2/samples.csv.gz -o c1_c2.diff.tsv -p 1 --minBF 0
 
 
 For many cells (gives events with ``BF>10``. Speed: 100 cells in ~10min with 30 
@@ -136,7 +136,7 @@ CPUs)
 
   fileList=cell1/samples.csv.gz,cell2/samples.csv.gz,cell3/samples.csv.gz,cell4/samples.csv.gz
 
-  brie-diff -i $fileList -o c1_c4.diff.tsv
+  brie1-diff -i $fileList -o c1_c4.diff.tsv
 
 Then you will have two output files. The first one (in the format of xxx.diff.tsv) 
 contains all Bayes factor passing the threshold, and it has with 15 columns:
@@ -163,7 +163,7 @@ you are using):
 
 .. code-block:: html
 
-  Usage: brie-diff [options]
+  Usage: brie1-diff [options]
 
   Options:
   -h, --help            show this help message and exit
@@ -191,7 +191,7 @@ you are using):
 One typical example on 130 mouse cells during gastrulation is in this folder, 
 from which you will quantify the splicing with BRIE, identify the highly 
 variable splicing events and visualise them with sashimi plot.
-https://github.com/huangyh09/brie/tree/master/examples/gastrulation
+https://github.com/huangyh09/brie/tree/0.2.x/examples/gastrulation
 
 
 There are some earlier examples: 
@@ -207,6 +207,6 @@ https://sourceforge.net/projects/brie-rna/files/examples/
   anno_maker.sh_
 
 .. _brie-examples.zip: http://ufpr.dl.sourceforge.net/project/brie-rna/examples/brie_quantify/brie-examples.zip
-.. _brie_demo.sh: https://github.com/huangyh09/brie/blob/master/examples/brie_demo.sh
-.. _anno_maker.sh: https://github.com/huangyh09/brie/blob/master/examples/anno_maker.sh
+.. _brie_demo.sh: https://github.com/huangyh09/brie/blob/0.2.x/examples/brie_demo.sh
+.. _anno_maker.sh: https://github.com/huangyh09/brie/blob/0.2.x/examples/anno_maker.sh
 
