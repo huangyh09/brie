@@ -209,6 +209,11 @@ class TranUnits:
             if sum(self.probs) > 0: self.probs /= sum(self.probs)
         else:
             for i in np.unique(flen): 
+                if i > len(self.probs):
+                    print("[brie] Warning: fragment len %d exceed transcript "
+                          "length %d for %d times" %(i, len(self.probs), 
+                          np.sum(flen==i)))
+                    continue
                 self.probs[int(i)-1] = np.mean(flen==i) #be careful here.
              
         # effective length
@@ -230,6 +235,9 @@ class TranUnits:
 
         # reads probability
         for i in range(self.rcnt):
+            ## check when fL is longer than self.ulen, 
+            ## self.Rmat[i] should be False in this case.
+            if self.flen[i] > len(self.probs): continue # read will be ignored
             if self.Rmat[i] == False: continue
             fL = int(self.flen[i])
             self.proU[i] *= self.probs[fL-1] / (self.ulen - fL + 1)
