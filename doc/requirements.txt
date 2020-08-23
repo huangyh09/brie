@@ -1,5 +1,5 @@
 # Just until rtd.org understands pyproject.toml
-scanpy
+brie
 setuptools
 setuptools_scm
 typing_extensions
