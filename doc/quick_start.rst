@@ -51,7 +51,8 @@ Step2.2 phenotype detection
 
 If you have cell level features, e.g., disease condition or cell type or 
 continuous variable, you can use it in cell features to detect variable splicing
-events as phenotypes for further analysis.
+events as phenotypes for further analysis. This is ``mode 3`` in ``brie-quant``,
+so requires ``-c`` and ``--LRTindex``
 
 .. code-block:: bash
 

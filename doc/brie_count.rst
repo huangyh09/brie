@@ -22,11 +22,12 @@ Read counting
 The ``brie-count`` CLI calculates a count tensor for the number of reads that 
 are aligned to each splicing event and each cell, and stratifies four them into
 four different categories in :
-0) Partially aligned in the region but not compatible with any of the two 
+
+1. key 1: Uniquely aligned to isoform1, e.g., in exon1-exon2 junction in SE event
+2. key 2: Uniquely aligned to isoform2, e.g., in exon1-exon3 junction in SE event
+3. key 3: Ambiguously aligned to isoform1 and isoform2, e.g., within exon1
+4. key 0: Partially aligned in the region but not compatible with any of the two 
    isoforms. We suggest ignoring these reads.
-1) Uniquely aligned to isoform1, e.g., in exon1-exon2 junction in SE event
-2) Uniquely aligned to isoform2, e.g., in exon1-exon3 junction in SE event
-3) Ambiguously aligned to isoform1 and isoform2, e.g., within exon1
 
 Then you fetch the counts on a list of bam files by the command line like this:
 
