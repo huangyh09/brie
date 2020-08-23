@@ -49,7 +49,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'brie'
-copyright = u'2018, Yuanhua Huang'
+copyright = u'2017-2020, Yuanhua Huang'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -134,7 +134,7 @@ html_theme_options = {
     'navbar_links': [
         ("Install", "install"),
         ("Manual", "manual"),
-        ("Preprocess", "briekit"),
+        ("BRIE1", "manual_brie1"),
         # ("Tutorial", "manual"),
         # ("API", "manual"),
         # ("Link", "http://example.com", True),

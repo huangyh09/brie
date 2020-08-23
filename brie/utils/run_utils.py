@@ -9,6 +9,35 @@ from .bias_utils import BiasFile, FastaFile
 from .tran_utils import TranUnits, TranSplice
 
 
+
+def get_count_matrix(g, g_idx, sam_files, bias_mode, ref_file, 
+                     bias_file, FLmean, FLstd, mate_mode, auto_min):
+    RV = []
+    for s in range(len(sam_files)):
+        _RV = set_info(g, sam_files[s], bias_mode, ref_file, 
+                       bias_file, FLmean, FLstd, mate_mode, auto_min)
+        
+        if _RV["Rmat"].shape[0] == 0:
+            continue
+
+        M = _RV["Rmat"]
+        K = 2**(np.arange(M.shape[1]))
+        code_id, code_cnt = np.unique(np.dot(M, K), return_counts=True)
+        
+        count_dict = {}
+        for i in range(len(code_id)):
+            count_dict["%d" %(code_id[i])] = code_cnt[i]
+            
+        RV.append("%d\t%d\t%s" %(g_idx + 1, s + 1, str(count_dict)))
+    
+    RV_line = ""
+    if len(RV) > 0:
+        RV_line = "\n".join(RV) + "\n"
+        
+    return RV_line
+
+
+
 def set_info(g, sam_file, bias_mode, ref_file, bias_file, FLmean, FLstd,
     mate_mode, auto_min):
     RV = {}

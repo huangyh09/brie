@@ -18,7 +18,10 @@ exec(open("./brie/version.py").read())
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
-reqs = ['numpy>=1.9.0', 'pysam>=0.9.0']
+reqs = ['numpy>=1.18.0', 'pysam>=0.15.2', 'anndata>=0.6.0', 'pandas>=0.23.0', 
+        'h5py', 'tensorflow-probability>=0.8.0', 'tensorflow>=2.0.0', 
+        'click>=7.0.0', 'matplotlib>=3.1.2', 'seaborn>=0.10.0', 
+        'statsmodels>=0.11']
 
 setup(
     name='brie',
@@ -36,14 +39,14 @@ setup(
 
     # Author details
     author='Yuanhua Huang',
-    author_email='yuanhua@ebi.ac.uk',
+    author_email='yuanhua@hku.hk',
 
     # Choose your license
     license='Apache-2.0',
 
     # What does your project relate to?
-    keywords=['splicing isoform estimate', 'Bayesian regression',
-              'single cell RNA-seq', 'Markov chain Monte Carlo'],
+    keywords=['RNA splicing', 'Bayesian regression',
+              'single cell RNA-seq', 'variantional inference'],
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
@@ -51,12 +54,15 @@ setup(
 
     entry_points={
         'console_scripts': [
-            'brie = brie.brie:main',
-            'brie-diff = brie.brie_diff:main',
+            # 'brie = brie:_cli.cli',
+            'brie-count = brie.bin.count:main',
+            'brie-quant = brie.bin.quant:main',
+            'brie1 = brie.version1.brie:main',
+            'brie1-diff = brie.version1.brie_diff:main',
         ],
     },
-
-    # python_requires='>=3.5',
+    
+    python_requires='>=3.5',
 
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip's
@@ -64,10 +70,13 @@ setup(
     # https://packaging.python.org/en/latest/requirements.html
 
     install_requires=reqs,
+    # install_requires=[
+    #     l.strip() for l in Path('requirements.txt').read_text('utf-8').splitlines()
+    # ],
 
     extras_require={
         'docs': [
-            'sphinx >= 1.4',
+            # 'sphinx >= 1.4',
             'sphinx_bootstrap_theme']},
 
     py_modules=['brie']

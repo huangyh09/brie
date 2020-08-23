@@ -10,9 +10,9 @@ import multiprocessing
 from optparse import OptionParser, OptionGroup
 
 # import pyximport; pyximport.install()
-from .utils.gtf_utils import loadgene
-from .utils.run_utils import set_info, map_data, save_data
-from .models.model_brie import brie_MH_Heuristic
+from ..utils.gtf_utils import load_genes
+from ..utils.run_utils import set_info, map_data, save_data
+from .model_brie import brie_MH_Heuristic
 
 PROCESSED = 0
 TOTAL_GENE = 0
@@ -50,6 +50,10 @@ def main():
         help="Full path of output directory")
     parser.add_option("--factor_file", "-f", dest="factor_file", default=None,
         help=("Features in csv.gz file to predict isoform expression."))
+    # parser.add_option("--gene_file", "-c", dest="gene_file", default=None,
+    #     help=("Gene features, the same order of the input genes."))
+    # parser.add_option("--cell_file", "-c", dest="cell_file", default=None,
+    #     help=("Cell features, the same order of the input sam files."))
 
     group = OptionGroup(parser, "Optional arguments")
     group.add_option("--nproc", "-p", type="int", dest="nproc", default="4",
@@ -103,7 +107,7 @@ def main():
         sys.stdout.write("\r[Brie] loading annotation file... ")
         sys.stdout.flush()
         # anno = load_annotation(options.anno_file, options.anno_source)
-        genes = loadgene(options.anno_file)
+        genes = load_genes(options.anno_file)
         sys.stdout.write("\r[Brie] loading annotation file... Done.\n")
         sys.stdout.flush()
         # genes = anno["genes"]
@@ -144,14 +148,13 @@ def main():
 
     two_isoform = True
     if options.factor_file == None:
-        feature_all = np.ones((len(tran_ids), 6))
-        feature_ids = ["random%d" %i for i in range(1,6)] + ["intercept"]
+        feature_all = np.zeros((len(tran_ids), 1))
+        feature_ids = ["zero"]
         if two_isoform: 
             idxF = np.arange(0, len(tran_ids), 2)
             feature_all[idxF+1,:] = None
         else:
             idxF = np.arange(0, len(tran_ids))
-        feature_all[idxF,:-1] = np.random.rand(len(idxF), 5)
     else:
         feature_all, feature_ids, idxF = map_data(options.factor_file,
             tran_ids, False) #options.feature_log

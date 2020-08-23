@@ -166,7 +166,7 @@ def parse_attribute(attStr, default="*",
 
     return RV
 
-def loadgene(anno_file, comments="#,>", geneTag="gene", 
+def load_genes(anno_file, comments="#,>", geneTag="gene", 
         tranTag="transcript,mRNA", exonTag="exon"):
     """
     Load genes from gtf or gff3 file.
@@ -254,7 +254,7 @@ def loadgene(anno_file, comments="#,>", geneTag="gene",
     return genes
 
 
-def savegene(out_file, genes, atype="GFF3", tags="gene,mRNA,exon"):
+def save_genes(out_file, genes, atype="GFF3", tags="gene,mRNA,exon"):
     """Save genes into file in GFF3 or GTF format.
 
     Parameters
@@ -329,3 +329,11 @@ def savegene(out_file, genes, atype="GFF3", tags="gene,mRNA,exon"):
     pro = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
     output = pro.communicate()[0]
         
+
+def savegene(**kwargs):
+    print("This function is deprecated, please use save_genes")
+    return save_genes(**kwargs)
+
+def loadgene(**kwargs):
+    print("This function is deprecated, please use load_genes")
+    return save_genes(**kwargs)

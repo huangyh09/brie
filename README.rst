@@ -14,55 +14,70 @@ BRIE: Bayesian Regression for Isoform Estimate
 About BRIE
 ----------
 
-BRIE (Bayesian regression for isoform estimate) is a Bayesian method to 
-estimate isoform proportions from RNA-seq data. Currently, BRIE could take 
-sequence features to automatically learn informative prior of exon inclusion 
-ratio in  exon-skippiing events. This informative prior is very important when 
-limited data is available. In Bulk RNA-seq experiment, we could easily increase 
-the amplification to get more sequencing reads to improve the accuracy of 
-isoform estimate. However, in single cell RNA-seq (scRNA-seq) experiments, the 
-initial molecular is very limited, which always results some genes with very 
-low coverage or even drop-out. In scRNA-seq, the BRIE method, by integrating 
-informative prior, e.g. learned from sequence feature, could provide accurate 
-and reproducible estimates of splicing in single cells, as well as sensitive 
-differential analyses.
+Welcome to the new BRIE2 (Bayesian regression for isoform estimate, v2), a 
+scalable Bayesian method to robustly identify splicing phenotypes in single 
+cells RNA-seq designs and accurately estimate isoform proportions and its 
+uncertainty.
+
+BRIE2 supports isoform quantification for different needs:
+
+1. likelihood based: without learning informative prior from any features
+
+2. gene features: informative prior is learned from shared gene regulatory 
+   features, e.g., sequences and RNA protein binding
+
+3. cell features: informative prior is learned from shared cell processes. It 
+   also allows to effectively detect splicing phenotypes by using Evidence Lower
+   Bound gain, an approximate of Bayes factor.
+   
+Note, BRIE1 is CLI is still available in this version but changed to `brie1` 
+and `brie1-diff`.
 
 
-BRIE provides following functions through command line:
 
-1. ``brie``: Estimate isoform proportions and FPKM, and calculate weights for 
-regulatory features.
+Installation
+============
 
-2. ``brie-diff``: Calculate Bayes factor of differential splicing between 
-multiple cells pair-wisely. 
+BRIE2 is available through PyPI_. To install, type the following command 
+line, and add ``-U`` for upgrading:
 
-Quick Start
------------
+.. code-block:: bash
 
-**Installation**: 
+  pip install -U brie
 
-- ``pip install brie``
-- or download this repository, and type ``python setup.py install``; 
-- add ``--user`` if you don't have root permission and you don't use Anaconda_.
+Alternatively, you can install from this GitHub repository for latest (often 
+development) version by following command line
 
-.. _Anaconda: https://www.continuum.io/anaconda-overview
+.. code-block:: bash
 
-**Arguments**
+  pip install -U git+https://github.com/huangyh09/brie
 
-- Type command line ``brie -h``
+In either case, add ``--user`` if you don't have the write permission for your 
+Python environment.
+
+For more instructions, see the installation_ manual.
+
+.. _PyPI: https://pypi.org/project/brie
+.. _installation: https://brie.readthedocs.io/en/latest/install.html
 
 
-Detailed manual
----------------
+Manual and examples
+===================
 
-See the documentation_ on how to install, to use, to find the annotation data 
-etc.
+The full manual is at https://brie.readthedocs.io 
+More examples and tutorials are coming soon.
 
-.. _documentation: https://brie.readthedocs.io
+In brief, you need to run `brie-count` first, which will return a count matrix
+and h5 data for AnnData. Then you can use `brie-quant` to perform quantification
+in different settings. Type command line ``brie-count -h`` and ``brie-quant -h``
+to see the full arguments.
+
 
 
 References
-----------
+==========
 
-Yuanhua Huang and Guido Sanguinetti. `BRIE: transcriptome-wide splicing quantification in single cells <https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1248-5>`_. 
-\ **Genome Biology**\, 2017; 18(1):123.
+* Yuanhua Huang and Guido Sanguinetti. `BRIE: transcriptome-wide splicing 
+  quantification in single cells 
+  <https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1248-5>`_. 
+  \ **Genome Biology**\, 2017; 18(1):123.

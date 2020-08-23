@@ -1,212 +1,197 @@
-======
-Manual
-======
+==========
+CLI Manual
+==========
 
-After properly installed BRIE Python package, two excutable binary files could 
-be run from command line directly: ``brie``, ``brie-diff``. From version 0.2.0, 
-all preprocessing are divided and moved into BRIE-kit_ package, which is aimed
-to be used in Python2 only. 
+After properly installed BRIE (>=2.0.0) Python package, two CLI will be 
+available directly in your Python path: ``brie-count``, ``brie-quant``. 
 
+In this documentation, BRIE refers to BRIE2 (>=2.0.0). For using BRIE1 (<=0.2.2)
+with MCMC sampler, please refer to BRIE1_. If you want to generate splicing
+annotations for your data, e.g., a species different from human and mouse,
+please use a separated package BRIE-kit_, which is developed in Python2. 
+
+.. _BRIE1: https://brie.readthedocs.io/en/latest/brie1.html
 .. _BRIE-kit: https://github.com/huangyh09/briekit/wiki
 
-1. BRIE isoform estimate
-========================
 
-This is the main program to quitify the fraction of exon inclusion level. In 
-order to automatically learn the informative prior, the predictive features are 
-required. There are two ways to get the annotation and sequence features: 
+1. brie-count
+=============
 
-1. use our processed annotation file and according sequence features, which you 
-   can download from here_. Currently, we produced data for human_ and mouse_. 
-   We suggest align RNA-seq reads to the according version of reference genome.
+This CLI will return a count tensor for the number of reads aligned to four 
+different categories in each splicing event and each cell:
+1) Uniquely aligned to isoform1, e.g., in exon1-exon2 junction in SE event
+2) Uniquely aligned to isoform2, e.g., in exon1-exon3 junction in SE event
+3) Ambiguously aligned to isoform1 and isoform2, e.g., within exon1
+0) Fetched in the region but not compatible with any of the above three types.
+   We suggest ignore these reads.
+   
+As input, you need to generate the splicing event annotation. We have generated
+data for human_ and mouse_. We suggest align RNA-seq reads to the according 
+version of reference genome. Alternatively, you can use `briekit` package to 
+generate.
 
-2. generate the annotation and fetch the sequence features with the help of 
-   brie-event_ and brie-factor_ by yourself
-
-.. _here: https://sourceforge.net/projects/brie-rna/files/annotation/
 .. _human: https://sourceforge.net/projects/brie-rna/files/annotation/human/gencode.v25/
 .. _mouse: https://sourceforge.net/projects/brie-rna/files/annotation/mouse/gencode.vM12/
-.. _brie-event: https://brie-rna.sourceforge.io/manual.html#splicing-events
-.. _brie-factor: https://brie-rna.sourceforge.io/manual.html#sequence-features
 
 
-Then you could input the feature file obtained above, and run it like this:
+Then you fetch the counts on a list of bam files by the command line like this:
 
-::
+.. code-block:: bash
 
-  brie -a AS_events/SE.gold.gtf -s Cell1.sorted.bam -f mouse_features.csv.gz -o out_dir -p 15
+  brie-count -a AS_events/SE.gold.gtf -S sam_and_cellID.tsv -o out_dir -p 15
 
-By default, you will have three output files in the out_dir: ``fractions.tsv``, 
-``weights.tsv`` and ``samples.csv.gz``. 
-
-- In ``fractions.tsv``, there are 8 columns:
-
-  * column 1: transcript id
-  * column 2: gene id
-  * column 3: transcript length
-  * column 4: reads counts for whole events
-  * column 5: FPKM for each isoform
-  * column 6: fraction for each isoform, called Psi
-  * column 7: lower bound of 95% confidence interval of isoform fraction
-  * column 8: higher bound of 95% confidence interval of isoform fraction
-
-- In ``weights.tsv``, there are the weights for the Bayesian regression, with 
-  `#Feature+2` lines, involving each features, interpret and sigma (a hyperparameter). 
-  There are two columns each line, including the label and the value.
-
-- In ``sample.csv.gz``, there are the MCMC_ samples of posterior distribution of 
-  Psi. These samples are used to detect the differential splicing.
-
-.. _MCMC: https://en.wikipedia.org/wiki/Markov_chain_Monte_Carlo
-
-There are more parameters for setting (``brie -h`` always give the version you 
-are using)
-
-.. code-block:: html
-
-  Usage: brie [options]
-
-  Options:
-    -h, --help            show this help message and exit
-    -a ANNO_FILE, --anno_file=ANNO_FILE
-                          Annotation file for genes and transcripts in GTF or
-                          GFF3
-    -s SAM_FILE, --sam_file=SAM_FILE
-                          Sorted and indexed bam/sam files, use ',' for
-                          replicates e.g., rep1.sorted.bam,sam1_rep2.sorted.bam
-    -o OUT_FILE, --out_file=OUT_FILE
-                          Prefix of the output files with full path
-    -f FACTOR_FILE, --factor_file=FACTOR_FILE
-                          Features in csv.gz file to predict isoform expression.
-
-    Optional arguments:
-      -p NPROC, --nproc=NPROC
-                          Number of subprocesses [default: 4]
-      -w WEIGHT_FILE, --weight_file=WEIGHT_FILE
-                          File with weights, an output of Brie.
-      -y FTYPE, --ftype=FTYPE
-                          Type of function target: FPKM, Y, Psi [default: Y].
-      --fLen=FRAG_LENG    Two arguments for fragment length: mean and standard
-                          diveation, default: auto-detected
-      --bias=BIAS_ARGS    Three argments for bias correction:
-                          BIAS_MODE,REF_FILE,BIAS_FILE(s). BIAS_MODE: unif,
-                          end5, end3, both. REF_FILE: the genome reference file
-                          in fasta format. BIAS_FILE(s): bias files from dice-
-                          bias, use '---' for time specific files, [default:
-                          unif None None]
-      --sigma=_SIGMA      Sigma in Bayesian regression: the Gaussian standard
-                          deviation of residues [default: Auto].
-      --lambda=_LAMBDA    Lambda in Bayesian regression: the coeffiecient of L2
-                          constrain on weights [default: 0.1].
-      --mcmc=MCMC_RUN     Four arguments for in MCMC iterations:
-                          save_sample,max_run,min_run,gap_run. Required:
-                          save_sample =< 3/4*mim_run. [default: 500 5000 1000 50]
-
-**Hyperparamers**
-
-* ``sigma`` is the square rooted variance of Gaussian noise in Bayesian 
-  regression. By default, it will learn it automatically. Alternatively, you 
-  could set it with your experience, for example, 3 might be a good option. 
-* ``lambda`` is the constrain on weights of Bayesian regression. 0.1 is good 
-  option in ENCODE data.
-* ``weight_file`` is fixed weights for Bayesian regression. Therefore, the 
-  prior is predicted from the input weight file and its sequence features.
-  
+By default, you will have four output files in the out_dir: ``brie_count.h5ad``, 
+``read_count.mtx.gz``, ``cell_note.tsv.gz``, and ``gene_note.tsv.gz``. The 
+``brie_count.h5ad`` contains all information for downstream analysis, e.g., for
+`brie-quant`.
 
 
-2. Differential splicing
-========================
-
-This command allows to detect differential splicing between many cells 
-pair-wisely, including just two cells, by calculating Bayes factor. You could 
-run it as follows:
-
-For two cells (``-p 1 --minBF 0`` gives all events in the same order. Speed: 
-10-20 second with 1 CPU)
-
-::
-
-  brie-diff -i cell1/samples.csv.gz,cell2/samples.csv.gz -o c1_c2.diff.tsv -p 1 --minBF 0
-
-
-For many cells (gives events with ``BF>10``. Speed: 100 cells in ~10min with 30 
-CPUs)
-
-::
-
-  fileList=cell1/samples.csv.gz,cell2/samples.csv.gz,cell3/samples.csv.gz,cell4/samples.csv.gz
-
-  brie-diff -i $fileList -o c1_c4.diff.tsv
-
-Then you will have two output files. The first one (in the format of xxx.diff.tsv) 
-contains all Bayes factor passing the threshold, and it has with 15 columns:
-
-* column1-2: transcript id and gene id
-* column3-4: cell 1 and cell 2 names (the folder names)
-* column5-6: prior of exon inclusion fraction for cell 1 and cell 2
-* column7-8: posterior of exon inclusion fraction for cell 1 and cell 2
-* column9-12: counts for inclusion and exclusion for cell1, and then cell 2
-* column13-14: probability of prior and posterior diff<0.05
-* column 15: Bayes factor
-
-.. note::
-  Bayes factor is different from p value in hypothesis test. A good threshold 
-  could be ``Bayes factor > 10`` as differential splicing event between two 
-  cells.
-
-Also another file ranks these splicing events by the number of cell paris with
-differential splicing. It has 4 columns: ``gene_id``, ``cell_pairs``, 
-``mean_BF``, ``median_BF``.
-
-There are more parameters for setting (``brie-diff -h`` always give the version 
+There are more parameters for setting (``brie-count -h`` always give the version 
 you are using):
 
 .. code-block:: html
 
-  Usage: brie-diff [options]
+    Usage: brie-count [options]
 
-  Options:
-  -h, --help            show this help message and exit
-  -i IN_FILES, --inFiles=IN_FILES
-                        Input files of Brie samples for multiple cells, comma
-                        separated for each cell, e.g., cell1,cell2,cell3
-  -o OUT_FILE, --outFile=OUT_FILE
-                        Output file with full path
+    Options:
+      -h, --help            show this help message and exit
+      -a GFF_FILE, --gffFile=GFF_FILE
+                            GTF/GFF3 file for gene and transcript annotation
+      -S SAMLIST_FILE, --samList=SAMLIST_FILE
+                            A tsv file containing sorted and indexed bam/sam/cram 
+                            files. No header line; file path and cell id (optional)
+      -o OUT_DIR, --out_dir=OUT_DIR
+                            Full path of output directory [default: $samList/brieCOUNT]
 
-  Optional arguments:
-    -p NPROC, --nproc=NPROC
-                        Number of subprocesses [default: 4]
-    -n BOOTSTRAP, --bootstrap=BOOTSTRAP
-                        Number of bootstrap [default: 1000]
-    --minBF=MINBF       Minimum BF for saving out, e.g., 3 or 10. If it is 0,
-                        save all events [default: 10]
-
+      Optional arguments:
+        -p NPROC, --nproc=NPROC
+                            Number of subprocesses [default: 4]
+  
 
 
+2. brie-quant
+=============
 
 
-3. Examples
-===========
+This command allows to quantify the splicing isoform proportion Psi and detect
+variable splicing event along with cell level features, e.g., cell type, 
+disease condition, development time.
 
-One typical example on 130 mouse cells during gastrulation is in this folder, 
-from which you will quantify the splicing with BRIE, identify the highly 
-variable splicing events and visualise them with sashimi plot.
-https://github.com/huangyh09/brie/tree/master/example/gastrulation
+As a Bayesian method, the key philosophy of BRIE is to combine likelihood (data 
+driven) and prior (uninformative or informative). In BRIE2, a variety of prior
+settings are supported, as follows.
+
+2.1 Mode 1: None imputation
+---------------------------
+
+In this mode, the prior is uninformative logit-normal distribution with mean=0, 
+and learned variance. Therefore, if a splicing event in a gene doesn't have any
+read, it will return a posterior with Psi's mean=0.5 and 95% confidence interval 
+around 0.95 (most case >0.9).
+
+This setting is used if you have high covered data and you only want to 
+calculate cells with sufficient reads for each interesting genes, e.g., by 
+filtering out all genes with Psi_95CI > 0.3.
+
+Otherwise, the 0.5 imputed genes will be confounded by the expression level, 
+instead of the isoform proportion.
+
+Example command line for mode 1:
+
+.. code-block:: bash
+
+  brie-quant -i out_dir/brie_count.h5ad -o out_dir/brie_quant_pure.h5ad --interceptMode None
 
 
-There are some earlier examples: 
-https://sourceforge.net/projects/brie-rna/files/examples/
+2.2 Mode 2: Aggregated imputation
+---------------------------------
 
-- Example to quantify splicing with provided annotation (bash code and data): 
-  brie-examples.zip_
+This mode requires argument `--interceptMode gene`. It aims to learn a prior 
+shared by all cells on each gene. The benefit for this mode is that dimension 
+reduction can be performed, e.g., PCA and UMAP on splicing. As there are many 
+splicing events that are not well covered, it has a high variance in the 
+estimation, and is often suggested filtered out, which will cause missing values.
+Based on the cell aggregated imputation, most dimension reduction methods can be
+used, even it doesn't support missing values.
 
-- Example to quantify splicing with provided annotation (bash code): 
-  brie_demo.sh_
+Example command line for mode 2:
 
-- Example to generate splicing events and fetch sequence factors (bash codes): 
-  anno_maker.sh_
+.. code-block:: bash
 
-.. _brie-examples.zip: http://ufpr.dl.sourceforge.net/project/brie-rna/examples/brie_quantify/brie-examples.zip
-.. _brie_demo.sh: https://github.com/huangyh09/brie/blob/master/example/brie_demo.sh
-.. _anno_maker.sh: https://github.com/huangyh09/brie/blob/master/example/anno_maker.sh
+  brie-quant -i out_dir/brie_count.h5ad -o out_dir/brie_quant_aggr.h5ad --interceptMode gene
+  
+  
+2.3 Mode 3: Variable splicing detection
+---------------------------------------
 
+This mode requires argument `-c` for cell features and `--LRTindex` for the 
+index (zero-based) of cell features to perform likelihood ratio test. Again we
+suggest to keep the cell aggregation on each gene by `--interceptMode gene`.
+
+Then this mode will learn a prior from the given cell level features and perform
+the second fit by leaving each feature out to calculate the EBLO gain, which 
+can be further used as likelihood ratio test.
+
+Example command line for mode 3:
+
+.. code-block:: bash
+
+  brie-quant -i out_dir/brie_count.h5ad -o out_dir/brie_quant_cell.h5ad \
+      -c $DATA_DIR/cell_info.tsv --interceptMode gene --LRTindex=All
+
+
+2.4 Flexible settings
+---------------------
+
+There could be more flexible settings, for example only use gene features as in
+BRIE1 by the following command:
+
+.. code-block:: bash
+
+  brie-quant -i out_dir/brie_count.h5ad -o out_dir/brie_quant_gene.h5ad \
+      -g $DATA_DIR/gene_seq_features.tsv --interceptMode cell --LRTindex=All
+      
+      
+Or use both gene features and cell features
+      
+.. code-block:: bash
+
+  brie-quant -i out_dir/brie_count.h5ad -o out_dir/brie_quant_all.h5ad \
+      -c $DATA_DIR/cell_info.tsv -g $DATA_DIR/gene_seq_features.tsv \
+      --interceptMode gene --LRTindex=All
+      
+
+There are more parameters for setting (``brie-quant -h`` always give the version 
+you are using):
+
+.. code-block:: html
+
+    Usage: brie-quant [options]
+
+    Options:
+      -h, --help            show this help message and exit
+      -i IN_FILE, --inFile=IN_FILE
+                            Input read count matrices in AnnData h5ad or brie npz format.
+      -c CELL_FILE, --cellFile=CELL_FILE
+                            File for cell features in tsv[.gz] with cell and feature ids.
+      -g GENE_FILE, --geneFile=GENE_FILE
+                            File for gene features in tsv[.gz] with gene and feature ids.
+      -o OUT_FILE, --out_file=OUT_FILE
+                            Full path of output file for annData in h5ad [default: $inFile/brie_quant.h5ad]
+      --LRTindex=LRT_INDEX  Index (0-based) of cell features to test with LRT: 
+                            All, None or comma separated integers [default: None]
+      --interceptMode=INTERCEPT_MODE
+                            Intercept mode: gene, cell or None [default: None]
+      --layers=LAYERS       Comma separated layers two or three for estimating 
+                            Psi [default: isoform1,isoform2,ambiguous]
+
+      Optional arguments:
+        --minCount=MIN_COUNT
+                            Minimum total counts for fitltering genes [default: 50]
+        --minUniqCount=MIN_UNIQ_COUNT
+                            Minimum unique counts for fitltering genes [default: 10]
+        --minCell=MIN_CELL  Minimum number of cells with unique count for fitltering genes [default: 30]
+        --minIter=MIN_ITER  Minimum number of iterations [default: 5000]
+        --maxIter=MAX_ITER  Maximum number of iterations [default: 20000]
+        --batchSize=BATCH_SIZE
+                            Element size per batch: n_gene * total cell [default: 500000]
