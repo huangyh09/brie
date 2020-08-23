@@ -81,9 +81,9 @@ quantification in single cells
    
    index
    install
+   quick_start
    brie_count
    brie_quant
-   brie1
    release
 
 .. toctree::
