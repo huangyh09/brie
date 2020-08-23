@@ -12,7 +12,6 @@ from pathlib import Path
 # Set __version__ for the project.
 exec(open("./brie/version.py").read())
 
-
 setup(
     name='brie',
 

@@ -81,6 +81,7 @@ author = "Yuanhua Huang"
 title = "Bayesian Regression for Isoform Estimate in Single Cells"
 copyright = f"{datetime.now():%Y}, {author}"
 
+
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
@@ -149,6 +150,7 @@ html_theme_options = dict(navigation_depth=1, titles_only=True)
 # further.  For a list of options available for each theme, see the
 # documentation.
 #html_theme_options = {}
+
 # html_theme_options = {
 #     # Navigation bar title. (Default: ``project`` value)
 #     'navbar_title': "BRIE",
