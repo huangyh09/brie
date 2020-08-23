@@ -18,7 +18,7 @@ exec(open("./brie/version.py").read())
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
-reqs = ['numpy>=1.18.0', 'pysam>=0.15.2', 'anndata>=0.6.0', 'pandas>=0.23.0', 
+reqs = ['scikit-learn>=0.23.0', 'numpy>=1.18.0', 'pysam>=0.15.2', 'anndata>=0.6.0', 'pandas>=0.23.0', 
         'h5py', 'tensorflow-probability>=0.8.0', 'tensorflow>=2.0.0', 
         'click>=7.0.0', 'matplotlib>=3.1.2', 'seaborn>=0.10.0', 
         'statsmodels>=0.11']
