@@ -14,8 +14,9 @@ Release v2.0.0 (23/08/2020)
 * Restructure the whole package
 * BRIE earlier version is still avaible with `brie1`
 
-=======
+
 Release v0.2.4 (21/10/2019)
+===========================
 * fix a bug that fragment length longer than transcript length
 
 Release v0.2.2 (15/01/2019)

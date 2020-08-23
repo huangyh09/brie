@@ -1,10 +1,17 @@
+|PyPI| |Docs| |Build Status|
+
+.. |PyPI| image:: https://img.shields.io/pypi/v/brie.svg
+    :target: https://pypi.org/project/brie
+.. |Docs| image:: https://readthedocs.org/projects/brie/badge/?version=latest
+   :target: https://brie.readthedocs.io
+.. |Build Status| image:: https://travis-ci.org/huangyh09/brie.svg?branch=master
+   :target: https://travis-ci.org/huangyh09/brie
+   
 ====
 Home
 ====
 
-.. :Author: Yuanhua Huang
-.. :Version: 2.0.0
-.. :Last viewed: Aug 23, 2020
+
 
 About BRIE
 ==========
@@ -56,3 +63,21 @@ quantification in single cells
 <https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1248-5>`_. 
 \ **Genome Biology**\, 2017; 18(1):123.
 
+
+
+.. toctree::
+   :caption: Main
+   :maxdepth: 1
+   :hidden:
+   
+   install
+   manual
+   manual_brie1
+   releases
+
+.. toctree::
+   :caption: Examples
+   :maxdepth: 1
+   :hidden:
+
+   Prior_distribution_BRIE2

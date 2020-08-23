@@ -14,12 +14,29 @@
 
 import sys
 import os
-import sphinx_bootstrap_theme
+from datetime import datetime
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
+
+
+# -- Retrieve notebooks ------------------------------------------------
+
+from urllib.request import urlretrieve
+
+notebooks_url = "https://github.com/huangyh09/brie/raw/master/examples/"
+notebooks = [
+    "Prior_distribution_BRIE2.ipynb",
+]
+for nb in notebooks:
+    try:
+        urlretrieve(notebooks_url + nb, nb)
+    except:
+        pass
+
+
 
 # -- General configuration ------------------------------------------------
 
@@ -29,17 +46,28 @@ import sphinx_bootstrap_theme
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+
+needs_sphinx = "1.7"
+
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.doctest',
-    'sphinx.ext.pngmath',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.doctest",
+    "sphinx.ext.coverage",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.githubpages",
+    "sphinx_autodoc_typehints",
+    "nbsphinx",
+    "edit_on_github",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
 # The suffix of source filenames.
-source_suffix = '.rst'
+source_suffix = ['.rst', ".ipynb"]
 
 # The encoding of source files.
 #source_encoding = 'utf-8-sig'
@@ -48,8 +76,11 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'brie'
-copyright = u'2017-2020, Yuanhua Huang'
+project = "BRIE"
+author = "Yuanhua Huang"
+title = "Bayesian Regression for Isoform Estimate in Single Cells"
+copyright = f"{datetime.now():%Y}, {author}"
+
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -107,83 +138,89 @@ pygments_style = 'sphinx'
 # html_theme = 'default'
 # html_theme = "bizstyle"
 # html_theme = "nature"
-html_theme = 'bootstrap'
-html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+html_theme = 'sphinx_rtd_theme'
+html_theme_options = dict(navigation_depth=1, titles_only=True)
+
+
+# import sphinx_bootstrap_theme
+# html_theme = 'bootstrap'
+# html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #html_theme_options = {}
-html_theme_options = {
-    # Navigation bar title. (Default: ``project`` value)
-    'navbar_title': "BRIE",
 
-    # Tab name for entire site. (Default: "Site")
-    'navbar_site_name': "Site",
+# html_theme_options = {
+#     # Navigation bar title. (Default: ``project`` value)
+#     'navbar_title': "BRIE",
 
-    # Tab name for the current pages TOC. (Default: "Page")
-    'navbar_pagenav_name': "Page",
+#     # Tab name for entire site. (Default: "Site")
+#     'navbar_site_name': "Site",
 
-    # A list of tuples containing pages or urls to link to.
-    # Valid tuples should be in the following forms:
-    #    (name, page)                 # a link to a page
-    #    (name, "/aa/bb", 1)          # a link to an arbitrary relative url
-    #    (name, "http://example.com", True) # arbitrary absolute url
-    # Note the "1" or "True" value above as the third argument to indicate
-    # an arbitrary url.
-    'navbar_links': [
-        ("Install", "install"),
-        ("Manual", "manual"),
-        ("BRIE1", "manual_brie1"),
-        # ("Tutorial", "manual"),
-        # ("API", "manual"),
-        # ("Link", "http://example.com", True),
-    ],
+#     # Tab name for the current pages TOC. (Default: "Page")
+#     'navbar_pagenav_name': "Page",
 
-    'navbar_sidebarrel': False,
+#     # A list of tuples containing pages or urls to link to.
+#     # Valid tuples should be in the following forms:
+#     #    (name, page)                 # a link to a page
+#     #    (name, "/aa/bb", 1)          # a link to an arbitrary relative url
+#     #    (name, "http://example.com", True) # arbitrary absolute url
+#     # Note the "1" or "True" value above as the third argument to indicate
+#     # an arbitrary url.
+#     'navbar_links': [
+#         ("Install", "install"),
+#         ("Manual", "manual"),
+#         ("BRIE1", "manual_brie1"),
+#         # ("Tutorial", "manual"),
+#         # ("API", "manual"),
+#         # ("Link", "http://example.com", True),
+#     ],
 
-    # Global TOC depth for "site" navbar tab. (Default: 1)
-    # Switching to -1 shows all levels.
-    'globaltoc_depth': 1,
+#     'navbar_sidebarrel': False,
 
-    # Include hidden TOCs in Site navbar?
-    #
-    # Note: If this is "false", you cannot have mixed ``:hidden:`` and
-    # non-hidden ``toctree`` directives in the same page, or else the build
-    # will break.
-    #
-    # Values: "true" (default) or "false"
-    'globaltoc_includehidden': "true",
+#     # Global TOC depth for "site" navbar tab. (Default: 1)
+#     # Switching to -1 shows all levels.
+#     'globaltoc_depth': 1,
 
-    # HTML navbar class (Default: "navbar") to attach to <div> element.
-    # For black navbar, do "navbar navbar-inverse"
-    'navbar_class': "navbar", #"navbar",
+#     # Include hidden TOCs in Site navbar?
+#     #
+#     # Note: If this is "false", you cannot have mixed ``:hidden:`` and
+#     # non-hidden ``toctree`` directives in the same page, or else the build
+#     # will break.
+#     #
+#     # Values: "true" (default) or "false"
+#     'globaltoc_includehidden': "true",
 
-    # Fix navigation bar to top of page?
-    # Values: "true" (default) or "false"
-    'navbar_fixed_top': "true",
+#     # HTML navbar class (Default: "navbar") to attach to <div> element.
+#     # For black navbar, do "navbar navbar-inverse"
+#     'navbar_class': "navbar", #"navbar",
 
-    # Location of link to source.
-    # Options are "nav" (default), "footer" or anything else to exclude.
-    'source_link_position': "footer", #"nav",
+#     # Fix navigation bar to top of page?
+#     # Values: "true" (default) or "false"
+#     'navbar_fixed_top': "true",
 
-    # Bootswatch (http://bootswatch.com/) theme.
-    #
-    # Options are nothing (default) or the name of a valid theme such
-    # as "amelia" or "cosmo".
-    #
-    # Example themes:
-    # * flatly
-    # * sandstone (v3 only)
-    # * united
-    # * yeti (v3 only)
-    # * cerulean
-    'bootswatch_theme': "flatly",
+#     # Location of link to source.
+#     # Options are "nav" (default), "footer" or anything else to exclude.
+#     'source_link_position': "footer", #"nav",
 
-    # Choose Bootstrap version.
-    # Values: "3" (default) or "2" (in quotes)
-    'bootstrap_version': "3",
-}
+#     # Bootswatch (http://bootswatch.com/) theme.
+#     #
+#     # Options are nothing (default) or the name of a valid theme such
+#     # as "amelia" or "cosmo".
+#     #
+#     # Example themes:
+#     # * flatly
+#     # * sandstone (v3 only)
+#     # * united
+#     # * yeti (v3 only)
+#     # * cerulean
+#     'bootswatch_theme': "flatly",
+
+#     # Choose Bootstrap version.
+#     # Values: "3" (default) or "2" (in quotes)
+#     'bootstrap_version': "3",
+# }
 
 
 # Add any paths that contain custom themes here, relative to this directory.
