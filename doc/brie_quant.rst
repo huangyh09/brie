@@ -2,17 +2,11 @@
 brie-quant CLI
 ==============
 
-After properly installed BRIE (>=2.0.0) Python package, two CLI will be 
-available directly in your Python path: ``brie-count``, ``brie-quant``. 
-
-In this documentation, BRIE refers to BRIE2 (>=2.0.0). For using BRIE1 (<=0.2.2)
-with MCMC sampler, please refer to BRIE1_. If you want to generate splicing
-annotations for your data, e.g., a species different from human and mouse,
-please use a separated package BRIE-kit_, which is developed in Python2. 
+The ``brie-quant`` CLI (in brie>=2.0.0) uses the newly developed variational 
+inference methods scalable to large data sets. For using BRIE1 (<=0.2.4)
+with MCMC sampler, please refer to BRIE1_. 
 
 .. _BRIE1: brie1.html
-.. _BRIE-kit: https://github.com/huangyh09/briekit/wiki
-
 
 This command allows to quantify the splicing isoform proportion Psi and detect
 variable splicing event along with cell level features, e.g., cell type, 
@@ -47,7 +41,7 @@ Example command line for mode 1:
 Mode 2: Aggregated imputation
 =============================
 
-This mode requires argument `--interceptMode gene`. It aims to learn a prior 
+This mode requires argument ``--interceptMode gene``. It aims to learn a prior 
 shared by all cells on each gene. The benefit for this mode is that dimension 
 reduction can be performed, e.g., PCA and UMAP on splicing. As there are many 
 splicing events that are not well covered, it has a high variance in the 
@@ -65,9 +59,9 @@ Example command line for mode 2:
 Mode 3: Variable splicing detection
 ===================================
 
-This mode requires argument `-c` for cell features and `--LRTindex` for the 
+This mode requires argument ``-c`` for cell features and ``--LRTindex`` for the 
 index (zero-based) of cell features to perform likelihood ratio test. Again we
-suggest to keep the cell aggregation on each gene by `--interceptMode gene`.
+suggest to keep the cell aggregation on each gene by ``--interceptMode gene``.
 
 Then this mode will learn a prior from the given cell level features and perform
 the second fit by leaving each feature out to calculate the EBLO gain, which 

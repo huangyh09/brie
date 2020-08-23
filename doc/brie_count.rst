@@ -2,37 +2,31 @@
 brie-count CLI
 ==============
 
-After properly installed BRIE (>=2.0.0) Python package, two CLI will be 
-available directly in your Python path: ``brie-count``, ``brie-quant``. 
+BRIE (>=2.0.0) provids two CLI directly available in your Python path: 
+``brie-count``, ``brie-quant``. 
 
-In this documentation, BRIE refers to BRIE2 (>=2.0.0). For using BRIE1 (<=0.2.2)
-with MCMC sampler, please refer to BRIE1_. If you want to generate splicing
-annotations for your data, e.g., a species different from human and mouse,
-please use a separated package BRIE-kit_, which is developed in Python2. 
-
-.. _BRIE1: brie1.html
-.. _BRIE-kit: https://github.com/huangyh09/briekit/wiki
-
-
-Options
-=======
-
-This CLI will return a count tensor for the number of reads aligned to four 
-different categories in each splicing event and each cell:
-1) Uniquely aligned to isoform1, e.g., in exon1-exon2 junction in SE event
-2) Uniquely aligned to isoform2, e.g., in exon1-exon3 junction in SE event
-3) Ambiguously aligned to isoform1 and isoform2, e.g., within exon1
-0) Fetched in the region but not compatible with any of the above three types.
-   We suggest ignoring these reads.
-   
-As input, you need to generate the splicing event annotation. We have generated
-data for human_ and mouse_. We suggest align RNA-seq reads to the according 
-version of reference genome. Alternatively, you can use `briekit` package to 
-generate.
+Splicing annotations
+====================
+As input, it requires a list of annotated splicing events. We have generated
+annotations for human_ and mouse_. If you are using it, please align RNA-seq 
+reads to the according version (or close version) of reference genome. 
+Alternatively, you can use `briekit`_ package to generate.
 
 .. _human: https://sourceforge.net/projects/brie-rna/files/annotation/human/gencode.v25/
 .. _mouse: https://sourceforge.net/projects/brie-rna/files/annotation/mouse/gencode.vM12/
+.. _briekit: https://github.com/huangyh09/briekit/wiki
 
+Read counting
+=============
+
+The ``brie-count`` CLI calculates a count tensor for the number of reads that 
+are aligned to each splicing event and each cell, and stratifies four them into
+four different categories in :
+0) Partially aligned in the region but not compatible with any of the two 
+   isoforms. We suggest ignoring these reads.
+1) Uniquely aligned to isoform1, e.g., in exon1-exon2 junction in SE event
+2) Uniquely aligned to isoform2, e.g., in exon1-exon3 junction in SE event
+3) Ambiguously aligned to isoform1 and isoform2, e.g., within exon1
 
 Then you fetch the counts on a list of bam files by the command line like this:
 
@@ -45,6 +39,8 @@ By default, you will have four output files in the out_dir: ``brie_count.h5ad``,
 ``brie_count.h5ad`` contains all information for downstream analysis, e.g., for
 `brie-quant`.
 
+Options
+=======
 
 There are more parameters for setting (``brie-count -h`` always give the version 
 you are using):
