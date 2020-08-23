@@ -7,8 +7,8 @@ import time
 import numpy as np
 from optparse import OptionParser, OptionGroup
 
-import brie
-import tensorflow as tf
+from ..version import __version__
+
 
 def quant(in_file, cell_file=None, gene_file=None, out_file=None,
           LRT_index=[], layer_keys=['isoform1', 'isoform2', 'ambiguous'],
@@ -152,7 +152,7 @@ def main():
     
     (options, args) = parser.parse_args()
     if len(sys.argv[1:]) == 0:
-        print("Welcome to brie-quant in BRIE v%s!\n" %(brie.__version__))
+        print("Welcome to brie-quant in BRIE v%s!\n" %(__version__))
         print("use -h or --help for help on argument.")
         sys.exit(1)
     if options.in_file == None:

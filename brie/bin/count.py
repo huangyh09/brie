@@ -186,7 +186,7 @@ def main():
     
     (options, args) = parser.parse_args()
     if len(sys.argv[1:]) == 0:
-        print("Welcome to brie-count in BRIE v%s!\n" %(brie.__version__))
+        print("Welcome to brie-count in BRIE v%s!\n" %(__version__))
         print("use -h or --help for help on argument.")
         sys.exit(1)
     if options.samList_file == None:
