@@ -7,21 +7,11 @@ See: https://brie.readthedocs.io
 from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
-from os import path
-
-here = path.abspath(path.dirname(__file__))
+from pathlib import Path
 
 # Set __version__ for the project.
 exec(open("./brie/version.py").read())
 
-# Get the long description from the relevant file
-with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
-    long_description = f.read()
-
-reqs = ['numpy>=1.18.0', 'pysam>=0.15.2', 'anndata>=0.6.0', 'pandas>=0.23.0', 
-        'h5py', 'tensorflow-probability>=0.8.0', 'tensorflow>=2.0.0', 
-        'click>=7.0.0', 'matplotlib>=3.1.2', 'seaborn>=0.10.0', 
-        'statsmodels>=0.11']
 
 setup(
     name='brie',
@@ -32,7 +22,7 @@ setup(
     version=__version__,
 
     description='BRIE: Bayesian regression for isoform estimate',
-    long_description=long_description,
+    long_description=Path("README.rst").read_text("utf-8"),
 
     # The project's main homepage.
     url='https://brie.readthedocs.io',
@@ -69,10 +59,10 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
 
-    install_requires=reqs,
-    # install_requires=[
-    #     l.strip() for l in Path('requirements.txt').read_text('utf-8').splitlines()
-    # ],
+    # install_requires=reqs,
+    install_requires=[
+        l.strip() for l in Path('requirements.txt').read_text('utf-8').splitlines()
+    ],
 
     extras_require={
         'docs': [
