@@ -3,7 +3,10 @@ Quick start
 ===========
 
 BRIE estimates the isoform proportion for two-isoform events across many single 
-cells. For getting started quickly, there are two main steps to go. 
+cells. For getting started quickly, there are two main steps to go. A demo file
+is available at `brie2_demo.sh`_. Sepcifically, you can follow the steps below.
+
+.. _brie2_demo.sh: https://github.com/huangyh09/brie/blob/master/examples/brie2_demo.sh
 
 
 Step1: read counts

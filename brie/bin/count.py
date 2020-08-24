@@ -8,9 +8,9 @@ import numpy as np
 import multiprocessing
 from optparse import OptionParser, OptionGroup
 
-from ..version import __version__
-from ..utils.io_utils import read_brieMM, read_gff, convert_to_annData
-from ..utils.count import get_count_matrix, SE_effLen
+from brie.version import __version__
+from brie.utils.io_utils import read_brieMM, read_gff, convert_to_annData
+from brie.utils.count import get_count_matrix, SE_effLen
 
 
 FID = None
@@ -163,8 +163,8 @@ def count(gff_file, samList_file, out_dir=None, nproc=1, add_premRNA=False):
     
     
 def main():
-    import warnings
-    warnings.filterwarnings('error')
+    # import warnings
+    # warnings.filterwarnings('error')
 
     # parse command line options
     parser = OptionParser()

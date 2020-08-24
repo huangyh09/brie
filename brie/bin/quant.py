@@ -9,6 +9,7 @@ from optparse import OptionParser, OptionGroup
 
 import brie
 
+
 def quant(in_file, cell_file=None, gene_file=None, out_file=None,
           LRT_index=[], layer_keys=['isoform1', 'isoform2', 'ambiguous'],
           intercept=None, intercept_mode='gene', nproc=1,
@@ -183,4 +184,3 @@ def main():
 if __name__ == "__main__":
     main()
     
-

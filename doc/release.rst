@@ -2,6 +2,10 @@
 Release notes
 =============
 
+Release v2.0.2 (24/08/2020)
+===========================
+* Fix minor bugs in brei-count and brie-quant cli for compatibility
+
 Release v2.0.0 (23/08/2020)
 ===========================
 * Change the whole BRIE model from MCMC sampler (v1) to variational inference (v2)

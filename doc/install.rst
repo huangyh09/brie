@@ -9,15 +9,11 @@ heavily depends on TensorFlow and TensorFlow-probability.
 
 .. code-block:: bash
   
-  conda create -n TFProb python=3.7 scikit-learn
+  conda create -n TFProb python=3.7
 
 replace ``-n TFProb`` with ``-p ANY_PATH/TFProb`` to specify the path for conda 
 environment. Then activate the environment by ``conda activate TFProb`` or the 
 full path, before install more packages.
-
-.. code-block:: bash
-
-  pip install -U tensorflow tensorflow-probability
 
 .. _conda environment: https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
 
@@ -73,7 +69,7 @@ you will see the following output.
 
 .. code-block:: html
 
-  Welcome to brie-quant in BRIE v2.0.0!
+  Welcome to brie-quant in BRIE v2.0.2!
 
   use -h or --help for help on argument.
 
