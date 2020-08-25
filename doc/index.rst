@@ -93,4 +93,5 @@ quantification in single cells
    :maxdepth: 1
    :hidden:
 
+   multiple_sclerosis
    Prior_distribution_BRIE2
