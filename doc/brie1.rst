@@ -26,8 +26,8 @@ required. There are two ways to get the annotation and sequence features:
 .. _here: https://sourceforge.net/projects/brie-rna/files/annotation/
 .. _human: https://sourceforge.net/projects/brie-rna/files/annotation/human/gencode.v25/
 .. _mouse: https://sourceforge.net/projects/brie-rna/files/annotation/mouse/gencode.vM12/
-.. _brie-event: https://brie-rna.sourceforge.io/manual.html#splicing-events
-.. _brie-factor: https://brie-rna.sourceforge.io/manual.html#sequence-features
+.. _briekit-event: https://brie-rna.sourceforge.io/manual.html#splicing-events
+.. _briekit-factor: https://brie-rna.sourceforge.io/manual.html#sequence-features
 
 
 Then you could input the feature file obtained above, and run it like this:

@@ -37,6 +37,16 @@ for nb in notebooks:
         pass
 
 
+notebooks_url = "https://sourceforge.net/projects/brie-rna/files/examples/brie_quantify/"
+notebooks = [
+    "multiple_sclerosis.ipynb",
+]
+for nb in notebooks:
+    try:
+        urlretrieve(notebooks_url + nb, nb)
+    except:
+        pass
+
 
 # -- General configuration ------------------------------------------------
 
