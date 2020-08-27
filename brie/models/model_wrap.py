@@ -93,6 +93,17 @@ def fit_BRIE_matrix(data, Xc=None, Xg=None, effLen=None, intercept=None,
     -------
     BRIE2 model object.
     """
+    from scipy.sparse import issparse
+    for i in range(len(data)):
+        if issparse(data[i]):
+            data[i] = data[i].toarray().astype(np.float32)
+
+    # Test add pseudo count
+    pseudo_count = 0.01
+    idx = data[0] + data[1] > 0
+    for i in range(2):
+        data[i][idx] = data[i][idx] + pseudo_count
+
     if Xc is None:
         Xc = np.ones((data[0].shape[0], 0), np.float32)
     if Xg is None:

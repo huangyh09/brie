@@ -97,7 +97,7 @@ class BRIE2():
         return tfd.Normal(_zz_loc, self.sigma)
     
         
-    def logLik_MC(self, count_layers, target="ELBO", size=10):
+    def logLik_MC(self, count_layers, target="ELBO", MC_size=1):
         """Get marginal logLikelihood on variational or prior distribution
         with Monte Carlo sampling
         """
@@ -124,9 +124,9 @@ class BRIE2():
         
         ## Build-in re-parametrized: Gaussian is FULLY_REPARAMETERIZED
         if target == "marginLik":
-            _Z = self.Z_prior.sample(size)      # (size, Nc, Ng)
+            _Z = self.Z_prior.sample(MC_size)      # (size, Nc, Ng)
         else:
-            _Z = self.Z.sample(size)            # (size, Nc, Ng)
+            _Z = self.Z.sample(MC_size)            # (size, Nc, Ng)
         
         ## Calculate element wise logLikelihood
         if self.effLen is None:

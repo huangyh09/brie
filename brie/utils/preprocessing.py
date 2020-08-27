@@ -3,7 +3,7 @@
 import numpy as np
 
 def filter_genes(data, min_counts=0, min_cells=0, 
-                 min_counts_uniq=0,  min_cells_uniq=0, 
+                 min_counts_uniq=0,  min_cells_uniq=0, min_MIF_uniq=0.001,
                  uniq_layers=['isoform1', 'isoform2'],
                  ambg_layers=['ambiguous'], copy=False):
     """Filter genes based on number of cells or counts.
@@ -52,6 +52,14 @@ def filter_genes(data, min_counts=0, min_cells=0,
     
     gene_subset &= np.array(unique_counts.sum(0)).reshape(-1) >= min_counts_uniq
     gene_subset &= np.array((unique_counts > 0).sum(0)).reshape(-1) >= min_cells_uniq
+    
+    # limiting the isoform fractions
+    unique_counts1 = adata.layers[uniq_layers[0]]
+    unique_counts2 = adata.layers[uniq_layers[1]]
+    gene_subset &= (np.array(unique_counts1.sum(0)).reshape(-1) >= 
+                    min_MIF_uniq * np.array(unique_counts.sum(0)).reshape(-1))
+    gene_subset &= (np.array(unique_counts2.sum(0)).reshape(-1) >= 
+                    min_MIF_uniq * np.array(unique_counts.sum(0)).reshape(-1))
     
     adata._inplace_subset_var(gene_subset)
     adata.var['n_counts'] = np.array(total_counts.sum(0)).reshape(-1)[gene_subset]

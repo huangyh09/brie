@@ -2,6 +2,16 @@
 Release notes
 =============
 
+Release v2.0.3 (26/08/2020)
+===========================
+* Support to use minimum minor isoform frequency to fileter genes (default=0.001)
+* Add pseudo count (default=0.01) for none-empty element in both unique counts 
+  for more robust results
+* Reduce the sample size for Monte Carlo Expectation (10 to 3) for computational
+  efficiency
+* Restructure the arguments in brie-quant
+* Initialise the example notebook on multiple sclerosis data
+
 Release v2.0.2 (24/08/2020)
 ===========================
 * Fix minor bugs in brei-count and brie-quant cli for compatibility

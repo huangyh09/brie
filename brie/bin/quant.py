@@ -12,9 +12,9 @@ import brie
 
 def quant(in_file, cell_file=None, gene_file=None, out_file=None,
           LRT_index=[], layer_keys=['isoform1', 'isoform2', 'ambiguous'],
-          intercept=None, intercept_mode='gene', nproc=1,
-          min_counts=50, min_counts_uniq=10, min_cells_uniq=30, 
-          min_iter=5000, max_iter=20000, batch_size=500000):
+          intercept=None, intercept_mode='gene', nproc=1, min_counts=50, 
+          min_counts_uniq=10, min_cells_uniq=30, min_MIF_uniq=0.001,
+          min_iter=5000, max_iter=20000, MC_size=1, batch_size=500000):
     """CLI for quantifying splicing isoforms and detecting variable splicing 
     events associated with cell features
     
@@ -67,6 +67,7 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
     adata = brie.pp.filter_genes(adata, min_counts=min_counts,
                                  min_counts_uniq=min_counts_uniq, 
                                  min_cells_uniq=min_cells_uniq, 
+                                 min_MIF_uniq=min_MIF_uniq,
                                  uniq_layers=layer_keys[:2],
                                  ambg_layers=layer_keys[2:], copy=True)
     
@@ -99,8 +100,10 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
     model = brie.tl.fitBRIE(adata, Xc=Xc, Xg=Xg, 
                             LRT_index=LRT_index, layer_keys=layer_keys, 
                             intercept=intercept, intercept_mode=intercept_mode,
-                            min_iter=min_iter, max_iter=max_iter,
-                            batch_size=batch_size)
+                            min_iter=min_iter, max_iter=max_iter, 
+                            MC_size=MC_size, batch_size=batch_size)
+    
+    adata.brie_version = brie.__version__
     
     adata.write_h5ad(out_file)
         
@@ -130,25 +133,32 @@ def main():
         help="Comma separated layers two or three for estimating Psi "
              "[default: %default]")
     
-    group = OptionGroup(parser, "Optional arguments")
-    group.add_option("--minCount", type="int", dest="min_count", default=50,
+    group1 = OptionGroup(parser, "Gene filtering")
+    group1.add_option("--minCount", type="int", dest="min_count", default=50,
         help="Minimum total counts for fitltering genes [default: %default]")
-    group.add_option("--minUniqCount", type="int", dest="min_uniq_count",
+    group1.add_option("--minUniqCount", type="int", dest="min_uniq_count",
         default=10, help="Minimum unique counts for fitltering genes "
                          "[default: %default]")
-    group.add_option("--minCell", type="int", dest="min_cell", default=30,
+    group1.add_option("--minCell", type="int", dest="min_cell", default=30,
         help="Minimum number of cells with unique count for fitltering genes "
              "[default: %default]")
-    group.add_option("--minIter", type="int", dest="min_iter", default=5000,
+    group1.add_option("--minMIF", type="float", dest="min_MIF", default=0.001,
+        help="Minimum minor isoform frequency in unique count [default: %default]")
+    
+    group2 = OptionGroup(parser, "VI Optimization")
+    group2.add_option("--MCsize", type="int", dest="MC_size", default=3,
+        help="Sample size for Monte Carlo Expectation [default: %default]")
+    group2.add_option("--minIter", type="int", dest="min_iter", default=5000,
         help="Minimum number of iterations [default: %default]")
-    group.add_option("--maxIter", type="int", dest="max_iter", default=20000,
+    group2.add_option("--maxIter", type="int", dest="max_iter", default=20000,
         help="Maximum number of iterations [default: %default]")
-    group.add_option("--batchSize", type=int, dest="batch_size", default=500000, 
+    group2.add_option("--batchSize", type=int, dest="batch_size", default=500000, 
         help="Element size per batch: n_gene * total cell [default: %default]")
     # group.add_option("--nproc", "-p", type="int", dest="npoc", default="-1",
     #     help="Number of processes for computing [default: %default]")
 
-    parser.add_option_group(group)
+    parser.add_option_group(group1)
+    parser.add_option_group(group2)
     
     (options, args) = parser.parse_args()
     if len(sys.argv[1:]) == 0:
@@ -177,9 +187,10 @@ def main():
     # run detection function
     quant(options.in_file, options.cell_file, options.gene_file, 
           options.out_file, LRT_index, options.layers.split(','),
-          intercept, options.intercept_mode, 
-          nproc, options.min_count, options.min_uniq_count, options.min_cell,
-          options.min_iter, options.max_iter, options.batch_size)
+          intercept, options.intercept_mode, nproc, options.min_count, 
+          options.min_uniq_count, options.min_cell, options.min_MIF,
+          options.min_iter, options.max_iter, options.MC_size, 
+          options.batch_size)
 
 if __name__ == "__main__":
     main()
