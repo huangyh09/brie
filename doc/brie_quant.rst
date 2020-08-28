@@ -104,28 +104,40 @@ you are using):
     Options:
       -h, --help            show this help message and exit
       -i IN_FILE, --inFile=IN_FILE
-                            Input read count matrices in AnnData h5ad or brie npz format.
+                            Input read count matrices in AnnData h5ad or brie npz
+                            format.
       -c CELL_FILE, --cellFile=CELL_FILE
-                            File for cell features in tsv[.gz] with cell and feature ids.
+                            File for cell features in tsv[.gz] with cell and
+                            feature ids.
       -g GENE_FILE, --geneFile=GENE_FILE
-                            File for gene features in tsv[.gz] with gene and feature ids.
+                            File for gene features in tsv[.gz] with gene and
+                            feature ids.
       -o OUT_FILE, --out_file=OUT_FILE
-                            Full path of output file for annData in h5ad [default: $inFile/brie_quant.h5ad]
-      --LRTindex=LRT_INDEX  Index (0-based) of cell features to test with LRT: 
+                            Full path of output file for annData in h5ad [default:
+                            $inFile/brie_quant.h5ad]
+      --LRTindex=LRT_INDEX  Index (0-based) of cell features to test with LRT:
                             All, None or comma separated integers [default: None]
       --interceptMode=INTERCEPT_MODE
                             Intercept mode: gene, cell or None [default: None]
-      --layers=LAYERS       Comma separated layers two or three for estimating 
-                            Psi [default: isoform1,isoform2,ambiguous]
+      --layers=LAYERS       Comma separated layers two or three for estimating Psi
+                            [default: isoform1,isoform2,ambiguous]
 
-      Optional arguments:
+      Gene filtering:
         --minCount=MIN_COUNT
-                            Minimum total counts for fitltering genes [default: 50]
+                            Minimum total counts for fitltering genes [default:
+                            50]
         --minUniqCount=MIN_UNIQ_COUNT
-                            Minimum unique counts for fitltering genes [default: 10]
-        --minCell=MIN_CELL  Minimum number of cells with unique count for fitltering genes [default: 30]
+                            Minimum unique counts for fitltering genes [default:
+                            10]
+        --minCell=MIN_CELL  Minimum number of cells with unique count for
+                            fitltering genes [default: 30]
+        --minMIF=MIN_MIF    Minimum minor isoform frequency in unique count
+                            [default: 0.001]
+
+      VI Optimization:
+        --MCsize=MC_SIZE    Sample size for Monte Carlo Expectation [default: 3]
         --minIter=MIN_ITER  Minimum number of iterations [default: 5000]
         --maxIter=MAX_ITER  Maximum number of iterations [default: 20000]
         --batchSize=BATCH_SIZE
-                            Element size per batch: n_gene * total cell [default: 500000]
-
+                            Element size per batch: n_gene * total cell [default:
+                            500000]
