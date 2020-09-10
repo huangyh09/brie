@@ -75,7 +75,9 @@ def filter_genes(data, min_counts=0, min_cells=0,
         if min_cells_uniq > 0:
             terms.append('%d cells with unique counts' %(min_cells_uniq))
         if min_counts_uniq > 0:
-            terms.append('%d unique counts' %(min_counts_uniq))    
+            terms.append('%d unique counts' %(min_counts_uniq))  
+        if min_MIF_uniq > 0:
+            terms.append('%d minor isoform frequency' %(min_MIF_uniq))  
         print('Filtered out %d genes with less than ' %(s) + " or ".join(terms))
 
     return adata if copy else None

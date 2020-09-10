@@ -20,11 +20,13 @@ def loss(losses, last=200):
     
 def counts(adata, genes, size='Psi', color=None, gene_key='index',
            layers=['isoform1', 'isoform2'], nrow=None, ncol=None, 
-           show_key="index", add_val=None, **keyargs):
+           show_key="index", add_val=None, noise_scale=0.1, **keyargs):
     """Plot the counts for isoforms
     """
     import pandas as pd
     import seaborn as sns
+    if noise_scale > 0:
+        np.random.seed = 0
     
     # support a single gene input
     if type(genes) == str:
@@ -64,8 +66,10 @@ def counts(adata, genes, size='Psi', color=None, gene_key='index',
             y_mat = y_mat.toarray()
         
         df_tmp = pd.DataFrame({
-            "x": x_mat[:, 0],
-            "y": y_mat[:, 0],
+            "x": x_mat[:, 0] + np.random.normal(loc = 0.0, scale = noise_scale, 
+                                                size = len(x_mat[:, 0])),
+            "y": y_mat[:, 0] + np.random.normal(loc = 0.0, scale = noise_scale, 
+                                                size = len(x_mat[:, 0])),
             color: color_use,
             size: adata_use.layers[size][:, 0]})
         
@@ -84,3 +88,30 @@ def counts(adata, genes, size='Psi', color=None, gene_key='index',
         #print(-res_md.pval_log10[sig_idx[i], 0])
 
     plt.tight_layout()
+
+    
+def vi_post(brie_res):
+    """Plot variational posterior
+    """
+    import seaborn as sns
+    from scipy.special import logit
+    from ..models import LogitNormal
+    
+    sns.heatmap(brie_res.Psi, cmap="GnBu", annot=False, fmt=".3f", 
+                vmin=0, vmax=1, cbar=False, linewidths=0.1, alpha=0.5)
+
+    # sns.heatmap(brie_res.Psi * 0, cmap="Pastel2", annot=False, fmt=".3f", 
+    #             vmin=0, vmax=1, cbar=False, linewidths=0.1, alpha=1)
+
+    for i in range(brie_res.Psi.shape[1]):
+        for j in range(brie_res.Psi.shape[0]):
+            x = np.linspace(0.05, 0.95, 100)
+            y = LogitNormal(scale=brie_res.Z_std[j, i], 
+                            loc=logit(brie_res.Psi[j, i])).pdf(x)
+            y = y / np.max(y) * 0.9
+            xx = i + x
+            yy = j - y + 1
+            plt.plot(xx, yy, c='black', linewidth=1.5)
+            plt.plot([i + brie_res.Psi[j, i], i + brie_res.Psi[j, i]],
+                     [j + 0.05, j + 1], c='firebrick', linewidth=0.5)
+            

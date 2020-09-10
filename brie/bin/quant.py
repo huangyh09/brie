@@ -14,7 +14,8 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
           LRT_index=[], layer_keys=['isoform1', 'isoform2', 'ambiguous'],
           intercept=None, intercept_mode='gene', nproc=1, min_counts=50, 
           min_counts_uniq=10, min_cells_uniq=30, min_MIF_uniq=0.001,
-          min_iter=5000, max_iter=20000, MC_size=1, batch_size=500000):
+          min_iter=5000, max_iter=20000, MC_size=1, batch_size=500000,
+          pseudo_count=0.01):
     """CLI for quantifying splicing isoforms and detecting variable splicing 
     events associated with cell features
     
@@ -64,6 +65,7 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
         Xc = None
         
     ## Filter genes
+    print("layers:", layer_keys)
     adata = brie.pp.filter_genes(adata, min_counts=min_counts,
                                  min_counts_uniq=min_counts_uniq, 
                                  min_cells_uniq=min_cells_uniq, 
@@ -101,9 +103,10 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
                             LRT_index=LRT_index, layer_keys=layer_keys, 
                             intercept=intercept, intercept_mode=intercept_mode,
                             min_iter=min_iter, max_iter=max_iter, 
-                            MC_size=MC_size, batch_size=batch_size)
+                            MC_size=MC_size, batch_size=batch_size,
+                            pseudo_count=pseudo_count)
     
-    adata.brie_version = brie.__version__
+    adata.uns['brie_version'] = brie.__version__
     
     adata.write_h5ad(out_file)
         
@@ -154,6 +157,8 @@ def main():
         help="Maximum number of iterations [default: %default]")
     group2.add_option("--batchSize", type=int, dest="batch_size", default=500000, 
         help="Element size per batch: n_gene * total cell [default: %default]")
+    group2.add_option("--pseudoCount", type=float, dest="pseudo_count", default=0.01, 
+        help="Pseudo count to add on unique count matrices [default: %default]")
     # group.add_option("--nproc", "-p", type="int", dest="npoc", default="-1",
     #     help="Number of processes for computing [default: %default]")
 
@@ -190,7 +195,7 @@ def main():
           intercept, options.intercept_mode, nproc, options.min_count, 
           options.min_uniq_count, options.min_cell, options.min_MIF,
           options.min_iter, options.max_iter, options.MC_size, 
-          options.batch_size)
+          options.batch_size, options.pseudo_count)
 
 if __name__ == "__main__":
     main()

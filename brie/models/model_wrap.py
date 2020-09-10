@@ -75,7 +75,8 @@ def concate(BRIE_RV_list):
 
 
 def fit_BRIE_matrix(data, Xc=None, Xg=None, effLen=None, intercept=None, 
-                    intercept_mode='gene', LRT_index=None, **keyargs):
+                    intercept_mode='gene', LRT_index=None, pseudo_count=0.01,
+                    sigma=None, **keyargs):
     """Fit a BRIE model with cell and/or gene features
     
     Parameters
@@ -99,7 +100,7 @@ def fit_BRIE_matrix(data, Xc=None, Xg=None, effLen=None, intercept=None,
             data[i] = data[i].toarray().astype(np.float32)
 
     # Test add pseudo count
-    pseudo_count = 0.01
+    print("[BRIE2] adding pseudo_count:", pseudo_count)
     idx = data[0] + data[1] > 0
     for i in range(2):
         data[i][idx] = data[i][idx] + pseudo_count
@@ -118,7 +119,8 @@ def fit_BRIE_matrix(data, Xc=None, Xg=None, effLen=None, intercept=None,
     model = BRIE2(Nc=Xc.shape[0], Ng=Xg.shape[0],
                   Kc=Xc.shape[1], Kg=Xg.shape[1], 
                   effLen=effLen, intercept=intercept,
-                  intercept_mode=intercept_mode)
+                  intercept_mode=intercept_mode, 
+                  sigma=sigma)
     
     losses = model.fit(data, Xc = Xc, Xg = Xg, **keyargs)
     
@@ -138,7 +140,8 @@ def fit_BRIE_matrix(data, Xc=None, Xg=None, effLen=None, intercept=None,
         Xc_del = np.delete(Xc, idx, 1)
         model_test = BRIE2(Nc=Xc_del.shape[0], Ng=data[0].shape[1],
                            Kc=Xc_del.shape[1], Kg=Xg.shape[1],
-                           intercept = intercept, effLen=effLen)
+                           intercept = intercept, effLen=effLen, 
+                           sigma=sigma)
         
         losses = model_test.fit(data, Xc = Xc_del, Xg = Xg, **keyargs)
         ELBO_gain[:, ii] = model_test.loss_gene - model.loss_gene
@@ -158,7 +161,7 @@ def fit_BRIE_matrix(data, Xc=None, Xg=None, effLen=None, intercept=None,
 
 def fitBRIE(adata, Xc=None, Xg=None, intercept=None, intercept_mode='gene', 
             LRT_index=[], layer_keys=['isoform1', 'isoform2', 'ambiguous'], 
-            batch_size=500000, **keyargs):
+            batch_size=500000, pseudo_count=0.01, sigma=None, **keyargs):
     """Fit a BRIE model from AnnData with cell and/or gene features
     
     Parameters
@@ -204,7 +207,8 @@ def fitBRIE(adata, Xc=None, Xg=None, intercept=None, intercept_mode='gene',
             _ResVal = fit_BRIE_matrix(
                 _count_layers, Xc=Xc, Xg=Xg[_idx, :], effLen=_effLen, 
                 intercept=intercept, intercept_mode=intercept_mode, 
-                LRT_index=LRT_index, **keyargs)
+                LRT_index=LRT_index, pseudo_count=pseudo_count, sigma=sigma, 
+                **keyargs)
             
             res_list.append(_ResVal)
             print("[BRIE2] %d out %d genes done" 
@@ -217,7 +221,8 @@ def fitBRIE(adata, Xc=None, Xg=None, intercept=None, intercept_mode='gene',
 
         ResVal = fit_BRIE_matrix(
             _count_layers, Xc=Xc, Xg=Xg, effLen=_effLen, intercept=intercept, 
-            intercept_mode=intercept_mode, LRT_index=LRT_index, **keyargs)
+            intercept_mode=intercept_mode, LRT_index=LRT_index, 
+            pseudo_count=pseudo_count, sigma=sigma, **keyargs)
     
     # update adata
     if Xc.shape[0] > 0:
