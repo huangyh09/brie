@@ -15,7 +15,7 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
           intercept=None, intercept_mode='gene', nproc=1, min_counts=50, 
           min_counts_uniq=10, min_cells_uniq=30, min_MIF_uniq=0.001,
           min_iter=5000, max_iter=20000, MC_size=1, batch_size=500000,
-          pseudo_count=0.01):
+          pseudo_count=0.01, base_mode='full'):
     """CLI for quantifying splicing isoforms and detecting variable splicing 
     events associated with cell features
     
@@ -96,6 +96,11 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
         Xg = None
     
     print(adata)
+    
+    if 'unspliced' in adata.layers:
+        tau_prior = [1, 1]
+    else:
+        tau_prior = [3, 27]
         
     ## Test genes with each cell features
     # model = brie.tl.fitBRIE(adata[:, :200])
@@ -104,7 +109,8 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
                             intercept=intercept, intercept_mode=intercept_mode,
                             min_iter=min_iter, max_iter=max_iter, 
                             MC_size=MC_size, batch_size=batch_size,
-                            pseudo_count=pseudo_count)
+                            pseudo_count=pseudo_count, base_mode=base_mode,
+                            tau_prior=tau_prior)
     
     adata.uns['brie_version'] = brie.__version__
     
@@ -129,6 +135,8 @@ def main():
     parser.add_option("--LRTindex", dest="LRT_index", default="None",
         help="Index (0-based) of cell features to test with LRT: All, None "
              "or comma separated integers [default: %default]")
+    parser.add_option("--testBase", dest="test_base", default="full",
+        help="Features in testing base model: full, null  [default: %default]")
     parser.add_option("--interceptMode", dest="intercept_mode", default="None",
         help="Intercept mode: gene, cell or None [default: %default]")
     parser.add_option("--layers", dest="layers", 
@@ -195,7 +203,7 @@ def main():
           intercept, options.intercept_mode, nproc, options.min_count, 
           options.min_uniq_count, options.min_cell, options.min_MIF,
           options.min_iter, options.max_iter, options.MC_size, 
-          options.batch_size, options.pseudo_count)
+          options.batch_size, options.pseudo_count, options.test_base)
 
 if __name__ == "__main__":
     main()

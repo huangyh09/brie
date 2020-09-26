@@ -105,7 +105,7 @@ def vi_post(brie_res):
 
     for i in range(brie_res.Psi.shape[1]):
         for j in range(brie_res.Psi.shape[0]):
-            x = np.linspace(0.05, 0.95, 100)
+            x = np.linspace(0.01, 0.99, 100)
             y = LogitNormal(scale=brie_res.Z_std[j, i], 
                             loc=logit(brie_res.Psi[j, i])).pdf(x)
             y = y / np.max(y) * 0.9

@@ -2,6 +2,16 @@
 Release notes
 =============
 
+Release v2.0.4 (26/09/2020)
+===========================
+* Tune the learning rate with multiple values
+* For test model, the fitted parameters will be used as initials
+* Support base model with full features or null feature
+* For gene feature only, switch sigma into per cell base
+* Add noise term in simulator
+* A few minor bug fix
+* Implement a Inv-Gamma prior distribution for sigma (not in use)
+
 Release v2.0.3 (26/08/2020)
 ===========================
 * Support to use minimum minor isoform frequency to fileter genes (default=0.001)

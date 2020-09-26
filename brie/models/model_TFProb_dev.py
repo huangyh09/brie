@@ -9,28 +9,6 @@ import tensorflow_probability as tfp
 from tensorflow_probability import distributions as tfd
 
 
-class Model_init():
-    """Random initialize parameters for BRIE2 model
-    """
-    def __init__(self, Nc, Ng, Kc, Kg, intercept_shape, sigma_shape, 
-                 intercept=None, sigma=None):
-        if intercept is None:
-            self.intercept = tf.random.normal(intercept_shape)
-        else:
-            self.intercept = tf.ones(intercept_shape) * intercept
-            
-        if sigma is None:
-            self.sigma = tf.ones(sigma_shape)
-        else:
-            self.sigma = tf.ones(sigma_shape) * sigma
-            
-        self.Z_loc = tf.random.normal([Nc, Ng])
-        self.Z_std = tf.math.exp(tf.random.normal([Nc, Ng]))
-        
-        self.Wc_loc = tf.random.normal([Kc, Ng])
-        self.Wg_loc = tf.random.normal([Nc, Kg])
-
-
 
 class BRIE2():
     """
@@ -41,8 +19,7 @@ class BRIE2():
     """
     def __init__(self, Nc, Ng, Kc=0, Kg=0, effLen=None,
                  intercept=None, intercept_mode='gene',
-                 sigma=None, tau_prior=[3, 27], 
-                 name=None, init_obj=None):
+                 sigma=None, tau_prior=[3, 27], name=None):
         self.Nc = Nc
         self.Ng = Ng
         self.Kc = Kc
@@ -50,40 +27,42 @@ class BRIE2():
         self.effLen = effLen # (Ng, 3 * 2)
         self.intercept_mode = intercept_mode
         
-        if intercept_mode.upper() == 'CELL':
+        self.Z_loc = tf.Variable(tf.random.normal([Nc, Ng]), name='Z_loc',
+            constraint=lambda t: tf.clip_by_value(t, -9, 9))
+        self.Z_std_log = tf.Variable(tf.random.normal([Nc, Ng]), name='Z_var')
+        
+        self.Wc_loc = tf.Variable(tf.random.normal([Kc, Ng]), name='Wc_loc')
+        self.Wg_loc = tf.Variable(tf.random.normal([Nc, Kg]), name='Wg_loc')
+        
+        if intercept_mode.upper() == 'GENE':
+            _intercept_shape = (1, Ng)
+            _sigma_shape = (1, Ng)
+        elif intercept_mode.upper() == 'CELL':
             _intercept_shape = (Nc, 1)
             _sigma_shape = (Nc, 1)
         else:
-            # for intercept_mode.upper() == 'GENE' and others
             # print("[BIRE2] Error: intercept_mode only supports gene or cell")
             _intercept_shape = (1, Ng)
             _sigma_shape = (1, Ng)
             
-        if init_obj is None:
-            # print("new init")
-            init_obj = Model_init(Nc, Ng, Kc, Kg, _intercept_shape, 
-                                  _sigma_shape, intercept, sigma)
-            
         if intercept is None:
-            self.intercept = tf.Variable(init_obj.intercept, name='bias', 
-                constraint=lambda t: tf.clip_by_value(t, -9, 9))
+            self.intercept = tf.Variable(tf.random.normal(_intercept_shape), 
+                name='bias', constraint=lambda t: tf.clip_by_value(t, -9, 9))
         else:
-            self.intercept = tf.constant(init_obj.intercept, name='bias')
+            _intercept = tf.ones(_intercept_shape) * intercept
+            self.intercept = tf.constant(_intercept, name='bias')
             
-        if sigma is None:
-            self.sigma_log = tf.Variable(tf.math.log(init_obj.sigma), 
-                                         name='sigma_log')
-        else:
-            self.sigma_log = tf.constant(tf.math.log(init_obj.sigma), 
-                                         name='sigma_log')
-            
-        self.Z_loc = tf.Variable(init_obj.Z_loc, name='Z_loc',
-            constraint=lambda t: tf.clip_by_value(t, -9, 9))
-        self.Z_std_log = tf.Variable(tf.math.log(init_obj.Z_std), name='Z_var')
+        self.tau_a_log = tf.Variable(tf.ones(_sigma_shape), name='tau_a_log')
+        self.tau_b_log = tf.Variable(tf.ones(_sigma_shape), name='tau_b_log')
         
-        self.Wc_loc = tf.Variable(init_obj.Wc_loc, name='Wc_loc')
-        self.Wg_loc = tf.Variable(init_obj.Wg_loc, name='Wg_loc')
-    
+        print(tau_prior)
+        self.tauPrior = tfd.Gamma(tau_prior[0], tau_prior[1])
+            
+#         if sigma is None:
+#             self.sigma_log = tf.Variable(tf.ones([1, Ng]), name='sigma_log')
+#         else:
+#             _sigma = tf.ones([1, Ng]) * sigma
+#             self.sigma_log = tf.constant(tf.math.log(_sigma), name='sigma_log')
 
     @property
     def Z_std(self):
@@ -104,12 +83,25 @@ class BRIE2():
         """95% confidence interval around mean"""
         return (self.PsiDist.quantile(0.975).numpy() - 
                 self.PsiDist.quantile(0.025).numpy())
+    
+    @property
+    def tauDist(self):
+        return tfd.Gamma(tf.exp(self.tau_a_log), tf.exp(self.tau_b_log))
+    
+#     @property
+#     def tauPrior(self):
+#         return tfd.Gamma(3, 27) # tfd.Gamma(2, 2) #tfd.Gamma(0.5, 4.5) # tfd.Gamma(20, 3)
+    
+    def tau_eblo_term(self, axis):
+        return 0.5 * self.Nc * tf.reduce_sum(
+            tf.math.digamma(tf.exp(self.tau_a_log)) - self.tau_a_log, axis=axis)
 
     @property
     def sigma(self):
         """Standard deviation of predicted Z"""
-        return tf.exp(self.sigma_log)
-
+        # return tf.exp(self.sigma_log)
+        return tf.math.sqrt(tf.exp(self.tau_b_log - self.tau_a_log))
+    
     @property
     def Z(self):
         """Variational posterior for the logit Psi"""
@@ -205,14 +197,16 @@ class BRIE2():
                 axis=axis)
         else:
             return (
+                tf.reduce_sum(tfd.kl_divergence(self.tauDist, self.tauPrior), 
+                              axis=axis) + 
                 tf.reduce_sum(tfd.kl_divergence(self.Z, self.Z_prior), 
-                              axis=axis) -
+                              axis=axis) - self.tau_eblo_term(axis=axis) -
                 tf.reduce_sum(self.logLik_MC(count_layers, target="ELBO", 
                                              **kwargs), axis=axis))
 
     
     def fit(self, count_layers, Xc=None, Xg=None, target="ELBO", optimizer=None, 
-            learn_rate=0.05, min_iter=1000, max_iter=5000, add_iter=500, 
+            learn_rate=0.05, min_iter=200, max_iter=5000, add_iter=100, 
             epsilon_conv=1e-2, verbose=True, **kwargs):
         """Fit the model's parameters"""
         start_time = time.time()
@@ -226,23 +220,11 @@ class BRIE2():
             
         ## optimization
         if optimizer is None:
-            learn_rate = 0.01
             optimizer = tf.optimizers.Adam(learning_rate=learn_rate)
-            #optimizer = tf.optimizers.Adagrad(learning_rate=learn_rate)
-                
-        # learning_rates = [0.001, 0.003, 0.005, 0.01, 0.005]
-        learning_rates = [0.001, 0.005, 0.01, 0.02, 0.01, 0.005]
-        # learning_rates = [0.001, 0.005, 0.015, 0.03, 0.015, 0.005, 0.003]
-        for i in range(6):
-            optimizer = tf.optimizers.Adam(learning_rate=learning_rates[i])
-            
-            losses = tfp.math.minimize(loss_fn, 
-                                       num_steps=int(min_iter/6), 
-                                       optimizer=optimizer)
         
-#         losses = tfp.math.minimize(loss_fn, 
-#                                    num_steps=min_iter, 
-#                                    optimizer=optimizer)
+        losses = tfp.math.minimize(loss_fn, 
+                                   num_steps=min_iter, 
+                                   optimizer=optimizer)
         
         n_iter = min_iter + 0
         d1 = min(50, add_iter / 2)
@@ -259,9 +241,9 @@ class BRIE2():
             
         
         self.loss_gene = self.get_loss(count_layers, target, axis=0).numpy()
-        for it in range(499):
+        for it in range(99):
             self.loss_gene += self.get_loss(count_layers, target, axis=0).numpy()
-        self.loss_gene = tf.constant(self.loss_gene / 500)
+        self.loss_gene = tf.constant(self.loss_gene / 100)
         
         self.losses = losses
         

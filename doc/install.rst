@@ -61,6 +61,13 @@ For more information on GPU configuration, please refer to the
 .. _anaconda GPU: https://docs.anaconda.com/anaconda/user-guide/tasks/gpu-packages/
 
 
+.. note::
+   At the moment, TensorFlow calls all available GPUs, which is not nessary. 
+   You can specify the card you want to use by add the following variable before
+   you command line ``CUDA_VISIBLE_DEVICES=3 brie-quant -i my_count.h5ad``
+   
+
+
 Test
 ====
 

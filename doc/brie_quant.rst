@@ -3,8 +3,10 @@ brie-quant CLI
 ==============
 
 The ``brie-quant`` CLI (in brie>=2.0.0) uses the newly developed variational 
-inference methods scalable to large data sets. For using BRIE1 (<=0.2.4)
-with MCMC sampler, please refer to `BRIE1 <brie1.html>`_. 
+inference methods scalable to large data sets, which works both in CPU or 
+`GPU <install.html#gpu-usage>`_ with the TensorFlow Backend. 
+For using BRIE1 (<=0.2.4) with MCMC sampler, 
+please refer to `BRIE1 <brie1.html>`_.
 
 This command allows to quantify the splicing isoform proportion Psi and detect
 variable splicing event along with cell level features, e.g., cell type, 

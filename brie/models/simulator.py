@@ -5,7 +5,8 @@ from scipy.special import expit
 from tensorflow_probability import distributions as tfd
 
 def simulator(adata, Psi=None, effLen=None, mode="posterior",
-              layer_keys=['isoform1', 'isoform2', 'ambiguous']):
+              layer_keys=['isoform1', 'isoform2', 'ambiguous'],
+              prior_sigma=None):
     """Simulate read counts for BRIE model
     """
     # Check Psi
@@ -25,6 +26,16 @@ def simulator(adata, Psi=None, effLen=None, mode="posterior",
                 Psi += adata.varm['intercept'].T
             if 'intercept' in adata.obsm and adata.obsm['intercept'].shape[1] > 0:
                 Psi += adata.obsm['intercept']
+                
+            adata.layers['Psi_sim_noNoise'] = expit(Psi)
+            
+            if prior_sigma is None:
+                _sigma = adata.varm['sigma'].T
+            else:
+                _sigma = np.ones([1, adata.shape[1]]) * prior_sigma
+            _noise = np.random.normal(loc=0.0, scale=_sigma, size=None) 
+            Psi += _noise
+            
             Psi[Psi > 9] = 9
             Psi[Psi < -9] = -9
             Psi = expit(Psi)
