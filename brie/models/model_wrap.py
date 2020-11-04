@@ -147,7 +147,7 @@ def fit_BRIE_matrix(data, Xc=None, Xg=None, effLen=None, intercept=None,
     
     ## Perform ELBO gain in the analogy to likelihood ratio
     if LRT_index is None:
-        LRT_index = range(Xc.shape[1])
+        LRT_index = np.arange(Xc.shape[1])
         
     if len(LRT_index) == 0:
         return brie_results
@@ -235,6 +235,8 @@ def fitBRIE(adata, Xc=None, Xg=None, intercept=None, intercept_mode='gene',
         Xc = np.ones((adata.shape[0], 0), np.float32)
     if Xg is None:
         Xg = np.ones((adata.shape[1], 0), np.float32)
+    if LRT_index is None:
+        LRT_index = np.arange(Xc.shape[1])
         
     if (Xg is None or Xg.shape[1] == 0) and intercept_mode.upper() != 'CELL':
         _n_gene = int(np.ceil(batch_size / adata.shape[0]))
@@ -297,6 +299,16 @@ def fitBRIE(adata, Xc=None, Xg=None, intercept=None, intercept_mode='gene',
         adata.varm['fdr'] = ResVal.fdr
         adata.varm['pval'] = ResVal.pval
         adata.varm['ELBO_gain'] = ResVal.ELBO_gain
+    
+    adata.uns['brie_param'] = {
+        'LRT_index': LRT_index,
+        'base_mode': base_mode,
+        'intecept': intercept,
+        'intercept_mode': intercept_mode,
+        'sigma': sigma,
+        'pseudo_count': pseudo_count,
+        'layer_keys': layer_keys
+    }
     
     # return BRIE model result value
     return ResVal

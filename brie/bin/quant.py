@@ -63,6 +63,7 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
         adata = adata[mm1, :]
     else:
         Xc = None
+        Xc_ids = None
         
     ## Filter genes
     print("layers:", layer_keys)
@@ -94,6 +95,7 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
         adata = adata[:, mm1]
     else:
         Xg = None
+        Xg_ids = None
     
     print(adata)
     
@@ -113,9 +115,19 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
                             tau_prior=tau_prior)
     
     adata.uns['brie_version'] = brie.__version__
+    adata.uns['Xc_ids'] = Xc_ids
+    adata.uns['Xg_ids'] = Xg_ids
     
+    
+    # Save adata
     adata.write_h5ad(out_file)
-        
+    
+    # Save results tatble for identified splicing phenotypes
+    out_table_file = ".".join(out_file.split('.')[:-1]) + '.brie_ident.tsv'
+    df = brie.io.dump_results(adata)
+    df.round(5).to_csv(out_table_file, sep='\t', header=True, 
+                       index=True, index_label='GeneID')
+    
     
 def main():
     # import warnings

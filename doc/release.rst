@@ -2,6 +2,11 @@
 Release notes
 =============
 
+Release v2.0.5 (04/11/2020)
+===========================
+* Support saving detection table to tsv file
+* Add the exon start and stop positions in brie-count
+
 Release v2.0.4 (26/09/2020)
 ===========================
 * Tune the learning rate with multiple values
