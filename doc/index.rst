@@ -93,5 +93,7 @@ quantification in single cells
    :maxdepth: 1
    :hidden:
 
-   multiple_sclerosis
+   brie2_msEAE
+   brie2_scNTseq
+   brie2_dentateGyrus
    Prior_distribution_BRIE2

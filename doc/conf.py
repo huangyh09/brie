@@ -37,16 +37,18 @@ for nb in notebooks:
         pass
 
 
-notebooks_url = "https://sourceforge.net/projects/brie-rna/files/examples/brie_quantify/"
+notebooks_url = "https://github.com/huangyh09/brie-tutorials/raw/main/"
 notebooks = [
-    "multiple_sclerosis.ipynb",
+    "msEAE/brie2_msEAE.ipynb",
+    "scNTseq/brie2_scNTseq.ipynb",
+    "dentateGyrus/brie2_dentateGyrus.ipynb"
 ]
+
 for nb in notebooks:
     try:
-        urlretrieve(notebooks_url + nb, nb)
+        urlretrieve(notebooks_url + nb, nb.split('/')[1])
     except:
         pass
-
 
 # -- General configuration ------------------------------------------------
 
