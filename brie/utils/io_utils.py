@@ -118,6 +118,8 @@ def dump_results(adata):
     """Dump splicing phenotype detection results to pandas.DataFrame
     """
     df = adata.var[['n_counts', 'n_counts_uniq']].copy()
+    df['n_counts'] = df['n_counts'].astype(int)
+    df['n_counts_uniq'] = df['n_counts_uniq'].astype(int)
     df['cdr'] = np.array((adata.X > 0).mean(0))[0, :]
     
     cdr = np.array((adata.X > 0).mean(0))[0, :]
@@ -136,9 +138,10 @@ def dump_results(adata):
         LRT_index = []
     
     ## feature columns
-    for i in LRT_index:
+    for i in range(len(LRT_index)):
+        _idx = LRT_index[i]
         if 'Xc_ids' in adata.uns and adata.uns['Xc_ids'] is not None:
-            _Xc_ids = adata.uns['Xc_ids'][i]
+            _Xc_ids = adata.uns['Xc_ids'][_idx]
         else:
             _Xc_ids = 'X%d' %i
         

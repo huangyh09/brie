@@ -125,8 +125,8 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
     # Save results tatble for identified splicing phenotypes
     out_table_file = ".".join(out_file.split('.')[:-1]) + '.brie_ident.tsv'
     df = brie.io.dump_results(adata)
-    df.round(5).to_csv(out_table_file, sep='\t', header=True, 
-                       index=True, index_label='GeneID')
+    df.to_csv(out_table_file, sep='\t', header=True, 
+              index=True, index_label='GeneID', float_format='%.3e')
     
     
 def main():
