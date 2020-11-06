@@ -2,6 +2,14 @@
 Quick start
 ===========
 
+.. note::
+   This tutorial is mainly for alternative splicing analysis. If you are 
+   interested in detecting **differential momentum genes (DMG)** for RNA 
+   velocity analysis, please go to 
+   `step 2.2 <quick_start.html#step2-2-phenotype-detection>`_ directly
+   and also follow the tutorials on `scVelo <https://scvelo.org>`_.
+
+
 BRIE estimates the isoform proportion for two-isoform events across many single 
 cells. For getting started quickly, there are two main steps to go. A demo file
 is available at `brie2_demo.sh`_. Sepcifically, you can follow the steps below.
@@ -37,6 +45,11 @@ available soon.
 Step2: quantification
 =====================
 
+`brie-quant` is used for this step. If GPU is available, we highly 
+recommend using GPU for ~10x speedup comparing CPU server. Thanks to well 
+support from Tensorflow, the environment setting is straightforwad, see our 
+guide on `GPU Usage <./install.html#gpu-usage>`_.
+
 Step2.1: isoform quantification
 -------------------------------
 
@@ -54,8 +67,8 @@ Step2.2 phenotype detection
 
 If you have cell level features, e.g., disease condition or cell type or 
 continuous variable, you can use it in cell features to detect variable splicing
-events as phenotypes for further analysis. This is ``mode 3`` in ``brie-quant``,
-so requires ``-c`` and ``--LRTindex``
+events or differential momentum genes as phenotypes for further analysis. This 
+is ``mode 3`` in ``brie-quant``, so requires ``-c`` and ``--LRTindex``
 
 .. code-block:: bash
 

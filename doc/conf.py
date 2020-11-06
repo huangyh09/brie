@@ -151,6 +151,8 @@ pygments_style = 'sphinx'
 # html_theme = "bizstyle"
 # html_theme = "nature"
 html_theme = 'sphinx_rtd_theme'
+github_repo = 'brie'
+github_nb_repo = 'brie-tutorials'
 html_theme_options = dict(navigation_depth=1, titles_only=True)
 
 

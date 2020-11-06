@@ -18,23 +18,31 @@ About BRIE
 
 Welcome to the new BRIE2 (Bayesian regression for isoform estimate, v2), a 
 scalable Bayesian method to robustly identify splicing phenotypes in single 
-cells RNA-seq designs and accurately estimate isoform proportions and its 
+cells RNA-seq experiments and accurately estimate isoform proportions and its 
 uncertainty.
 
-BRIE2 supports isoform quantification for different needs:
+BRIE2 supports isoform quantification and gene selection by different settings
+and input features:
 
 1. cell features: informative prior is learned from shared cell processes. It 
    also allows to effectively detect splicing phenotypes by using Evidence Lower
    Bound gain, an approximate of Bayes factor.
    
 2. gene features: informative prior is learned from shared gene regulatory 
-   features, e.g., sequences and RNA protein binding
+   features, e.g., sequences and RNA protein binding.
 
 3. no feature: use zero-mean logit-normal as uninformative prior, namely
-   merely data deriven
+   merely data deriven.
+
+.. note::
+   The first option with cell features is a very useful utility, which allows 
+   identifying both differential momentum genes for RNA velocity analysis and 
+   differential splicing events on alternative splicing for either categorical 
+   or continuous covariates.
+
    
-Note, `BRIE1 CLI`_ is still available in this version but changed to `brie1` 
-and `brie1-diff`.
+Besides the overhaul in v2, `BRIE1 CLI`_ (MCMC based & gene feature only) 
+is still available in this version but changed to `brie1` and `brie1-diff`.
 
 .. _BRIE1 CLI: https://brie.readthedocs.io/en/latest/brie1.html
 
@@ -52,27 +60,32 @@ yuanhua <at> hku.hk
 Quick Resources
 ===============
 
-**Code: GitHub latest version**
-https://github.com/huangyh09/brie
+* **Code: GitHub latest version**
+  https://github.com/huangyh09/brie
 
-**Data: splicing events annotations**
-http://sourceforge.net/projects/brie-rna/files/annotation/
+* **Data: splicing events annotations**
+  http://sourceforge.net/projects/brie-rna/files/annotation/
 
-**All releases**
-https://pypi.org/project/brie/#history
+* **All releases**
+  https://pypi.org/project/brie/#history
 
-**Issue reports**
-https://github.com/huangyh09/brie/issues
+* **Issue reports**
+  https://github.com/huangyh09/brie/issues
 
 
 
 References
 ==========
 
-Yuanhua Huang and Guido Sanguinetti. `BRIE: transcriptome-wide splicing 
-quantification in single cells 
-<https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1248-5>`_. 
-\ **Genome Biology**\, 2017; 18(1):123.
+* Yuanhua Huang and Guido Sanguinetti. `Computational identification of splicing 
+  phenotypes from single cell transcriptomic experiments
+  <https://www.biorxiv.org/content/10.1101/2020.11.04.368019v1>`_.
+  \ **bioRxiv**\, 2020; 368019.
+
+* Yuanhua Huang and Guido Sanguinetti. `BRIE: transcriptome-wide splicing 
+  quantification in single cells 
+  <https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1248-5>`_. 
+  \ **Genome Biology**\, 2017; 18(1):123.
 
 
 

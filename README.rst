@@ -77,7 +77,12 @@ quantification in different settings. Type command line ``brie-count -h`` and
 References
 ==========
 
-Yuanhua Huang and Guido Sanguinetti. `BRIE: transcriptome-wide splicing 
-quantification in single cells 
-<https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1248-5>`_. 
-\ **Genome Biology**\, 2017; 18(1):123.
+* Yuanhua Huang and Guido Sanguinetti. `Computational identification of splicing 
+  phenotypes from single cell transcriptomic experiments
+  <https://www.biorxiv.org/content/10.1101/2020.11.04.368019v1>`_.
+  \ **bioRxiv**\, 2020; 368019.
+
+* Yuanhua Huang and Guido Sanguinetti. `BRIE: transcriptome-wide splicing 
+  quantification in single cells 
+  <https://genomebiology.biomedcentral.com/articles/10.1186/s13059-017-1248-5>`_. 
+  \ **Genome Biology**\, 2017; 18(1):123.
