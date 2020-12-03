@@ -21,6 +21,10 @@ from datetime import datetime
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
 
+from pathlib import Path
+HERE = Path(__file__).parent
+sys.path.insert(0, f"{HERE.parent.parent}")
+sys.path.insert(0, os.path.abspath("_ext"))
 
 # -- Retrieve notebooks ------------------------------------------------
 

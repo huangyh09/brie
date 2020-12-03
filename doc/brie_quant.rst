@@ -64,7 +64,7 @@ index (zero-based) of cell features to perform likelihood ratio test. Again we
 suggest to keep the cell aggregation on each gene by ``--interceptMode gene``.
 
 Then this mode will learn a prior from the given cell level features and perform
-the second fit by leaving each feature out to calculate the EBLO gain, which 
+the second fit by leaving each feature out to calculate the ELBO gain, which 
 can be further used as likelihood ratio test.
 
 Example command line for mode 3:
@@ -73,6 +73,42 @@ Example command line for mode 3:
 
   brie-quant -i out_dir/brie_count.h5ad -o out_dir/brie_quant_cell.h5ad \
       -c $DATA_DIR/cell_info.tsv --interceptMode gene --LRTindex=All
+
+**Example**
+
+As an example in the 
+`MS data <brie2_msEAE.html#BRIE2-option-1:-differential-splicing-events>`_, 
+we have cells labelled with 
+two factors 1) multiple sclerosis & control - isEAE, 2) two mouse strains 
+- isCD1. We want to identify alternative splicing events associated with the 
+first factor multiple sclerosis, but also want to considerthe potential 
+confounder in mouse strain, we could set the design matrix in ``cell_info.tsv`` 
+file as follow, along with parameters ``--interceptMode gene --LRTindex 0``.
+
+.. code-block:: bash
+
+  samID   isEAE   isCD1
+  SRR7102862      0       1
+  SRR7103631      1       0
+  SRR7104046      1       1
+  SRR7105069      0       0
+
+
+.. note::
+   Be very careful on collinearity (i.e., redudance) of your design matrix in 
+   ``cell_info.tsv`` and the constant intercept (if use 
+   ``--interceptMode gene``), which is similar as DEG in edgeR or DESeq2.
+
+   By default, BRIE2 uses the ``--testBase=full`` mode to detect differential 
+   splicing by comparing all features + constant intercept versus leaving the 
+   testing feature(s) out. In this setting, if your features can't have 
+   collinearity with intercept, e.g., you may need to remove one cell type out 
+   if it covers all you cells.
+   
+   Alternatively, you can change to another strategy ``--testBase=null`` by 
+   comparing the testing feature(s) + intercept versus intercept only, 
+   like the example data on
+   `Dentate Gyrus <brie2_dentateGyrus.html#BRIE2’s-differential-momentum-genes-(DMGs)>`_.
 
 
 Flexible settings

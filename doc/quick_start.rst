@@ -50,13 +50,17 @@ recommend using GPU for ~10x speedup comparing CPU server. Thanks to well
 support from Tensorflow, the environment setting is straightforwad, see our 
 guide on `GPU Usage <./install.html#gpu-usage>`_.
 
+This step support various settings for either quantifications of splicing or 
+detection of splicing phenotypes. You can directly run step 2.2 if you only want
+to perform phenotype detection.
+
 Step2.1: isoform quantification
 -------------------------------
 
-Second, you can quantify the isoform with cell / gene or none features. Usually,
+You can quantify the isoform with cell or gene features or both or none. Usually,
 we recommend to use aggregated imputation even if you don't have any feature, 
 namely ``mode 2`` in `brie-quant CLI <brie_quant.html>`_ as follows (please add 
-``--interceptMode gene``),
+``--interceptMode gene`` for aggregating cells as prior for each gene),
 
 .. code-block:: bash
 
@@ -68,12 +72,20 @@ Step2.2 phenotype detection
 If you have cell level features, e.g., disease condition or cell type or 
 continuous variable, you can use it in cell features to detect variable splicing
 events or differential momentum genes as phenotypes for further analysis. This 
-is ``mode 3`` in ``brie-quant``, so requires ``-c`` and ``--LRTindex``
+is ``mode 3`` in `brie-quant CLI <brie_quant.html>`_, so requires ``-c`` and 
+``--LRTindex``.
 
 .. code-block:: bash
 
   brie-quant -i out_dir/brie_count.h5ad -o out_dir/brie_quant_cell.h5ad \
       -c $DATA_DIR/cell_info.tsv --interceptMode gene --LRTindex=All
+
+**Example**
+
+Please see the example in 
+`brie-quant CLI mode 3 <brie_quant.html#mode-3-variable-splicing-detection>`_,
+and 
+`MS data <brie2_msEAE.html#BRIE2-option-1:-differential-splicing-events>`_.
 
 
 Step3: downstream analysis
