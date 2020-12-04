@@ -21,19 +21,20 @@ uncertainty.
 
 BRIE2 supports isoform quantification for different needs:
 
-1. likelihood based: without learning informative prior from any features
-
-2. gene features: informative prior is learned from shared gene regulatory 
-   features, e.g., sequences and RNA protein binding
-
-3. cell features: informative prior is learned from shared cell processes. It 
+1. cell features: informative prior is learned from shared cell processes. It 
    also allows to effectively detect splicing phenotypes by using Evidence Lower
    Bound gain, an approximate of Bayes factor.
    
-Note, BRIE1 is CLI is still available in this version but changed to `brie1` 
+2. gene features: informative prior is learned from shared gene regulatory 
+   features, e.g., sequences and RNA protein binding
+
+3. no feature: use zero-mean logit-normal as uninformative prior, namely
+   merely data deriven
+   
+Note, `BRIE1 CLI`_ is still available in this version but changed to `brie1` 
 and `brie1-diff`.
 
-
+.. _BRIE1 CLI: https://brie.readthedocs.io/en/latest/brie1.html
 
 Installation
 ============
@@ -68,14 +69,18 @@ The full manual is at https://brie.readthedocs.io
 More examples and tutorials are coming soon.
 
 In brief, you need to run `brie-count` first, which will return a count matrix
-and h5 data for AnnData. Then you can use `brie-quant` to perform quantification
-in different settings. Type command line ``brie-count -h`` and ``brie-quant -h``
-to see the full arguments.
-
+and hdf5 file for AnnData. Then you can use `brie-quant` to perform 
+quantification in different settings. Type command line ``brie-count -h`` and 
+``brie-quant -h`` to see the full arguments.
 
 
 References
 ==========
+
+* Yuanhua Huang and Guido Sanguinetti. `Computational identification of splicing 
+  phenotypes from single cell transcriptomic experiments
+  <https://www.biorxiv.org/content/10.1101/2020.11.04.368019v1>`_.
+  \ **bioRxiv**\, 2020; 368019.
 
 * Yuanhua Huang and Guido Sanguinetti. `BRIE: transcriptome-wide splicing 
   quantification in single cells 

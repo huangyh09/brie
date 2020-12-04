@@ -112,3 +112,42 @@ def fetch_gene_info(genes, fraglen=None, out_file=None):
         fid.close()
 
     return out_all
+
+
+def dump_results(adata):
+    """Dump splicing phenotype detection results to pandas.DataFrame
+    """
+    df = adata.var[['n_counts', 'n_counts_uniq']].copy()
+    df['n_counts'] = df['n_counts'].astype(int)
+    df['n_counts_uniq'] = df['n_counts_uniq'].astype(int)
+    df['cdr'] = np.array((adata.X > 0).mean(0))[0, :]
+    
+    cdr = np.array((adata.X > 0).mean(0))[0, :]
+    if 'intercept' in adata.varm:
+        df['intercept'] = adata.varm['intercept'][:, 0]
+    else:
+        df['intercept'] = [None] * adata.shape[1]
+    if 'sigma' in adata.varm:
+        df['sigma'] = adata.varm['sigma'][:, 0]
+    else:
+        df['sigma'] = [None] * adata.shape[1]
+        
+    if 'brie_param' in adata.uns:
+        LRT_index = adata.uns['brie_param']['LRT_index']
+    else:
+        LRT_index = []
+    
+    ## feature columns
+    for i in range(len(LRT_index)):
+        _idx = LRT_index[i]
+        if 'Xc_ids' in adata.uns and adata.uns['Xc_ids'] is not None:
+            _Xc_ids = adata.uns['Xc_ids'][_idx]
+        else:
+            _Xc_ids = 'X%d' %i
+        
+        df[_Xc_ids + '_ceoff'] = adata.varm['cell_coeff'][:, i]
+        df[_Xc_ids + '_ELBO_gain'] = adata.varm['ELBO_gain'][:, i]
+        df[_Xc_ids + '_pval'] = adata.varm['pval'][:, i]
+        df[_Xc_ids + '_FDR'] = adata.varm['fdr'][:, i]
+        
+    return df

@@ -2,6 +2,21 @@ import numpy as np
 from scipy.stats import multinomial
 from scipy.special import logit, expit, gammaln
 
+from scipy.special import logit
+from scipy.stats import norm, rv_continuous
+
+class LogitNormal(rv_continuous):
+    """LogitNormal distribution based on scipy.stats.rv_continuous
+    """
+    def __init__(self, loc=0, scale=1):
+        super().__init__(self)
+        self.loc = loc
+        self.scale = scale
+        
+    def _pdf(self, x):
+        return norm.pdf(logit(x), loc=self.loc, scale=self.scale)/(x*(1-x))
+
+
 def BRIE_base_lik(psi, counts, lengths):
     """Base likelihood function of BRIE model
     """

@@ -9,15 +9,11 @@ heavily depends on TensorFlow and TensorFlow-probability.
 
 .. code-block:: bash
   
-  conda create -n TFProb python=3.7 scikit-learn
+  conda create -n TFProb python=3.7
 
-replace `-n TFProb` with `-p ANY_PATH/TFProb` to specify the path for conda 
-environment. Then activate the environment by `conda activate TFProb` or the 
+replace ``-n TFProb`` with ``-p ANY_PATH/TFProb`` to specify the path for conda 
+environment. Then activate the environment by ``conda activate TFProb`` or the 
 full path, before install more packages.
-
-.. code-block:: bash
-
-  pip install -U tensorflow tensorflow-probability
 
 .. _conda environment: https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
 
@@ -61,8 +57,15 @@ set up GPU configurations with NVIDIA GPU on Ubuntu:
 For more information on GPU configuration, please refer to the 
 `Tensorflow documentation`_, or `anaconda GPU`_.
 
-.. _TF documentation: https://www.tensorflow.org/guide/gpu
+.. _Tensorflow documentation: https://www.tensorflow.org/guide/gpu
 .. _anaconda GPU: https://docs.anaconda.com/anaconda/user-guide/tasks/gpu-packages/
+
+
+.. note::
+   At the moment, TensorFlow calls all available GPUs, which is not nessary. 
+   You can specify the card you want to use by add the following variable before
+   you command line ``CUDA_VISIBLE_DEVICES=3 brie-quant -i my_count.h5ad``
+   
 
 
 Test
@@ -73,7 +76,7 @@ you will see the following output.
 
 .. code-block:: html
 
-  Welcome to brie-quant in BRIE v2.0.0!
+  Welcome to brie-quant in BRIE v2.0.2!
 
   use -h or --help for help on argument.
 

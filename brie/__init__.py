@@ -13,6 +13,7 @@ from .version import __version__
 # direct classes or functions
 from .models.model_TFProb import BRIE2
 from .utils.io_utils import read_brieMM, read_h5ad, read_gff, read_npz
+from .utils import io_utils as io
 from .utils.base_utils import match
 
 # set simplified alias

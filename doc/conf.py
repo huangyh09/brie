@@ -21,6 +21,10 @@ from datetime import datetime
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
 
+from pathlib import Path
+HERE = Path(__file__).parent
+sys.path.insert(0, f"{HERE.parent.parent}")
+sys.path.insert(0, os.path.abspath("_ext"))
 
 # -- Retrieve notebooks ------------------------------------------------
 
@@ -37,6 +41,18 @@ for nb in notebooks:
         pass
 
 
+notebooks_url = "https://github.com/huangyh09/brie-tutorials/raw/main/"
+notebooks = [
+    "msEAE/brie2_msEAE.ipynb",
+    "scNTseq/brie2_scNTseq.ipynb",
+    "dentateGyrus/brie2_dentateGyrus.ipynb"
+]
+
+for nb in notebooks:
+    try:
+        urlretrieve(notebooks_url + nb, nb.split('/')[1])
+    except:
+        pass
 
 # -- General configuration ------------------------------------------------
 
@@ -60,7 +76,7 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinx_autodoc_typehints",
     "nbsphinx",
-    "edit_on_github",
+    # "edit_on_github",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -139,6 +155,8 @@ pygments_style = 'sphinx'
 # html_theme = "bizstyle"
 # html_theme = "nature"
 html_theme = 'sphinx_rtd_theme'
+github_repo = 'brie'
+github_nb_repo = 'brie-tutorials'
 html_theme_options = dict(navigation_depth=1, titles_only=True)
 
 

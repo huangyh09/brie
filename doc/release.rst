@@ -1,6 +1,35 @@
-=======
-History
-=======
+=============
+Release notes
+=============
+
+Release v2.0.5 (04/11/2020)
+===========================
+* Support saving detection table to tsv file
+* Add the exon start and stop positions in brie-count
+
+Release v2.0.4 (26/09/2020)
+===========================
+* Tune the learning rate with multiple values
+* For test model, the fitted parameters will be used as initials
+* Support base model with full features or null feature
+* For gene feature only, switch sigma into per cell base
+* Add noise term in simulator
+* A few minor bug fix
+* Implement a Inv-Gamma prior distribution for sigma (not in use)
+
+Release v2.0.3 (26/08/2020)
+===========================
+* Support to use minimum minor isoform frequency to fileter genes (default=0.001)
+* Add pseudo count (default=0.01) for none-empty element in both unique counts 
+  for more robust results
+* Reduce the sample size for Monte Carlo Expectation (10 to 3) for computational
+  efficiency
+* Restructure the arguments in brie-quant
+* Initialise the example notebook on multiple sclerosis data
+
+Release v2.0.2 (24/08/2020)
+===========================
+* Fix minor bugs in brei-count and brie-quant cli for compatibility
 
 Release v2.0.0 (23/08/2020)
 ===========================
