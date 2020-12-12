@@ -8,9 +8,9 @@ import numpy as np
 import multiprocessing
 from optparse import OptionParser, OptionGroup
 
-from brie.version import __version__
-from brie.utils.io_utils import read_brieMM, read_gff, convert_to_annData
-from brie.utils.count import get_count_matrix, SE_effLen
+from ..version import __version__
+from ..utils.io_utils import read_brieMM, read_gff, convert_to_annData
+from ..utils.count import get_count_matrix, SE_effLen
 
 
 FID = None
@@ -44,14 +44,21 @@ def show_progress(RV=None):
 
 
 
-def count(gff_file, samList_file, out_dir=None, nproc=1, add_premRNA=False):
+def count(gff_file, samList_file, out_dir=None, nproc=1, event_type='SE',
+          add_premRNA=False):
     """CLI for counting reads supporting isoforms
     """
     # Parameter check
     
     ## Load sam file list
-    sam_table = np.genfromtxt(samList_file, delimiter = None, dtype=str)
-    sam_table = sam_table.reshape(sam_table.shape[0], -1)
+    fid = open(samList_file)
+    sam_table = fid.readlines()
+    fid.close()
+    print(sam_table)
+    sam_table = np.array([x.rstrip().split("\t") for x in sam_table])
+    
+    # sam_table = np.genfromtxt(samList_file, delimiter = None, dtype=str)
+    # sam_table = sam_table.reshape(sam_table.shape[0], -1)
     print(sam_table[:min(3, sam_table.shape[0])], "...")
         
     ## Check out_dir
@@ -75,16 +82,14 @@ def count(gff_file, samList_file, out_dir=None, nproc=1, add_premRNA=False):
     
     # Running
     ## Output gene info
-    gene_table = [["GeneID", "GeneName", "TranLens", "TranIDs", 
-                   "chrom", "ExonSS"]]
+    gene_table = [["GeneID", "GeneName", "TranLens", "TranIDs"]]
     for g in genes:
         tran_ids, tran_lens = [], []
         for t in g.trans:
             tran_ids.append(t.tranID)
             tran_lens.append(str(t.tranL))
-        exon_tran1 = [str(x[0]) + '-' + str(x[1]) for x in g.trans[0].exons]
         out_list = [g.geneID, g.geneName, ",".join(tran_lens), 
-                    ",".join(tran_ids), g.chrom, ','.join(exon_tran1)]
+                    ",".join(tran_ids)]
         gene_table.append(out_list)
         
     fid = open(out_dir + "/gene_note.tsv", "w")
@@ -118,9 +123,13 @@ def count(gff_file, samList_file, out_dir=None, nproc=1, add_premRNA=False):
     fid.close()
     
     ## Generate isoform effective length matrix
-    effLen_tensor = np.zeros((len(genes), 2, 3), dtype=np.float32)
-    for ig, _gene in enumerate(genes):
-        effLen_tensor[ig, :, :] = SE_effLen(_gene, rlen=76)
+    if event_type == 'SE':
+        effLen_tensor = np.zeros((len(genes), 2, 3), dtype=np.float32)
+        for ig, _gene in enumerate(genes):
+            effLen_tensor[ig, :, :] = SE_effLen(_gene, rlen=76)
+    else:
+        # placeholder, not support yet
+        effLen_tensor = np.zeros((len(genes), 1), dtype=np.float32)
     
     ## Load read counts
     print("[BRIE2] loading reads for %d genes in %d sam files with %d cores..." 
@@ -135,19 +144,23 @@ def count(gff_file, samList_file, out_dir=None, nproc=1, add_premRNA=False):
     
     if nproc <= 1:
         for s in range(len(sam_table[:, 0])):
-            res = get_count_matrix(genes, sam_table[s, 0], s, 10, 2)
+            res = get_count_matrix(genes, sam_table[s, 0], s, event_type, 10, 2)
             show_progress(res)
     else:
         pool = multiprocessing.Pool(processes=nproc)
         result = []
         for s in range(len(sam_table[:, 0])):
             result.append(pool.apply_async(get_count_matrix, (genes, 
-                sam_table[s, 0], s, 10, 2), callback=show_progress))
+                sam_table[s, 0], s, event_type, 10, 2), callback=show_progress))
         pool.close()
         pool.join()
     
     FID.close()
     print("")
+    
+    ## Don't save into h5ad if not SE
+    if event_type != 'SE':
+        sys.exit()
     
     ## Save data into h5ad
     print("[BRIE2] save matrix into h5ad ...")
@@ -156,6 +169,7 @@ def count(gff_file, samList_file, out_dir=None, nproc=1, add_premRNA=False):
                                effLen_tensor=effLen_tensor, 
                                cell_note=np.array(cell_table, dtype='str'), 
                                gene_note=np.array(gene_table, dtype='str'))
+    adata.uns['event_type'] = event_type
     adata.write_h5ad(out_dir + "/brie_count.h5ad")
     
     ## Save data into npz
@@ -165,8 +179,8 @@ def count(gff_file, samList_file, out_dir=None, nproc=1, add_premRNA=False):
     
     
 def main():
-    # import warnings
-    # warnings.filterwarnings('error')
+    import warnings
+    warnings.filterwarnings('error')
 
     # parse command line options
     parser = OptionParser()
@@ -181,6 +195,10 @@ def main():
     group = OptionGroup(parser, "Optional arguments")
     group.add_option("--nproc", "-p", type="int", dest="nproc", default="4",
         help="Number of subprocesses [default: %default]")
+    group.add_option("--eventType", "-t", dest="event_type", default="SE",
+        help="Type of splicing event for check. SE: skipping-exon; "
+             "Any: no-checking [default: %default]")
+    
     # group.add_option("--add_premRNA", action="store_true", dest="add_premRNA", 
     #     default=False, help="Add the pre-mRNA as a transcript")
 
@@ -203,7 +221,7 @@ def main():
     add_premRNA = False
     
     count(options.gff_file, options.samList_file, options.out_dir, 
-          options.nproc, add_premRNA)
+          options.nproc, options.event_type, add_premRNA)
 
 
 if __name__ == "__main__":
