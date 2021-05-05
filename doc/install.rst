@@ -53,7 +53,7 @@ set up GPU configurations with NVIDIA GPU on Ubuntu:
   conda install -c anaconda cudatoolkit
 
 Make sure that you have compatible versions between tensorflow and NVIDIA CUDA. 
-You can check TF's test `here <https://www.tensorflow.org/install/source#gpu>`.
+You can check TF's test `here <https://www.tensorflow.org/install/source#gpu>`_.
 For more information on GPU configuration, please refer to the 
 `Tensorflow documentation`_, or `anaconda GPU`_.
 
