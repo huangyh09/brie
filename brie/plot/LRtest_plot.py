@@ -26,10 +26,17 @@ def volcano(adata, x="cell_coeff", y="pval", index=0, score_red=0.0001,
     """
     xval = adata.varm[x][:, index]
     yval = adata.varm[y][:, index]
-    idx = yval < score_red
-    idx_anno = np.argsort(yval)[:n_anno]
+    
     if log_y:
+        idx = yval < score_red
+        idx_anno = np.argsort(yval)[:n_anno]
+        y_label = "-log10(%s)" %(y)
+        
         yval = -np.log10(yval)
+    else:
+        idx = yval > score_red
+        idx_anno = np.argsort(yval)[-n_anno:]
+        y_label = str(y)
         
     plt.scatter(xval[~idx], yval[~idx], color="gray")
     plt.scatter(xval[idx], yval[idx], color="firebrick")
@@ -48,7 +55,7 @@ def volcano(adata, x="cell_coeff", y="pval", index=0, score_red=0.0001,
         adjust_text(texts, arrowprops=dict(arrowstyle="-", color='k', lw=0.5))
     
     plt.xlabel(x)
-    plt.ylabel("-log10(%s)" %(y))
+    plt.ylabel(y_label)
     
     
 def qqplot(pval):
