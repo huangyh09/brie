@@ -12,64 +12,68 @@ Home
 ====
 
 
-
 About BRIE
 ==========
 
-Welcome to the new BRIE2 (Bayesian regression for isoform estimate, v2), a 
-scalable Bayesian method to robustly identify splicing phenotypes in single 
-cells RNA-seq experiments and accurately estimate isoform proportions and its 
+Welcome to the new BRIE (>=2.0 or BRIE2), Bayesian Regression for Isoform 
+Estimate, a scalable Bayesian method to accurately identify splicing phenotypes 
+in single-cell RNA-seq experiments and quantify isoform proportions and their 
 uncertainty.
 
-BRIE2 supports isoform quantification and gene selection by different settings
-and input features:
+BRIE2 supports the analysis of splicing processes at two molecular levels, 
+either between alternative splicing isoforms or between unspliced and spliced 
+RNAs. In either case, it returns cell-by-event or cell-by-gene matrices of PSI 
+value and its 95% confidence interval (quantification), and the statistics for 
+for detecting DAS and DMG on each event or gene:
 
-1. cell features: informative prior is learned from shared cell processes. It 
-   also allows to effectively detect splicing phenotypes by using Evidence Lower
-   Bound gain, an approximate of Bayes factor.
-   
-2. gene features: informative prior is learned from shared gene regulatory 
-   features, e.g., sequences and RNA protein binding.
+1. **Differential alternative splicing (DAS):** This task is to quantify the 
+   proportions of alternative splicing isoforms and to detect DAS between groups
+   of cells or along with a continuous covariate, e.g., pseudotime. 
+   BRIE2 is designed for two-isoform splicing events with a focus on exon 
+   skipping, but in principle also applicable for mutual exclusion, 
+   intron-retaining, alternative poly-A site, 3' splice site and 5' splice site.
 
-3. no feature: use zero-mean logit-normal as uninformative prior, namely
-   merely data deriven.
+2. **Differential momentum genes (DMG):** This task is to quantify the 
+   proportions of unspliced and spliced RNAs in each gene and each cell. 
+   Similar to DAS, the DMG is a principled selection of genes that capture 
+   heterogeneity in transcriptional kinetics between cell groups, e.g., cell 
+   types, or continuous cell covariates, hence may enhance the RNA velocity 
+   analyses by focusing on dynamics informed genes.
 
 .. note::
-   The first option with cell features is a very useful utility, which allows 
-   identifying both differential momentum genes for RNA velocity analysis and 
-   differential splicing events on alternative splicing for either categorical 
-   or continuous covariates.
-
-   
-Besides the overhaul in v2, `BRIE1 CLI`_ (MCMC based & gene feature only) 
-is still available in this version but changed to `brie1` and `brie1-diff`.
+   Though we highly recommend using BRIE v2 for a coherent way for splicing 
+   phenotype selection, `BRIE1 CLI`_ (MCMC based & gene feature only) 
+   is still available but the CLIs are changed to `brie1` and `brie1-diff`.
 
 .. _BRIE1 CLI: https://brie.readthedocs.io/en/latest/brie1.html
 
 
-Questions or Bugs
-=================
-If you find any error or suspicious bug, we will appreciate your report.
-Please write them in the github issues: 
+Questions and Issues
+====================
+If you find any techincal issues in the codes or any techincal parts unclear, 
+we will appreciate your report. Please write them in the GitHub issues: 
 https://github.com/huangyh09/brie/issues
 
-If you have questions on using BRIE, feel free get in touch with us: 
-yuanhua <at> hku.hk
+If you have other specific questions on using BRIE, feel free to get in touch 
+with us: yuanhua <at> hku.hk
 
 
 Quick Resources
 ===============
 
-* **Code: GitHub latest version**
+* **Code on GitHub:**
   https://github.com/huangyh09/brie
 
-* **Data: splicing events annotations**
+* **Preprocessed splicing events annotations (GFT/GFF3):**
   http://sourceforge.net/projects/brie-rna/files/annotation/
 
-* **All releases**
+* **Example datasets:**
+  https://github.com/huangyh09/brie-tutorials
+
+* **All releases:**
   https://pypi.org/project/brie/#history
 
-* **Issue reports**
+* **Issue reports:**
   https://github.com/huangyh09/brie/issues
 
 
@@ -77,10 +81,10 @@ Quick Resources
 References
 ==========
 
-* Yuanhua Huang and Guido Sanguinetti. `Computational identification of splicing 
-  phenotypes from single cell transcriptomic experiments
-  <https://www.biorxiv.org/content/10.1101/2020.11.04.368019v1>`_.
-  \ **bioRxiv**\, 2020; 368019.
+* Yuanhua Huang and Guido Sanguinetti. `BRIE2: computational identification of 
+  splicing phenotypes from single-cell transcriptomic experiments
+  <https://genomebiology.biomedcentral.com/articles/10.1186/s13059-021-02461-5>`_.
+  \ **Genome Biology**\, 2021; 22(1):251.
 
 * Yuanhua Huang and Guido Sanguinetti. `BRIE: transcriptome-wide splicing 
   quantification in single cells 
