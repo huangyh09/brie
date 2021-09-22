@@ -22,8 +22,8 @@ uncertainty.
 BRIE2 supports the analysis of splicing processes at two molecular levels, 
 either between alternative splicing isoforms or between unspliced and spliced 
 RNAs. In either case, it returns cell-by-event or cell-by-gene matrices of PSI 
-value and its 95% confidence interval (quantification), and the statistics for 
-for detecting DAS and DMG on each event or gene:
+value and its 95% confidence interval (quantification) and the statistics for 
+detecting DAS and DMG on each event or gene:
 
 1. **Differential alternative splicing (DAS):** This task is to quantify the 
    proportions of alternative splicing isoforms and to detect DAS between groups
@@ -50,8 +50,8 @@ line, and add ``-U`` for upgrading:
 
   pip install -U brie
 
-Alternatively, you can install from this GitHub repository for latest (often 
-development) version with following command line
+Alternatively, you can install from this GitHub repository for the latest (often 
+development) version with the following command line
 
 .. code-block:: bash
 

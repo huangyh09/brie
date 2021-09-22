@@ -2,16 +2,16 @@
 brie-count CLI
 ==============
 
-BRIE (>=2.0.0) provids two CLI directly available in your Python path: 
+BRIE (>=2.0.0) provides two CLI directly available in your Python path: 
 ``brie-count``, ``brie-quant``. 
 
 The ``brie-count`` CLI only supports counting exon skipping events in Smart-seq 
 like protocols, i.e., each cell has a separate bam (sam/cram) file. Other types 
 of alternative splicing events may be supported soon. 
-For barcode based platforms, e.g., dropseq and 10x Genomics, ``brie-count`` are 
+For barcode-based platforms, e.g., dropseq and 10x Genomics, ``brie-count`` are 
 also not supported either.
 
-On the other hand, ``brie-quant`` is more generic and can be applicable if the 
+On the other hand, ``brie-quant`` is more generic and can be applied if the 
 counting has been done, either by ``brie-count`` or other tools.
 
 Splicing annotations
@@ -30,7 +30,7 @@ Read counting
 
 The ``brie-count`` CLI calculates a count tensor for the number of reads that 
 are aligned to each splicing event and each cell, and stratifies four them into
-four different categories in :
+four different categories:
 
 1. key 1: Uniquely aligned to isoform1, e.g., in exon1-exon2 junction in SE event
 2. key 2: Uniquely aligned to isoform2, e.g., in exon1-exon3 junction in SE event
