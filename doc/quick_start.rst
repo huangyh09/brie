@@ -5,31 +5,33 @@ Quick start
 BRIE2 estimates the splicing proportion for two-component events across many 
 cells. It is designed for analysing two molecular levels of splicing processes:
 
-1. alternative splicing isoforms, e.g., exon included or excluded. BRIE2 will 
+1. Alternative splicing isoforms, e.g., exon included or excluded. BRIE2 will 
    identify differential alternative splicing (DAS) events. 
    See demo1_ for detecting DAS between disease and control.
 
-2. spliced vs unspliced RNAs for RNA velocity analysis. BRIE2 will identify 
+2. Spliced vs unspliced RNAs for RNA velocity analysis. BRIE2 will identify 
    differential momentum genes (DMG).
    See demo2_ for detecting DMG between cell types.
 
 
-For getting started quickly, there are two steps to go: counting and quantifying. 
+For getting started quickly, there are two steps to go: **counting** and 
+**quantifying**. 
 The ``brie-quant`` (for quantifying and testing) is developed in a unified 
-manner. Here we provide a roadmap of using BRIE2 for either molecular level 
+manner. Here we provide a roadmap of using BRIE2 for both molecular levels 
 in different purposes (quantification or feature detection).
 
 .. image:: image/BRIE2_roadmap.png
-  :width: 400
+  :width: 600
   :alt: BRIE2 roadmap
+  :align: center
 
 
 .. _demo1: https://github.com/huangyh09/brie-tutorials/blob/main/msEAE/run_brie2.sh
 .. _demo2: https://github.com/huangyh09/brie-tutorials/blob/main/scNTseq/run_brie2.sh
 
 
-1. Pre-step: read counting
---------------------------
+Pre-step: read counting
+-----------------------
 
 First, you need to count the isoform-specific reads in each splicing event in 
 each cell. Similarly for read/UMI counts for spliced and unspliced RNAs. BRIE2
@@ -58,8 +60,8 @@ retaining is also applicable with BRIE. Some pre-processing utilities will be
 available soon.
 
 
-1. Main Step: quantify and test
--------------------------------
+Main Step: quantify and test
+----------------------------
 
 ``brie-quant`` is used for this step. If GPU is available, we highly 
 recommend using GPU for ~10x speedup comparing CPU server. Thanks to good 
@@ -70,8 +72,8 @@ This step supports various settings for either quantification of splicing or
 detection of splicing phenotypes. You can directly run step 1.2 if you only want
 to perform phenotype detection.
 
-Step1.1: PSI quantification
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+PSI quantification
+~~~~~~~~~~~~~~~~~~
 
 You can quantify the isoform with cell or gene features or both or none. Usually,
 we recommend using aggregated imputation even if you don't have any feature, 
@@ -83,8 +85,8 @@ namely ``mode2-quant`` in `brie-quant CLI <brie_quant.html>`_ as follows (please
   brie-quant -i out_dir/brie_count.h5ad -o out_dir/brie_quant_aggr.h5ad --interceptMode gene
 
 
-Step1.2 phenotype detection
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Splicing Phenotype detection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you have cell-level features, e.g., disease condition or cell type or 
 continuous variable, you can use it in cell features to detect variable splicing
@@ -100,13 +102,13 @@ is ``mode2-diff`` in `brie-quant CLI <brie_quant.html>`_, so requires ``-c`` and
 **Example**
 
 Please see the example in 
-`brie-quant CLI mode 3 <brie_quant.html#Mode2-diff-variable-splicing-detection>`_,
+`brie-quant CLI mode 3 <brie_quant.html#mode2-diff-variable-splicing-detection>`_,
 and 
 `MS data <brie2_msEAE.html#BRIE2-option-1:-differential-splicing-events>`_.
 
 
-2. Downstream Step: analysis
-----------------------------
+Downstream Step: analysis
+-------------------------
 
 The BRIE output AnnData files are compatible with `Scanpy`_, hence you can 
 easily use it for dimension reduction, clustering, and other visualization. 
@@ -117,8 +119,8 @@ in this documentation (see the navigation bar on the left).
 
 
 
-Pre-step for unspliced RNA counting
------------------------------------
+Others for unspliced RNA counting
+---------------------------------
 
 BRIE2 doesn't provide a utility function for counting the spliced and unspliced 
 RNAs, but thanks to the community efforts, there are a few tools already 
@@ -141,8 +143,7 @@ options align reads to genome and define reads as unspliced and spliced by the
 gene annotations in GTF/GFF3 format.
 
 Alternatively, there are other options by aligning reads to annotated 
-transcriptomes directly e.g., `kallisto bustools`_ and 
-
+transcriptomes directly e.g., `kallisto bustools`_.
 However, the agreement of the above counting tools is still not perfect 
 according to a recent benchmarking paper 
 (`Soneson et al, Plos Comp Bio, 2021 <https://doi.org/10.1371/journal.pcbi.1008585>`_)

@@ -42,9 +42,6 @@ estimation, and is often suggested filtered out, which will cause missing values
 Based on the cell aggregated imputation, most dimension reduction methods can be
 used, even it doesn't support missing values.
 
-This aggregation based imputation is in analogy for missing value imputation 
-when performing PCA on non-proportional values.
-
 Example command line for mode 2:
 
 .. code-block:: bash
@@ -108,7 +105,7 @@ file as follow, along with parameters ``--interceptMode gene --LRTindex 0``.
 
 
 
-Mode1: Imputation with gene features
+Mode 1: Imputation with gene features
 ====================================
 
 This mode is introduced in BRIE 1, where genomic sequences are leverage to 
