@@ -7,7 +7,7 @@ The official documentation together with examples and tutorials can be found
 at https://brie.readthedocs.io/.
 """
 
-from ._cli import cli
+# from ._cli import cli
 from .version import __version__
 
 # direct classes or functions
