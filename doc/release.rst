@@ -2,6 +2,10 @@
 Release notes
 =============
 
+Release in future
+=================
+* Fix a minor bug in exteme scenario with missing a certain isoform for all genes
+
 Release v2.0.6 (23/09/2021)
 ===========================
 * Fix in format bug in brie-count
