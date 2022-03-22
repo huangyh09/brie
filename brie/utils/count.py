@@ -155,7 +155,7 @@ def SE_probability(gene, rlen=75, edge_hang=10, junc_hang=2):
     """
     # check SE event
     if _check_SE_event(gene) == False:
-        print("This is not exon-skipping event: %s! %(gene.geneID)")
+        print("This is not exon-skipping event: %s!" %(gene.geneID))
         exit()
     
     l1, l2, l3 = gene.trans[0].exons[:, 1] - gene.trans[0].exons[:, 0]
@@ -197,7 +197,7 @@ def SE_effLen(gene, rlen=75, edge_hang=10, junc_hang=2):
     """
     # check SE event
     if _check_SE_event(gene) == False:
-        print("This is not exon-skipping event: %s! %(gene.geneID)")
+        print("This is not exon-skipping event: %s!" %(gene.geneID))
         exit()
     
     l1, l2, l3 = gene.trans[0].exons[:, 1] - gene.trans[0].exons[:, 0]
