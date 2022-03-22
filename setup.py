@@ -44,6 +44,7 @@ setup(
     entry_points={
         'console_scripts': [
             # 'brie = brie:_cli.cli',
+            'brie = brie.bin.brie_main:main',
             'brie-count = brie.bin.count:main',
             'brie-quant = brie.bin.quant:main',
             'brie1 = brie.version1.brie:main',

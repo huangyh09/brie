@@ -20,17 +20,58 @@ def LRT_basic(LRT_res):
     plt.show()
 
 
-def volcano(adata, x="cell_coeff", y="pval", index=0, score_red=0.0001, 
-            n_anno=10, anno_id='index', log_y=True, adjust=True):
+def volcano(adata, x="cell_coeff", y="ELBO_gain", index=0, score_red=4, 
+            n_anno=10, anno_id='index', log_y=None, clip_y_min=0, adjust=True):
     """Volcano plot for p values and weights
+
+    Parameters
+    ----------
+    adata: AnnData
+        The input AnnData, containing varm[x] and varm[y]
+    x: str
+        The tag in adata.varm for presenting in x-axis
+    y: str
+        The tag in adata.varm for presenting in y-axis
+    index: int
+        The index to present, used as adata.varm[x|y][:, index]
+    score_red: float
+        The cutoff score for highlighting in red
+    n_anno: int
+        Number of top hits to add names
+    anno_id: str
+        The tag id of the adata.var to use as var name
+    log_y: bool
+        If True, show y axis as log scale
+    clip_y_min: float
+        Clipping y at lower bound
+    adjust: bool
+        If True, adjust the annotation position
+
+    Examples
+    --------
+    brie.pl.volcano(adata, x="cell_coeff", y="ELBO_gain", score_red=4)
+    brie.pl.volcano(adata, x="cell_coeff", y="pval", score_red=0.0001)
+    brie.pl.volcano(adata, x="cell_coeff", y="FDR", score_red=0.0001)
     """
     xval = adata.varm[x][:, index]
     yval = adata.varm[y][:, index]
-    idx = yval < score_red
-    idx_anno = np.argsort(yval)[:n_anno]
-    if log_y:
-        yval = -np.log10(yval)
-        
+
+    if clip_y_min is not None:
+        yval[yval < clip_y_min] = clip_y_min
+    
+    if y == 'ELBO_gain':
+        idx = yval > score_red
+        idx_anno = np.argsort(yval)[-n_anno:]
+        y_label = str(y)
+    else:
+        idx = yval < score_red
+        idx_anno = np.argsort(yval)[:n_anno]
+        if log_y is None or log_y is True:
+            y_label = "-log10(%s)" %(y)
+            yval = -np.log10(yval)
+        else:
+            y_label = str(y)
+    
     plt.scatter(xval[~idx], yval[~idx], color="gray")
     plt.scatter(xval[idx], yval[idx], color="firebrick")
     
@@ -48,7 +89,7 @@ def volcano(adata, x="cell_coeff", y="pval", index=0, score_red=0.0001,
         adjust_text(texts, arrowprops=dict(arrowstyle="-", color='k', lw=0.5))
     
     plt.xlabel(x)
-    plt.ylabel("-log10(%s)" %(y))
+    plt.ylabel(y_label)
     
     
 def qqplot(pval):

@@ -51,15 +51,10 @@ def count(gff_file, samList_file, out_dir=None, nproc=1, event_type='SE',
     # Parameter check
     
     ## Load sam file list
-    fid = open(samList_file)
-    sam_table = fid.readlines()
-    fid.close()
-    print(sam_table)
-    sam_table = np.array([x.rstrip().split("\t") for x in sam_table])
-    
-    # sam_table = np.genfromtxt(samList_file, delimiter = None, dtype=str)
-    # sam_table = sam_table.reshape(sam_table.shape[0], -1)
+    sam_table = np.loadtxt(samList_file, delimiter = None, dtype=str, ndmin = 2)
     print(sam_table[:min(3, sam_table.shape[0])], "...")
+    if sam_table.shape[1] == 1:
+        sam_table = np.append(sam_table, [['S%d' %x] for x in range(sam_table.shape[0])], axis=1)
         
     ## Check out_dir
     if out_dir is None:

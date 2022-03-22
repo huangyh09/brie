@@ -2,6 +2,17 @@
 Release notes
 =============
 
+Release in future
+=================
+* Fix a minor bug in exteme scenario with missing a certain isoform for all genes
+
+Release v2.0.6 (23/09/2021)
+===========================
+* Fix in format bug in brie-count
+* Update brie.pl.volcano for using ELBO_gain as default y-axis
+* Update manual according to the revised paper
+* Add CLI ``brie``
+
 Release v2.0.5 (04/11/2020)
 ===========================
 * Support saving detection table to tsv file

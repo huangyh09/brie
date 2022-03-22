@@ -9,13 +9,22 @@ from anndata import read_h5ad
 from .gtf_utils import load_genes as read_gff
 
 
-def convert_to_annData(Rmat_dict, effLen_tensor, cell_note, gene_note):
+def convert_to_annData(Rmat_dict, effLen_tensor, cell_note, gene_note, 
+    fill_missing=True):
     """Convert matrices and annotation to annData
     """
     Rmat = {}
     for _key in Rmat_dict:
         Rmat[_key] = Rmat_dict[_key].astype(np.float32)#.toarray()
     Rmat.keys()
+
+    if fill_missing:
+        _input_keys = list(Rmat.keys())
+        _shape = Rmat[_input_keys[0]].shape
+        for _key in ['0', '1', '2', '3']:
+            if _key not in _input_keys:
+                print("key %s not exist in .mtx file, fill with zeros." %(_key))
+                Rmat[_key] = np.zeros(_shape, dtype=np.float32)
     
     X = Rmat['1'] + Rmat['2'] + Rmat['3']
     layers = {}
