@@ -174,8 +174,8 @@ def count(gff_file, samList_file, out_dir=None, nproc=1, event_type='SE',
     
     
 def main():
-    import warnings
-    warnings.filterwarnings('error')
+    # import warnings
+    # warnings.filterwarnings('error')
 
     # parse command line options
     parser = OptionParser()
