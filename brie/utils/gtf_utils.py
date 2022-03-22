@@ -75,10 +75,19 @@ class Gene:
         RV.append(",".join(_trans))
         return RV
 
-    def add_premRNA(self):
-        _tran = Transcript(self.chrom, self.strand, self.start, self.stop, 
-                           self.geneID+".p", self.geneName, self.biotype)
-        _tran.add_exon(self.chrom, self.strand, self.start, self.stop)
+    def add_premRNA(self, transcript=None):
+        if transcript is None:
+            _tran = Transcript(self.chrom, self.strand, self.start, self.stop, 
+                               self.geneID+".p", self.geneName, self.biotype)
+            _tran.add_exon(self.chrom, self.strand, self.start, self.stop)
+        else:
+            _tran = Transcript(transcript.chrom, transcript.strand, 
+                               transcript.start, transcript.stop, 
+                               transcript.tranID+".p", transcript.tranName, 
+                               transcript.biotype)
+            _tran.add_exon(transcript.chrom, transcript.strand, 
+                           transcript.start, transcript.stop)
+            
         self.trans.append(_tran)
         self.tranNum += 1
         

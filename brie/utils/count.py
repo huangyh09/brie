@@ -1,3 +1,5 @@
+"""Count reads in transcript for well-based scRNA-seq or bulk RNA-Seq"""
+
 import sys
 import numpy as np
 from .sam_utils import load_samfile, fetch_reads
@@ -59,14 +61,15 @@ def check_reads_compatible(transcript, reads, edge_hang=10, junc_hang=2):
     return np.array(is_compatible)
 
 
-def SE_reads_count(gene, samFile, edge_hang=10, junc_hang=2, **kwargs):
+def fetch_reads_count(gene, samFile, event_type="SE", RNA_type="spliced",
+                      edge_hang=10, junc_hang=2, **kwargs):
     """Count the categorical reads mapped to a splicing event
 
     rm_duplicate=True, inner_only=True,
     mapq_min=0, mismatch_max=5, rlen_min=1, is_mated=True
     """
     # Check SE event
-    if _check_SE_event(gene) == False:
+    if event_type == "SE" and _check_SE_event(gene) == False:
         print("This is not exon-skipping event!")
         exit()
 
@@ -74,37 +77,45 @@ def SE_reads_count(gene, samFile, edge_hang=10, junc_hang=2, **kwargs):
     reads = fetch_reads(samFile, gene.chrom, gene.start, gene.stop, **kwargs)
 
     # Check reads compatible
-    is_isoform1 = check_reads_compatible(gene.trans[0], reads["reads1"])
-    is_isoform2 = check_reads_compatible(gene.trans[1], reads["reads1"])
-    if len(reads["reads2"]) > 0:
-        is_isoform1 *= check_reads_compatible(gene.trans[0], reads["reads2"])
-        is_isoform2 *= check_reads_compatible(gene.trans[1], reads["reads2"])
-
-    is_isoform1 = np.append(is_isoform1, 
-        check_reads_compatible(gene.trans[0], reads["reads1u"]))
-    is_isoform2 = np.append(is_isoform2, 
-        check_reads_compatible(gene.trans[1], reads["reads1u"]))
-
-    is_isoform1 = np.append(is_isoform1, 
-        check_reads_compatible(gene.trans[0], reads["reads2u"]))
-    is_isoform2 = np.append(is_isoform2, 
-        check_reads_compatible(gene.trans[1], reads["reads2u"]))
-
-    # return Reads matrix
-    Rmat = np.zeros((len(is_isoform1), 2), dtype=bool)
-    Rmat[:, 0] = is_isoform1
-    Rmat[:, 1] = is_isoform2
+    n_readsPE = len(reads["reads1"])
+    n_readsU1 = len(reads["reads1u"])
+    n_readsU2 = len(reads["reads2u"])
+    
+    n_reads = n_readsPE + n_readsU1 + n_readsU2
+    n_trans = len(gene.trans)
+    
+    Rmat = np.zeros((n_reads , n_trans), dtype=bool)
+    for i in range(n_trans):
+        if RNA_type.upper() == "UNSPLICED":
+            _tran = gene.trans[i].make_premRNA()
+        else:
+            _tran = gene.trans[i]
+            
+        idx_PE = np.arange(0, n_readsPE)
+        idx_U1 = np.arange(n_readsPE, n_readsPE + n_readsU1)
+        idx_U2 = np.arange(n_readsPE + n_readsU1, n_reads)
+        
+        Rmat[idx_PE, i] = check_reads_compatible(_tran, reads["reads1"])
+        if len(reads["reads2"]) > 0:
+            Rmat[idx_PE, i] *= check_reads_compatible(_tran, reads["reads2"])
+            
+        Rmat[idx_U1, i] = check_reads_compatible(_tran, reads["reads1u"])
+        Rmat[idx_U2, i] = check_reads_compatible(_tran, reads["reads2u"])
+    
     return Rmat
 
 
-def get_count_matrix(genes, sam_file, sam_num, edge_hang=10, junc_hang=2):
+def get_count_matrix(genes, sam_file, sam_num, event_type="SE", 
+                     edge_hang=10, junc_hang=2):
     samFile = load_samfile(sam_file)
     
     RV = []
     for g in range(len(genes)):
-        _Rmat = SE_reads_count(genes[g], samFile, edge_hang=10, junc_hang=2, 
+        _Rmat = fetch_reads_count(
+            genes[g], samFile, event_type, edge_hang=10, junc_hang=2, 
             rm_duplicate=True, inner_only=False, mapq_min=0, mismatch_max=5, 
-            rlen_min=1, is_mated=True)
+            rlen_min=1, is_mated=True
+        )
 
         if _Rmat.shape[0] == 0:
             continue
@@ -144,7 +155,7 @@ def SE_probability(gene, rlen=75, edge_hang=10, junc_hang=2):
     """
     # check SE event
     if _check_SE_event(gene) == False:
-        print("This is not exon-skipping event: %s! %(gene.geneID)")
+        print("This is not exon-skipping event: %s!" %(gene.geneID))
         exit()
     
     l1, l2, l3 = gene.trans[0].exons[:, 1] - gene.trans[0].exons[:, 0]
@@ -186,7 +197,7 @@ def SE_effLen(gene, rlen=75, edge_hang=10, junc_hang=2):
     """
     # check SE event
     if _check_SE_event(gene) == False:
-        print("This is not exon-skipping event: %s! %(gene.geneID)")
+        print("This is not exon-skipping event: %s!" %(gene.geneID))
         exit()
     
     l1, l2, l3 = gene.trans[0].exons[:, 1] - gene.trans[0].exons[:, 0]
