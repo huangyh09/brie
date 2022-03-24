@@ -47,6 +47,7 @@ setup(
             'brie = brie.bin.brie_main:main',
             'brie-count = brie.bin.count:main',
             'brie-quant = brie.bin.quant:main',
+            'brie-countX = brie.bin.brie_count_droplet:main',
             'brie1 = brie.version1.brie:main',
             'brie1-diff = brie.version1.brie_diff:main',
         ],
