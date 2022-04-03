@@ -51,8 +51,11 @@ def get_droplet_UMIcount(gene, samFile, event_type="SE", edge_hang=10,
 
     # Fetch reads (TODO: customise fetch_reads function, e.g., FLAG)
     reads = fetch_reads(samFile, gene.chrom, gene.start, gene.stop, **kwargs)
-    print("%d reads fetched on %s" %(
-        len(reads["reads1u"]) + len(reads["reads2u"]), gene.geneID))
+    _n_reads = (len(reads["reads1u"]) + len(reads["reads2u"]) + 
+                len(reads["reads1"]) + len(reads["reads2"]))
+    print("%d reads fetched on %s" %(_n_reads, gene.geneID))
+    print("R1, R2, paired_R1, paired_R2:", len(reads["reads1u"]), 
+          len(reads["reads2u"]), len(reads["reads1"]), len(reads["reads2"]))
 
     # Check reads have CB_tag and UMI_tag
     reads["reads1u"] = [r for r in reads["reads1u"] if r.has_tag(CB_tag)]
@@ -60,8 +63,16 @@ def get_droplet_UMIcount(gene, samFile, event_type="SE", edge_hang=10,
     reads["reads1u"] = [r for r in reads["reads1u"] if r.has_tag(UMI_tag)]
     reads["reads2u"] = [r for r in reads["reads2u"] if r.has_tag(UMI_tag)]
 
-    print("%d reads have valid Cell and UMI tags on %s" %(
-        len(reads["reads1u"]) + len(reads["reads2u"]), gene.geneID))
+    reads["reads1"] = [r for r in reads["reads1"] if r.has_tag(CB_tag)]
+    reads["reads2"] = [r for r in reads["reads2"] if r.has_tag(CB_tag)]
+    reads["reads1"] = [r for r in reads["reads1"] if r.has_tag(UMI_tag)]
+    reads["reads2"] = [r for r in reads["reads2"] if r.has_tag(UMI_tag)]
+    
+    _n_reads = (len(reads["reads1u"]) + len(reads["reads2u"]) + 
+                len(reads["reads1"]) + len(reads["reads2"]))
+    print("%d reads fetched on %s" %(_n_reads, gene.geneID))
+    print("R1, R2, paired_R1, paired_R2:", len(reads["reads1u"]), 
+          len(reads["reads2u"]), len(reads["reads1"]), len(reads["reads2"]))
 
     # Check reads compatible
     n_readsPE = len(reads["reads1"])
@@ -74,7 +85,7 @@ def get_droplet_UMIcount(gene, samFile, event_type="SE", edge_hang=10,
     R_CB = []
     R_UR = []
     if n_readsPE > 0:
-        print('Warning: here is a lazy implementation assuming mate1 & ' +
+        print('Warning: here assumes mate1 & ' +
               'mate2 have the same cell & UMI barocdes.')
 
     R_UR += [x.get_tag(UMI_tag) for x in reads["reads1"]]
@@ -193,12 +204,16 @@ def get_droplet_matrix(genes, sam_file, cell_list, out_dir, event_type="SE",
     FID.writelines("%d\t%d\t%d\n" %(cell_list.shape[0], len(genes), 0))
 
     for g in range(len(genes)):
+        samFile, _chrom = load_samfile(samFile, genes[g].chrom)
+        genes[g].chrom = _chrom
+
         print("[BRIE2] parsing gene %d: %s, %s" 
               %(g + 1, genes[g].geneName, genes[g].geneID))
+        print("[BRIE2] transcript lengths:", [x.tranL for x in genes[g].trans])
 
         _Rmat, _R_CB, _R_UR = get_droplet_UMIcount(genes[g], samFile, 
             event_type, edge_hang, junc_hang, CB_tag, UMI_tag, 
-            rm_duplicate=True, inner_only=False, mapq_min=0, mismatch_max=5, 
+            rm_duplicate=True, inner_only=False, mapq_min=0, mismatch_max=15, 
             rlen_min=1, is_mated=True)
 
         if _Rmat.shape[0] == 0:

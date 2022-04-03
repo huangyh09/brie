@@ -4,20 +4,49 @@
 import sys
 import pysam
 
-def load_samfile(sam_file):
-    """To load an indexed bam file"""
-    ftype = sam_file.split(".")[-1]
-    if ftype != "bam" and ftype != "sam" and ftype != "cram" :
-        print("Error: file type need suffix of bam, sam or cram.")
-        sys.exit(1)
-    # print("Loading a %s" %ftype + " with file name: %s" %sam_file)
-    if ftype == "cram":
-        samfile = pysam.AlignmentFile(sam_file, "rc")
-    elif ftype == "bam":
-        samfile = pysam.AlignmentFile(sam_file, "rb")
+global CACHE_CHROM
+global CACHE_SAMFILE
+CACHE_CHROM = None
+CACHE_SAMFILE = None
+
+def load_samfile(samFile, chrom=None):
+    """Chech if samFile is a file name or pysam object, and if chrom format. 
+    """
+    global CACHE_CHROM
+    global CACHE_SAMFILE
+
+    if CACHE_CHROM is not None:
+        if (samFile == CACHE_SAMFILE) and (chrom == CACHE_CHROM):
+            return CACHE_SAMFILE, CACHE_CHROM
+
+    if type(samFile) == str:
+        ftype = samFile.split(".")[-1]
+        if ftype != "bam" and ftype != "sam" and ftype != "cram" :
+            print("Error: file type need suffix of bam, sam or cram.")
+            sys.exit(1)
+        if ftype == "cram":
+            samFile = pysam.AlignmentFile(samFile, "rc")
+        elif ftype == "bam":
+            samFile = pysam.AlignmentFile(samFile, "rb")
+        else:
+            samFile = pysam.AlignmentFile(samFile, "r")
+
+    if chrom is not None:
+        if chrom not in samFile.references:
+            if chrom.startswith("chr"):
+                chrom = chrom.split("chr")[1]
+            else:
+                chrom = "chr" + chrom
+        if chrom not in samFile.references:
+            print("Can't find references %s in samFile" %chrom)
+            return samFile, None
+
+        CACHE_CHROM = chrom
+        CACHE_SAMFILE = samFile
+        return samFile, chrom
     else:
-        samfile = pysam.AlignmentFile(sam_file, "r")
-    return samfile
+        CACHE_SAMFILE = samFile
+        return samFile
 
 
 def fetch_reads(samfile, chrom, start, end, rm_duplicate=True, inner_only=True,
