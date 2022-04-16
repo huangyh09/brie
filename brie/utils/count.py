@@ -113,7 +113,7 @@ def get_count_matrix(genes, sam_file, sam_num, event_type="SE",
     for g in range(len(genes)):
         _Rmat = fetch_reads_count(
             genes[g], samFile, event_type, edge_hang=10, junc_hang=2, 
-            rm_duplicate=True, inner_only=False, mapq_min=0, mismatch_max=5, 
+            rm_duplicate=True, inner_only=False, mapq_min=0, trimLen_max=5, 
             rlen_min=1, is_mated=True
         )
 

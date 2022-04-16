@@ -193,6 +193,7 @@ def encode_reads(Rmat, R_CB, R_UR, cell_list, g_idx, merge_UMIs=True,
 def get_droplet_matrix(genes, sam_file, cell_list, out_dir, event_type="SE", 
         edge_hang=10, junc_hang=2, CB_tag='CB', UMI_tag='UR'):
     """Fetch UMI count matrix for droplet based scRNA-seq data
+    Note, trimLen_max is 15 here; different from get_count_matrix with 5.
     """
     samFile = load_samfile(sam_file)
 
@@ -213,7 +214,7 @@ def get_droplet_matrix(genes, sam_file, cell_list, out_dir, event_type="SE",
 
         _Rmat, _R_CB, _R_UR = get_droplet_UMIcount(genes[g], samFile, 
             event_type, edge_hang, junc_hang, CB_tag, UMI_tag, 
-            rm_duplicate=True, inner_only=False, mapq_min=0, mismatch_max=15, 
+            rm_duplicate=True, inner_only=False, mapq_min=0, trimLen_max=15, 
             rlen_min=1, is_mated=True)
 
         if _Rmat.shape[0] == 0:

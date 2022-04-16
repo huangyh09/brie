@@ -50,7 +50,7 @@ def load_samfile(samFile, chrom=None):
 
 
 def fetch_reads(samfile, chrom, start, end, rm_duplicate=True, inner_only=True,
-                mapq_min=0, mismatch_max=10**5, rlen_min=1,  is_mated=True):
+                mapq_min=0, trimLen_max=1e6, rlen_min=1,  is_mated=True):
     """To fetch the reads in a given region from a pysam AlignmentFile.
 
     Args:
@@ -61,7 +61,7 @@ def fetch_reads(samfile, chrom, start, end, rm_duplicate=True, inner_only=True,
         rm_duplicate: A bool for only keeping the first one of duplicates.
         inner_only: A bool for only keeping fully region matched reads.
         mapq_min: An integer of the minimum of map quality.
-        mismatch_min: An integer of the minimum of mismatched bases.
+        trimLen_max: An integer of the maximum length of trimmed bases.
         rlen_min: An integer of the minimum of read length.
         is_paired: A bool for mating paired-end reads.
 
@@ -114,10 +114,10 @@ def fetch_reads(samfile, chrom, start, end, rm_duplicate=True, inner_only=True,
                                    r.aend is None or r.aend > end): continue
         # filter 2: too low map quality
         if r.mapq < mapq_min: continue
-        # filter 3: too long mismatch
-        if r.rlen - len(r.positions) > mismatch_max: continue
-        # filter 5: too short reads length
-        if r.rlen < rlen_min: continue
+        # filter 3: too long trimmed bases
+        if r.rlen - len(r.positions) > trimLen_max: continue
+        # filter 5: too short mapped length
+        if len(r.positions) < rlen_min: continue
         
         if r.is_read2:
             reads2.append(r)
