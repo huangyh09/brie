@@ -3,6 +3,7 @@
 
 import sys
 import pysam
+import numpy
 
 global CACHE_CHROM
 global CACHE_SAMFILE
@@ -15,11 +16,13 @@ def load_samfile(samFile, chrom=None):
     global CACHE_CHROM
     global CACHE_SAMFILE
 
+    # get from cache
     if CACHE_CHROM is not None:
         if (samFile == CACHE_SAMFILE) and (chrom == CACHE_CHROM):
             return CACHE_SAMFILE, CACHE_CHROM
 
-    if type(samFile) == str:
+    # open file
+    if type(samFile) == str or type(samFile) == numpy.str_:
         ftype = samFile.split(".")[-1]
         if ftype != "bam" and ftype != "sam" and ftype != "cram" :
             print("Error: file type need suffix of bam, sam or cram.")
@@ -30,6 +33,10 @@ def load_samfile(samFile, chrom=None):
             samFile = pysam.AlignmentFile(samFile, "rb")
         else:
             samFile = pysam.AlignmentFile(samFile, "r")
+    else:
+        print("[BRIE2] Error: unknown data type: %s" %samFile)
+        print(type(samFile), type(samFile) == numpy.str_)
+        sys.exit(1)
 
     if chrom is not None:
         if chrom not in samFile.references:
