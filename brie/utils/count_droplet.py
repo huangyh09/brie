@@ -5,7 +5,7 @@ import time
 import numpy as np
 import multiprocessing
 from .base_utils import match
-from .sam_utils import load_samfile, fetch_reads
+from .sam_utils import load_samfile, fetch_reads, check_pysam_chrom
 from .count import check_reads_compatible, _check_SE_event
 
 
@@ -195,7 +195,8 @@ def get_droplet_matrix(genes, sam_file, cell_list, out_dir, event_type="SE",
     """Fetch UMI count matrix for droplet based scRNA-seq data
     Note, trimLen_max is 15 here; different from get_count_matrix with 5.
     """
-    samFile = load_samfile(sam_file)
+    # samFile = load_samfile(sam_file)
+    samFile = check_pysam_chrom(sam_file, genes[0].chrom)[0]
 
     global START_TIME
     START_TIME = time.time()
@@ -205,7 +206,8 @@ def get_droplet_matrix(genes, sam_file, cell_list, out_dir, event_type="SE",
     FID.writelines("%d\t%d\t%d\n" %(cell_list.shape[0], len(genes), 0))
 
     for g in range(len(genes)):
-        samFile, _chrom = load_samfile(samFile, genes[g].chrom)
+        # samFile, _chrom = load_samfile(samFile, genes[g].chrom)
+        samFile, _chrom = check_pysam_chrom(samFile, genes[g].chrom)
         genes[g].chrom = _chrom
 
         print("[BRIE2] parsing gene %d: %s, %s" 

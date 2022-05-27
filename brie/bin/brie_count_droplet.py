@@ -263,9 +263,10 @@ def droplet_count(gff_file, sam_file, barcode_file, out_dir=None, nproc=1,
     ## Save data into h5ad
     print("[BRIE2] save matrix into h5ad ...")
     Rmat_dict = read_brieMM(out_dir + "/read_count.mtx")
+    cell_table = np.append(['barcodes'], cell_list).reshape(-1, 1)
     adata = convert_to_annData(Rmat_dict=Rmat_dict, 
                                effLen_tensor=effLen_tensor, 
-                               cell_note=np.array(cell_list, dtype='str'), 
+                               cell_note=np.array(cell_table, dtype='str'), 
                                gene_note=np.array(gene_table, dtype='str'))
     adata.uns['event_type'] = event_type
     adata.uns['total_reads'] = total_reads

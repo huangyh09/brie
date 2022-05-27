@@ -2,7 +2,7 @@
 
 import sys
 import numpy as np
-from .sam_utils import load_samfile, fetch_reads
+from .sam_utils import load_samfile, fetch_reads, check_pysam_chrom
 
 def _check_SE_event(gene):
     """Check SE event"""
@@ -61,7 +61,7 @@ def check_reads_compatible(transcript, reads, edge_hang=10, junc_hang=2):
     return np.array(is_compatible)
 
 
-def fetch_reads_count(gene, samFile, event_type="SE", RNA_type="spliced",
+def fetch_reads_count(gene, sam_file, event_type="SE", RNA_type="spliced",
                       edge_hang=10, junc_hang=2, **kwargs):
     """Count the categorical reads mapped to a splicing event
 
@@ -73,8 +73,10 @@ def fetch_reads_count(gene, samFile, event_type="SE", RNA_type="spliced",
         print("This is not exon-skipping event!")
         exit()
 
+    samFile, _chrom = check_pysam_chrom(sam_file, gene.chrom)
+
     # Fetch reads (TODO: customise fetch_reads function, e.g., FLAG)
-    reads = fetch_reads(samFile, gene.chrom, gene.start, gene.stop, **kwargs)
+    reads = fetch_reads(samFile, _chrom, gene.start, gene.stop, **kwargs)
 
     # Check reads compatible
     n_readsPE = len(reads["reads1"])
@@ -107,12 +109,12 @@ def fetch_reads_count(gene, samFile, event_type="SE", RNA_type="spliced",
 
 def get_count_matrix(genes, sam_file, sam_num, event_type="SE", 
                      edge_hang=10, junc_hang=2):
-    samFile = load_samfile(sam_file)
+    # samFile = load_samfile(sam_file)
     
     RV = []
     for g in range(len(genes)):
         _Rmat = fetch_reads_count(
-            genes[g], samFile, event_type, edge_hang=10, junc_hang=2, 
+            genes[g], sam_file, event_type, edge_hang=10, junc_hang=2, 
             rm_duplicate=True, inner_only=False, mapq_min=0, trimLen_max=5, 
             rlen_min=1, is_mated=True
         )

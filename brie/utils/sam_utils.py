@@ -10,9 +10,49 @@ global CACHE_SAMFILE
 CACHE_CHROM = None
 CACHE_SAMFILE = None
 
-def load_samfile(samFile, chrom=None):
+def check_pysam_chrom(samFile, chrom=None):
     """Chech if samFile is a file name or pysam object, and if chrom format. 
     """
+    global CACHE_CHROM
+    global CACHE_SAMFILE
+
+    if CACHE_CHROM is not None:
+        if (samFile == CACHE_SAMFILE) and (chrom == CACHE_CHROM):
+            return CACHE_SAMFILE, CACHE_CHROM
+
+    if type(samFile) == str or type(samFile) == numpy.str_:
+        ftype = samFile.split(".")[-1]
+        if ftype != "bam" and ftype != "sam" and ftype != "cram" :
+            print("Error: file type need suffix of bam, sam or cram.")
+            sys.exit(1)
+        if ftype == "cram":
+            samFile = pysam.AlignmentFile(samFile, "rc")
+        elif ftype == "bam":
+            samFile = pysam.AlignmentFile(samFile, "rb")
+        else:
+            samFile = pysam.AlignmentFile(samFile, "r")
+
+    if chrom is not None:
+        if chrom not in samFile.references:
+            if chrom.startswith("chr"):
+                chrom = chrom.split("chr")[1]
+            else:
+                chrom = "chr" + chrom
+        if chrom not in samFile.references:
+            print("Can't find references %s in samFile" %chrom)
+            return samFile, None
+
+    CACHE_CHROM = chrom
+    CACHE_SAMFILE = samFile
+    return samFile, chrom
+
+
+def load_samfile(samFile, chrom=None):
+    """Chech if samFile is a file name or pysam object, and if chrom format.
+    """
+    print('Warning: The load_samfile() function is recommended to be ' + 
+          'replaced by check_pysam_chrom().')
+
     global CACHE_CHROM
     global CACHE_SAMFILE
 
