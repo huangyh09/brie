@@ -45,9 +45,8 @@ setup(
         'console_scripts': [
             # 'brie = brie:_cli.cli',
             'brie = brie.bin.brie_main:main',
-            # 'brie-count = brie.bin.count:main',
             'brie-quant = brie.bin.quant:main',
-            'brie-count = brie.bin.brie_count_droplet:main',
+            'brie-count = brie.bin.count:main',
             'brie1 = brie.version1.brie:main',
             'brie1-diff = brie.version1.brie_diff:main',
         ],
