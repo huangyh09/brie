@@ -10,7 +10,7 @@ please refer to `BRIE1 <brie1.html>`_.
 
 This command allows to quantify the splicing proportion Psi and detect
 variable splicing events/genes along with cell-level features, e.g., cell type, 
-disease condition, development time. 
+disease condition, and development time. 
 It can handle both alternative splicing isoforms or unspliced vs spliced ratios 
 in a unified framework.
 
@@ -37,7 +37,7 @@ prior distribution through aggregation, hence learns a prior
 shared by all cells on each gene. The benefit for this mode is that dimension 
 reduction can be performed, e.g., PCA and UMAP on splicing PSI matrix. 
 As there are many 
-splicing events that are not well covered, they will have a high variance in the 
+splicing events with low total reads, they will have a high variance in the 
 estimation, and is often suggested filtered out, which will cause missing values.
 Based on the cell aggregated imputation, most dimension reduction methods can be
 used, even it doesn't support missing values.
@@ -106,7 +106,7 @@ file as follow, along with parameters ``--interceptMode gene --LRTindex 0``.
 
 
 Mode 1: Imputation with gene features
-====================================
+=====================================
 
 This mode is introduced in BRIE 1, where genomic sequences are leverage to 
 learn a prior distribution of PSI. Then the predicted distribution of PSI from 
@@ -171,19 +171,17 @@ you are using):
     Options:
       -h, --help            show this help message and exit
       -i IN_FILE, --inFile=IN_FILE
-                            Input read count matrices in AnnData h5ad or brie npz
-                            format.
+                            Input read count matrices in AnnData h5ad or brie npz format.
       -c CELL_FILE, --cellFile=CELL_FILE
-                            File for cell features in tsv[.gz] with cell and
-                            feature ids.
+                            File for cell features in tsv[.gz] with cell and feature ids.
       -g GENE_FILE, --geneFile=GENE_FILE
-                            File for gene features in tsv[.gz] with gene and
-                            feature ids.
+                            File for gene features in tsv[.gz] with gene and feature ids.
       -o OUT_FILE, --out_file=OUT_FILE
                             Full path of output file for annData in h5ad [default:
                             $inFile/brie_quant.h5ad]
-      --LRTindex=LRT_INDEX  Index (0-based) of cell features to test with LRT:
-                            All, None or comma separated integers [default: None]
+      --LRTindex=LRT_INDEX  Index (0-based) of cell features to test with LRT: All, None
+                            or comma separated integers [default: None]
+      --testBase=TEST_BASE  Features in testing base model: full, null  [default: full]
       --interceptMode=INTERCEPT_MODE
                             Intercept mode: gene, cell or None [default: None]
       --layers=LAYERS       Comma separated layers two or three for estimating Psi
@@ -191,20 +189,19 @@ you are using):
 
       Gene filtering:
         --minCount=MIN_COUNT
-                            Minimum total counts for fitltering genes [default:
-                            50]
+                            Minimum total counts for fitltering genes [default: 50]
         --minUniqCount=MIN_UNIQ_COUNT
-                            Minimum unique counts for fitltering genes [default:
-                            10]
-        --minCell=MIN_CELL  Minimum number of cells with unique count for
-                            fitltering genes [default: 30]
-        --minMIF=MIN_MIF    Minimum minor isoform frequency in unique count
-                            [default: 0.001]
+                            Minimum unique counts for fitltering genes [default: 10]
+        --minCell=MIN_CELL  Minimum number of cells with unique count for fitltering genes
+                            [default: 30]
+        --minMIF=MIN_MIF    Minimum minor isoform frequency in unique count [default:
+                            0.001]
 
       VI Optimization:
         --MCsize=MC_SIZE    Sample size for Monte Carlo Expectation [default: 3]
         --minIter=MIN_ITER  Minimum number of iterations [default: 5000]
         --maxIter=MAX_ITER  Maximum number of iterations [default: 20000]
         --batchSize=BATCH_SIZE
-                            Element size per batch: n_gene * total cell [default:
-                            500000]
+                            Element size per batch: n_gene * total cell [default: 500000]
+        --pseudoCount=PSEUDO_COUNT
+                            Pseudo count to add on unique count matrices [default: 0.01]
