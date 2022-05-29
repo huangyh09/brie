@@ -66,9 +66,23 @@ def read_npz(path):
     return adata
 
 
-def read_brieMM(path):
-    """Read brie count generated Market martrix: dictionary-format 
+def read_brieMM(path, return_type='dict', keys=None):
+    """
+    Read brie count generated Market martrix: dictionary or AnnData format 
     sparse count matrix
+
+    Parameters
+    ----------
+    path: str 
+        the path for read_count.mtx
+    return_type: str, the type for returned values
+        'dict' for dictionary; 'AnnData' or 'adata' for AnnData
+
+    Examples
+    --------
+
+    >>> adata = brie.read_brieMM('read_count.mtx', return_type='adata')
+    >>> adata
     """
     fid = open(path, 'r')
     lines = fid.readlines()
@@ -88,15 +102,39 @@ def read_brieMM(path):
             dat_dict[_key].append([i, j, _dat[_key]])
         
     mat_dict = {}
-    for _key in dat_dict:
+    for _key in dat_dict.keys():
         _mat = np.array(dat_dict[_key], dtype='int')
         _mat[:, :2] -= 1 # 0-based index
         mat_dict[_key] = csc_matrix(
             (_mat[:, 2], (_mat[:, 0], _mat[:, 1])), 
             shape=(n_gene, n_cell)
         )
+        _shape = mat_dict[_key].shape
+
+    # fill missed keys with zeros
+    if keys is not None:
+        mat_dict_new = {}
+        for _key in keys:
+            if _key not in mat_dict.keys():
+                mat_dict_new[_key] = csc_matrix(_shape, dtype=np.float32)
+            else:
+                mat_dict_new[_key] = mat_dict[_key]
+        mat_dict = mat_dict_new
+
+    # return type AnnData or dict
+    if return_type in ['adata', 'AnnData']:
+        keys = list(mat_dict.keys())
+        X = mat_dict[keys[0]]
+        for i in range(1, len(keys)):
+            X += mat_dict[keys[i]]
+            
+        adata = anndata.AnnData(X=X, obs=None, var=None, varm=None,
+                                layers=mat_dict, dtype='float32')
+        RV = adata
+    else:
+        RV = mat_dict
         
-    return mat_dict
+    return RV
 
 
 def fetch_gene_info(genes, fraglen=None, out_file=None):

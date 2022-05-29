@@ -11,6 +11,17 @@
 BRIE: Bayesian Regression for Isoform Estimate
 ==============================================
 
+Top News
+--------
+* [29/05/2022] We have released v2.2 that fully supports counting droplet-based 
+  data for both Skipping Exon events and other types of splcing events. See the
+  `brie-count manual <https://brie.readthedocs.io/en/latest/brie_count.html>`_
+
+* [29/05/2022] We have include small-sized test data sets (15MB) for both 
+  smart-seq2 and 10x Genomics. See data in `brie-tutorials/tests repo 
+  <https://github.com/huangyh09/brie-tutorials/tree/main/tests>`_
+
+
 About BRIE
 ----------
 

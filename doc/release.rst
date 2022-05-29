@@ -4,6 +4,17 @@ Release notes
 
 Release in future
 =================
+
+Release v2.2.0 (29/05/2022)
+===========================
+* **Big new feature** `brie-count` now supports cell barcodes based platforms, 
+  including 10x Genomics
+* provide small test files in the tests folder
+* Update `brie-count` manual
+
+Release v2.1.0 (22/03/2022)
+===========================
+* Enable `brie-count` to support other types of splicing events, not only SE
 * Fix a minor bug in exteme scenario with missing a certain isoform for all genes
 
 Release v2.0.6 (23/09/2021)

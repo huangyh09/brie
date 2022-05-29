@@ -1,4 +1,10 @@
 #!/bin/bash
+
+# Top Note, besides the demo below, from v2.2 we now include test sets for both
+# smart-seq2 and 10x Genomics data, in the brie-tutorials repo:
+# https://github.com/huangyh09/brie-tutorials/tree/main/tests
+
+
 #a demo for running brie2
 
 ## Assume you already have exon-skipping events and sequence features

@@ -49,7 +49,11 @@ CLI <brie_count.html>`_, and you can use this example command line.
 
 .. code-block:: bash
 
+  # for smart-seq
   brie-count -a AS_events/SE.gold.gtf -S sam_and_cellID.tsv -o out_dir -p 15
+
+  # for droplet, e.g. 10x Genomics
+  brie-count -a AS_events/SE.gold.gtf -s possorted.bam -b barcodes.tsv.gz -o out_dir -p 15
   
 .. _annotations: https://sourceforge.net/projects/brie-rna/files/annotation
 .. _briekit: https://github.com/huangyh09/briekit/wiki
@@ -60,8 +64,8 @@ retaining is also applicable with BRIE. Some pre-processing utilities will be
 available soon.
 
 
-Main Step: quantify and test
-----------------------------
+Main Step: quantify and detect
+------------------------------
 
 ``brie-quant`` is used for this step. If GPU is available, we highly 
 recommend using GPU for ~10x speedup comparing CPU server. Thanks to good 

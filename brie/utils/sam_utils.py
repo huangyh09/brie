@@ -3,25 +3,101 @@
 
 import sys
 import pysam
+import numpy
 
-def load_samfile(sam_file):
-    """To load an indexed bam file"""
-    ftype = sam_file.split(".")[-1]
-    if ftype != "bam" and ftype != "sam" and ftype != "cram" :
-        print("Error: file type need suffix of bam, sam or cram.")
-        sys.exit(1)
-    # print("Loading a %s" %ftype + " with file name: %s" %sam_file)
-    if ftype == "cram":
-        samfile = pysam.AlignmentFile(sam_file, "rc")
-    elif ftype == "bam":
-        samfile = pysam.AlignmentFile(sam_file, "rb")
+global CACHE_CHROM
+global CACHE_SAMFILE
+CACHE_CHROM = None
+CACHE_SAMFILE = None
+
+def check_pysam_chrom(samFile, chrom=None):
+    """Chech if samFile is a file name or pysam object, and if chrom format. 
+    """
+    global CACHE_CHROM
+    global CACHE_SAMFILE
+
+    if CACHE_CHROM is not None:
+        if (samFile == CACHE_SAMFILE) and (chrom == CACHE_CHROM):
+            return CACHE_SAMFILE, CACHE_CHROM
+
+    if type(samFile) == str or type(samFile) == numpy.str_:
+        ftype = samFile.split(".")[-1]
+        if ftype != "bam" and ftype != "sam" and ftype != "cram" :
+            print("Error: file type need suffix of bam, sam or cram.")
+            sys.exit(1)
+        if ftype == "cram":
+            samFile = pysam.AlignmentFile(samFile, "rc")
+        elif ftype == "bam":
+            samFile = pysam.AlignmentFile(samFile, "rb")
+        else:
+            samFile = pysam.AlignmentFile(samFile, "r")
+
+    if chrom is not None:
+        if chrom not in samFile.references:
+            if chrom.startswith("chr"):
+                chrom = chrom.split("chr")[1]
+            else:
+                chrom = "chr" + chrom
+        if chrom not in samFile.references:
+            print("Can't find references %s in samFile" %chrom)
+            return samFile, None
+
+    CACHE_CHROM = chrom
+    CACHE_SAMFILE = samFile
+    return samFile, chrom
+
+
+def load_samfile(samFile, chrom=None):
+    """Chech if samFile is a file name or pysam object, and if chrom format.
+    """
+    print('Warning: The load_samfile() function is recommended to be ' + 
+          'replaced by check_pysam_chrom().')
+
+    global CACHE_CHROM
+    global CACHE_SAMFILE
+
+    # get from cache
+    if CACHE_CHROM is not None:
+        if (samFile == CACHE_SAMFILE) and (chrom == CACHE_CHROM):
+            return CACHE_SAMFILE, CACHE_CHROM
+
+    # open file
+    if type(samFile) == str or type(samFile) == numpy.str_:
+        ftype = samFile.split(".")[-1]
+        if ftype != "bam" and ftype != "sam" and ftype != "cram" :
+            print("Error: file type need suffix of bam, sam or cram.")
+            sys.exit(1)
+        if ftype == "cram":
+            samFile = pysam.AlignmentFile(samFile, "rc")
+        elif ftype == "bam":
+            samFile = pysam.AlignmentFile(samFile, "rb")
+        else:
+            samFile = pysam.AlignmentFile(samFile, "r")
     else:
-        samfile = pysam.AlignmentFile(sam_file, "r")
-    return samfile
+        print("[BRIE2] Error: unknown data type: %s" %samFile)
+        print(type(samFile), type(samFile) == numpy.str_)
+        sys.exit(1)
+
+    if chrom is not None:
+        if chrom not in samFile.references:
+            if chrom.startswith("chr"):
+                chrom = chrom.split("chr")[1]
+            else:
+                chrom = "chr" + chrom
+        if chrom not in samFile.references:
+            print("Can't find references %s in samFile" %chrom)
+            return samFile, None
+
+        CACHE_CHROM = chrom
+        CACHE_SAMFILE = samFile
+        return samFile, chrom
+    else:
+        CACHE_SAMFILE = samFile
+        return samFile
 
 
 def fetch_reads(samfile, chrom, start, end, rm_duplicate=True, inner_only=True,
-                mapq_min=0, mismatch_max=10**5, rlen_min=1,  is_mated=True):
+                mapq_min=0, trimLen_max=1e6, rlen_min=1,  is_mated=True):
     """To fetch the reads in a given region from a pysam AlignmentFile.
 
     Args:
@@ -32,7 +108,7 @@ def fetch_reads(samfile, chrom, start, end, rm_duplicate=True, inner_only=True,
         rm_duplicate: A bool for only keeping the first one of duplicates.
         inner_only: A bool for only keeping fully region matched reads.
         mapq_min: An integer of the minimum of map quality.
-        mismatch_min: An integer of the minimum of mismatched bases.
+        trimLen_max: An integer of the maximum length of trimmed bases.
         rlen_min: An integer of the minimum of read length.
         is_paired: A bool for mating paired-end reads.
 
@@ -85,10 +161,10 @@ def fetch_reads(samfile, chrom, start, end, rm_duplicate=True, inner_only=True,
                                    r.aend is None or r.aend > end): continue
         # filter 2: too low map quality
         if r.mapq < mapq_min: continue
-        # filter 3: too long mismatch
-        if r.rlen - len(r.positions) > mismatch_max: continue
-        # filter 5: too short reads length
-        if r.rlen < rlen_min: continue
+        # filter 3: too long trimmed bases
+        if r.rlen - len(r.positions) > trimLen_max: continue
+        # filter 5: too short mapped length
+        if len(r.positions) < rlen_min: continue
         
         if r.is_read2:
             reads2.append(r)

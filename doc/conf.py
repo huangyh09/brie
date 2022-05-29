@@ -30,22 +30,12 @@ sys.path.insert(0, os.path.abspath("_ext"))
 
 from urllib.request import urlretrieve
 
-notebooks_url = "https://github.com/huangyh09/brie/raw/master/examples/"
-notebooks = [
-    "Prior_distribution_BRIE2.ipynb",
-]
-for nb in notebooks:
-    try:
-        urlretrieve(notebooks_url + nb, nb)
-    except:
-        pass
-
-
 notebooks_url = "https://github.com/huangyh09/brie-tutorials/raw/main/"
 notebooks = [
     "msEAE/brie2_msEAE.ipynb",
     "scNTseq/brie2_scNTseq.ipynb",
-    "dentateGyrus/brie2_dentateGyrus.ipynb"
+    "dentateGyrus/brie2_dentateGyrus.ipynb",
+    "theory/Prior_distribution_BRIE2.ipynb"
 ]
 
 for nb in notebooks:

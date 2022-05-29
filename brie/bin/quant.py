@@ -106,13 +106,14 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
         
     ## Test genes with each cell features
     # model = brie.tl.fitBRIE(adata[:, :200])
-    model = brie.tl.fitBRIE(adata, Xc=Xc, Xg=Xg, 
-                            LRT_index=LRT_index, layer_keys=layer_keys, 
-                            intercept=intercept, intercept_mode=intercept_mode,
-                            min_iter=min_iter, max_iter=max_iter, 
-                            MC_size=MC_size, batch_size=batch_size,
-                            pseudo_count=pseudo_count, base_mode=base_mode,
-                            tau_prior=tau_prior)
+    from brie.models import fitBRIE
+    model = fitBRIE(adata, Xc=Xc, Xg=Xg, 
+                    LRT_index=LRT_index, layer_keys=layer_keys, 
+                    intercept=intercept, intercept_mode=intercept_mode,
+                    min_iter=min_iter, max_iter=max_iter, 
+                    MC_size=MC_size, batch_size=batch_size,
+                    pseudo_count=pseudo_count, base_mode=base_mode,
+                    tau_prior=tau_prior)
     
     adata.uns['brie_version'] = brie.__version__
     adata.uns['Xc_ids'] = Xc_ids
