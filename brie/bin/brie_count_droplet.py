@@ -9,51 +9,26 @@ import multiprocessing
 from optparse import OptionParser, OptionGroup
 
 from ..version import __version__
-from ..utils.count import get_count_matrix, SE_effLen
+from ..utils.count import get_smartseq_matrix, SE_effLen
 from ..utils.count_droplet import get_droplet_matrix
 from ..utils.io_utils import read_brieMM, read_gff, convert_to_annData
 
-FID = None
-PROCESSED = 0
-TOTAL_BAMs = 0
-START_TIME = time.time()
 
 #TODO: something wrong as there is no reads for isoform 2. Please check!!
-    
-def show_progress(RV=None):    
-    global PROCESSED, TOTAL_BAMs, START_TIME, FID
-    
-    if RV is None:
-        return RV
-    else:
-        FID.writelines(RV)
-    
-    if RV is not None: 
-        PROCESSED += 1
-        bar_len = 20
-        run_time = time.time() - START_TIME
-        percents = 100.0 * PROCESSED / TOTAL_BAMs
-        filled_len = int(bar_len * percents / 100)
-        bar = '=' * filled_len + '-' * (bar_len - filled_len)
-        
-        sys.stdout.write('\r[BRIE2] [%s] %.1f%% cells done in %.1f sec.' 
-            % (bar, percents, run_time))
-        sys.stdout.flush()
-        
-    return RV
-
 
 def smartseq_count(gff_file, samList_file, out_dir=None, nproc=1, 
-        event_type='SE', add_premRNA=False):
+        event_type='SE', verbose=False):
     """CLI for counting reads supporting isoforms
     """
     # Parameter check
     
     ## Load sam file list
     sam_table = np.loadtxt(samList_file, delimiter = None, dtype=str, ndmin = 2)
+    print('[BRIE2] example head cells:')
     print(sam_table[:min(3, sam_table.shape[0])], "...")
     if sam_table.shape[1] == 1:
-        sam_table = np.append(sam_table, [['S%d' %x] for x in range(sam_table.shape[0])], axis=1)
+        sam_table = np.append(sam_table, 
+            [['S%d' %x] for x in range(sam_table.shape[0])], axis=1)
         
     ## Check out_dir
     if out_dir is None:
@@ -92,9 +67,6 @@ def smartseq_count(gff_file, samList_file, out_dir=None, nproc=1,
     fid.close()
         
     ## Output sam total counts
-    global TOTAL_BAMs
-    TOTAL_BAMs = sam_table.shape[0]
-    
     reads_table = np.zeros(sam_table.shape[0])
     for i in range(sam_table.shape[0]):
         if not os.path.isfile(str(sam_table[i, 0])):
@@ -126,38 +98,21 @@ def smartseq_count(gff_file, samList_file, out_dir=None, nproc=1,
         effLen_tensor = np.zeros((len(genes), 1), dtype=np.float32)
     
     ## Load read counts
-    print("[BRIE2] loading reads for %d genes in %d sam files with %d cores..." 
+    print("[BRIE2] counting reads for %d genes in %d sam files with %d cores..." 
           %(len(genes), sam_table.shape[0], nproc))
+
+    get_smartseq_matrix(genes, sam_table, out_dir, event_type="SE", 
+        edge_hang=10, junc_hang=2, nproc=nproc, verbose=verbose)
     
-    global START_TIME, FID
-    START_TIME = time.time()
-    
-    FID = open(out_dir + "/read_count.mtx", "w")
-    FID.writelines("%" + "%MatrixMarket matrix coordinate integer general\n")
-    FID.writelines("%d\t%d\t%d\n" %(sam_table.shape[0], len(genes), 0))
-    
-    if nproc <= 1:
-        for s in range(len(sam_table[:, 0])):
-            res = get_count_matrix(genes, sam_table[s, 0], s, event_type, 10, 2)
-            show_progress(res)
-    else:
-        pool = multiprocessing.Pool(processes=nproc)
-        result = []
-        for s in range(len(sam_table[:, 0])):
-            result.append(pool.apply_async(get_count_matrix, (genes, 
-                sam_table[s, 0], s, event_type, 10, 2), callback=show_progress))
-        pool.close()
-        pool.join()
-    
-    FID.close()
-    print("")
-    
+
     ## Don't save into h5ad if not SE
     if event_type != 'SE':
         sys.exit()
     
     ## Save data into h5ad
-    print("[BRIE2] save matrix into h5ad ...")
+    sys.stdout.write("\r[BRIE2] saving matrix into h5ad ... ")
+    sys.stdout.flush()
+
     Rmat_dict = read_brieMM(out_dir + "/read_count.mtx")
     adata = convert_to_annData(Rmat_dict=Rmat_dict, 
                                effLen_tensor=effLen_tensor, 
@@ -166,6 +121,9 @@ def smartseq_count(gff_file, samList_file, out_dir=None, nproc=1,
     adata.uns['event_type'] = event_type
     adata.write_h5ad(out_dir + "/brie_count.h5ad")
     
+    sys.stdout.write("\r[BRIE2] saving matrix into h5ad ... Done.\n")
+    sys.stdout.flush()
+    
     ## Save data into npz
     # np.savez(out_dir + "/brie_count.npz", 
     #         Rmat_dict=Rmat_dict, effLen_tensor=effLen_tensor, 
@@ -173,7 +131,7 @@ def smartseq_count(gff_file, samList_file, out_dir=None, nproc=1,
 
 
 def droplet_count(gff_file, sam_file, barcode_file, out_dir=None, nproc=1, 
-                  event_type='SE', CB_tag='CB', UMI_tag='UR'):
+                  event_type='SE', CB_tag='CB', UMI_tag='UR', verbose=False):
     """CLI for counting reads supporting isoforms
     """
     ## TODO: Parameter check
@@ -184,6 +142,7 @@ def droplet_count(gff_file, sam_file, barcode_file, out_dir=None, nproc=1,
     ## Load sam file list
     cell_list = np.loadtxt(barcode_file, delimiter = None, dtype=str, ndmin = 2)
     cell_list = cell_list[:, 0]
+    print('[BRIE2] example head cells:')
     print(cell_list[:min(3, cell_list.shape[0])], "...")
 
     ## Check out_dir
@@ -236,6 +195,7 @@ def droplet_count(gff_file, sam_file, barcode_file, out_dir=None, nproc=1,
                 
     ### Output cell info
     fid = open(out_dir + "/cell_note.tsv", "w")
+    fid.writelines("barcodes\n")
     for i in range(len(cell_list)):
         fid.writelines("%s\n" %(cell_list[i]))
     fid.close()
@@ -253,15 +213,17 @@ def droplet_count(gff_file, sam_file, barcode_file, out_dir=None, nproc=1,
     print("[BRIE2] counting reads for %d genes in %d cells with %d cores..." 
           %(len(genes), cell_list.shape[0], nproc))
 
-    res = get_droplet_matrix(genes, sam_file, cell_list, out_dir, 
-                             event_type, 10, 2, CB_tag, UMI_tag)
+    res = get_droplet_matrix(genes, sam_file, cell_list, out_dir, event_type, 
+                             10, 2, CB_tag, UMI_tag, nproc, verbose)
     
     ## Don't save into h5ad if not SE
     if event_type != 'SE':
         sys.exit()
     
     ## Save data into h5ad
-    print("[BRIE2] save matrix into h5ad ...")
+    sys.stdout.write("\r[BRIE2] saving matrix into h5ad ... ")
+    sys.stdout.flush()
+
     Rmat_dict = read_brieMM(out_dir + "/read_count.mtx")
     cell_table = np.append(['barcodes'], cell_list).reshape(-1, 1)
     adata = convert_to_annData(Rmat_dict=Rmat_dict, 
@@ -271,6 +233,9 @@ def droplet_count(gff_file, sam_file, barcode_file, out_dir=None, nproc=1,
     adata.uns['event_type'] = event_type
     adata.uns['total_reads'] = total_reads
     adata.write_h5ad(out_dir + "/brie_count.h5ad")
+
+    sys.stdout.write("\r[BRIE2] saving matrix into h5ad ... Done.\n")
+    sys.stdout.flush()
 
     
 def main():
@@ -300,6 +265,8 @@ def main():
         help="Tag for UMI barocdes [default: %default]")
 
     group2 = OptionGroup(parser, "Optional arguments")
+    group2.add_option("--verbose", dest="verbose", default=False, 
+        action="store_true", help="Print out detailed log info")    
     group2.add_option("--nproc", "-p", type="int", dest="nproc", default="4",
         help="Number of subprocesses [default: %default]")
     group2.add_option("--eventType", "-t", dest="event_type", default="SE",
@@ -328,11 +295,11 @@ def main():
     
     if options.samList_file is not None:
         smartseq_count(options.gff_file, options.samList_file, options.out_dir, 
-            options.nproc, options.event_type, add_premRNA)
+            options.nproc, options.event_type, options.verbose)
     else:
         droplet_count(options.gff_file, options.sam_file, options.barcodes_file, 
             options.out_dir, options.nproc, options.event_type, options.cell_tag,
-            options.UMI_tag)
+            options.UMI_tag, options.verbose)
 
 
 if __name__ == "__main__":

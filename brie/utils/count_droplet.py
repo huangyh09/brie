@@ -9,36 +9,8 @@ from .sam_utils import load_samfile, fetch_reads, check_pysam_chrom
 from .count import check_reads_compatible, _check_SE_event
 
 
-FID = None
-PROCESSED = 0
-TOTAL_GENE = 0
-START_TIME = time.time()
-    
-def show_progress(RV=None):    
-    global PROCESSED, TOTAL_GENE, START_TIME, FID
-    
-    if RV is None:
-        return RV
-    else:
-        FID.writelines(RV)
-    
-    if RV is not None: 
-        PROCESSED += 1
-        bar_len = 20
-        run_time = time.time() - START_TIME
-        percents = 100.0 * PROCESSED / TOTAL_GENE
-        filled_len = int(bar_len * percents / 100)
-        bar = '=' * filled_len + '-' * (bar_len - filled_len)
-        
-        sys.stdout.write('\r[BRIE2] [%s] %.1f%% genes done in %.1f sec.' 
-            % (bar, percents, run_time))
-        sys.stdout.flush()
-        
-    return RV
-
-
 def get_droplet_UMIcount(gene, samFile, event_type="SE", edge_hang=10, 
-        junc_hang=2, CB_tag='CB', UMI_tag='UR', **kwargs):
+        junc_hang=2, CB_tag='CB', UMI_tag='UR', verbose=False, **kwargs):
     """Count the categorical reads mapped to a splicing event
 
     rm_duplicate=True, inner_only=True,
@@ -53,9 +25,11 @@ def get_droplet_UMIcount(gene, samFile, event_type="SE", edge_hang=10,
     reads = fetch_reads(samFile, gene.chrom, gene.start, gene.stop, **kwargs)
     _n_reads = (len(reads["reads1u"]) + len(reads["reads2u"]) + 
                 len(reads["reads1"]) + len(reads["reads2"]))
-    print("%d reads fetched on %s" %(_n_reads, gene.geneID))
-    print("R1, R2, paired_R1, paired_R2:", len(reads["reads1u"]), 
-          len(reads["reads2u"]), len(reads["reads1"]), len(reads["reads2"]))
+
+    if verbose == True or verbose >= 1:
+        print("%d reads fetched on %s" %(_n_reads, gene.geneID))
+        print("R1, R2, paired_R1, paired_R2:", len(reads["reads1u"]), 
+            len(reads["reads2u"]), len(reads["reads1"]), len(reads["reads2"]))
 
     # Check reads have CB_tag and UMI_tag
     reads["reads1u"] = [r for r in reads["reads1u"] if r.has_tag(CB_tag)]
@@ -70,9 +44,11 @@ def get_droplet_UMIcount(gene, samFile, event_type="SE", edge_hang=10,
     
     _n_reads = (len(reads["reads1u"]) + len(reads["reads2u"]) + 
                 len(reads["reads1"]) + len(reads["reads2"]))
-    print("%d reads fetched on %s" %(_n_reads, gene.geneID))
-    print("R1, R2, paired_R1, paired_R2:", len(reads["reads1u"]), 
-          len(reads["reads2u"]), len(reads["reads1"]), len(reads["reads2"]))
+
+    if verbose == True or verbose >= 1:
+        print("%d reads fetched on %s with CB & UMI" %(_n_reads, gene.geneID))
+        print("R1, R2, paired_R1, paired_R2:", len(reads["reads1u"]), 
+            len(reads["reads2u"]), len(reads["reads1"]), len(reads["reads2"]))
 
     # Check reads compatible
     n_readsPE = len(reads["reads1"])
@@ -115,7 +91,7 @@ def get_droplet_UMIcount(gene, samFile, event_type="SE", edge_hang=10,
 
 
 def encode_reads(Rmat, R_CB, R_UR, cell_list, g_idx, merge_UMIs=True,
-        matched_reads_only=False):
+        matched_reads_only=False, verbose=False):
     """Encode reads
     """
     ## merge UMIs (sort, merge)
@@ -146,7 +122,8 @@ def encode_reads(Rmat, R_CB, R_UR, cell_list, g_idx, merge_UMIs=True,
         R_CB = [R_CB[x] for x in _uniq_idx]
         R_UR = [R_UR[x] for x in _uniq_idx]
 
-        print("Merged %d reads into %d UMIs" %(len(CB_UMI), len(_uniq_idx)))
+        if verbose == True or verbose >= 1:
+            print("Merged %d reads into %d UMIs" %(len(CB_UMI), len(_uniq_idx)))
 
     ## remove reads unmatched to any transcript; to reduce candidate reads
     if matched_reads_only:
@@ -190,44 +167,86 @@ def encode_reads(Rmat, R_CB, R_UR, cell_list, g_idx, merge_UMIs=True,
     return RV
 
 
+def _count_one_gene(sam_file, genes, g, cell_list, event_type="SE", 
+    edge_hang=10, junc_hang=2, CB_tag='CB', UMI_tag='UR', verbose=False):
+    """Counting UMIs for all cells on one gene
+    """
+    # Load bam file
+    samFile, _chrom = check_pysam_chrom(sam_file, genes[g].chrom)
+    genes[g].chrom = _chrom
+
+    if verbose == True or verbose >= 1:
+        print("")
+        print("[BRIE2] parsing gene %d: %s, %s" 
+            %(g + 1, genes[g].geneName, genes[g].geneID))
+        print("[BRIE2] transcript lengths:", [x.tranL for x in genes[g].trans])
+
+    _Rmat, _R_CB, _R_UR = get_droplet_UMIcount(genes[g], samFile, 
+        event_type, edge_hang, junc_hang, CB_tag, UMI_tag, 
+        rm_duplicate=True, inner_only=False, mapq_min=0, trimLen_max=15, 
+        rlen_min=1, is_mated=True, verbose=verbose)
+
+    if _Rmat.shape[0] == 0:
+        RV = None
+    else:
+        RV = encode_reads(_Rmat, _R_CB, _R_UR, cell_list, g, verbose)
+    
+    return RV
+
+
 def get_droplet_matrix(genes, sam_file, cell_list, out_dir, event_type="SE", 
-        edge_hang=10, junc_hang=2, CB_tag='CB', UMI_tag='UR'):
+        edge_hang=10, junc_hang=2, CB_tag='CB', UMI_tag='UR', nproc=1, 
+        verbose=False):
     """Fetch UMI count matrix for droplet based scRNA-seq data
     Note, trimLen_max is 15 here; different from get_count_matrix with 5.
     """
-    # samFile = load_samfile(sam_file)
-    samFile = check_pysam_chrom(sam_file, genes[0].chrom)[0]
-
-    global START_TIME
+    global START_TIME, PROCESSED, TOTAL_GENE, FID
+    FID = None
+    PROCESSED = 0
+    TOTAL_GENE = len(genes)
     START_TIME = time.time()
+        
+    def _show_progress(RV=None):    
+        global PROCESSED, TOTAL_GENE, START_TIME, FID
+        if RV is not None: 
+            FID.writelines(RV)
+            
+            PROCESSED += 1
+            bar_len = 20
+            run_time = time.time() - START_TIME
+            percents = 100.0 * PROCESSED / TOTAL_GENE
+            filled_len = int(bar_len * percents / 100)
+            bar = '=' * filled_len + '-' * (bar_len - filled_len)
+            
+            sys.stdout.write('\r[BRIE2] [%s] %.1f%% genes done in %.1f sec.' 
+                % (bar, percents, run_time))
+            sys.stdout.flush()
+        return RV
+
 
     FID = open(out_dir + "/read_count.mtx", "w")
     FID.writelines("%" + "%MatrixMarket matrix coordinate integer general\n")
     FID.writelines("%d\t%d\t%d\n" %(cell_list.shape[0], len(genes), 0))
 
-    for g in range(len(genes)):
-        # samFile, _chrom = load_samfile(samFile, genes[g].chrom)
-        samFile, _chrom = check_pysam_chrom(samFile, genes[g].chrom)
-        genes[g].chrom = _chrom
-
-        print("[BRIE2] parsing gene %d: %s, %s" 
-              %(g + 1, genes[g].geneName, genes[g].geneID))
-        print("[BRIE2] transcript lengths:", [x.tranL for x in genes[g].trans])
-
-        _Rmat, _R_CB, _R_UR = get_droplet_UMIcount(genes[g], samFile, 
-            event_type, edge_hang, junc_hang, CB_tag, UMI_tag, 
-            rm_duplicate=True, inner_only=False, mapq_min=0, trimLen_max=15, 
-            rlen_min=1, is_mated=True)
-
-        if _Rmat.shape[0] == 0:
-            continue
-
-        RV = encode_reads(_Rmat, _R_CB, _R_UR, cell_list, g)
-
-        for _RV_line in RV:
-            FID.writelines(_RV_line)
-        
-    FID.close()
-    print("[BRIE2] %d genes have been processed." %(len(genes)))
+    # processing each gene with multiple processors
+    if nproc <= 1:
+        for g in range(len(genes)):
+            res = _count_one_gene(sam_file, genes, g, cell_list, event_type, 
+                edge_hang, junc_hang, CB_tag, UMI_tag, verbose)
+            _show_progress(res)
+    else:
+        pool = multiprocessing.Pool(processes=nproc)
+        result = []
+        for g in range(len(genes)):
+            result.append(pool.apply_async(_count_one_gene, 
+                (sam_file, genes, g, cell_list, event_type, 
+                 edge_hang, junc_hang, CB_tag, UMI_tag, verbose), 
+                callback=_show_progress))
+        pool.close()
+        pool.join()
     
-    return RV
+    FID.close()
+
+    print("")
+    print("[BRIE2] %d genes have been processed." %(len(genes)))
+    return None

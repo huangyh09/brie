@@ -1,7 +1,9 @@
 """Count reads in transcript for well-based scRNA-seq or bulk RNA-Seq"""
 
 import sys
+import time
 import numpy as np
+import multiprocessing
 from .sam_utils import load_samfile, fetch_reads, check_pysam_chrom
 
 def _check_SE_event(gene):
@@ -14,6 +16,87 @@ def _check_SE_event(gene):
         return False
     else:
         return True
+
+
+def SE_probability(gene, rlen=75, edge_hang=10, junc_hang=2):
+    """Get read categorical probability of each isoform.
+    In exon-skipping (SE) event, there are two isoform:
+    isoform1 for exon inclusion and isoform2 for exon exclusion.
+    
+    Here, we only treat single-end reads. For paired-end reads,
+    we treat it as the single-end by only using the most informative
+    mate, namely the mate mapped to least number of isoform(s).
+    
+    isoform1: l1 + l2 + l3 + rlen - 2 * edge_hang
+        p1: l2 + rlen - 2 * junc_hang
+        p3: l1 + l3 - 2 * edge_hang + 2 * junc_hang
+    isoform2: l1 + l3 + rlen - 2 * edge_hang
+        p1: rlen - 2 * junc_hang
+        p3: l1 + l3 - 2 * edge_hang + 2 * junc_hang
+    """
+    # check SE event
+    if _check_SE_event(gene) == False:
+        print("This is not exon-skipping event: %s!" %(gene.geneID))
+        exit()
+    
+    l1, l2, l3 = gene.trans[0].exons[:, 1] - gene.trans[0].exons[:, 0]
+    prob_mat = np.zeros((2, 3))
+    
+    # Isoform 1
+    len_isoform1 = l1 + l2 + l3 + rlen - 2 * edge_hang
+    prob_mat[0, 0] = (l2 + rlen - 2 * junc_hang) / len_isoform1
+    prob_mat[0, 2] = (l1 + l3 - 2 * edge_hang + 2 * junc_hang) / len_isoform1
+    
+    # Isoform 2
+    len_isoform2 = l1 + l3 + rlen - 2 * edge_hang
+    prob_mat[1, 1] = (rlen - 2 * junc_hang) / len_isoform2
+    prob_mat[1, 2] = (l1 + l3 - 2 * edge_hang + 2 * junc_hang) / len_isoform2
+    
+    return prob_mat
+
+
+def SE_effLen(gene, rlen=75, edge_hang=10, junc_hang=2):
+    """Get effective length matrix for three read categories from two isoforms.
+    
+    In exon-skipping (SE) event, there are two isoform:
+    isoform1 for exon inclusion and isoform2 for exon exclusion.
+    and three read groups:
+    group1: uniquely from isoform1
+    group2: uniquely from isoform2
+    group3: ambiguous identity
+    
+    Here, we only treat single-end reads. For paired-end reads,
+    we treat it as the single-end by only using the most informative
+    mate, namely the mate mapped to least number of isoform(s).
+    
+    isoform1: l1 + l2 + l3 + rlen - 2 * edge_hang
+        read group1: l2 + rlen - 2 * junc_hang
+        read group3: l1 + l3 - 2 * edge_hang + 2 * junc_hang
+    isoform2: l1 + l3 + rlen - 2 * edge_hang
+        read group2: rlen - 2 * junc_hang
+        read group3: l1 + l3 - 2 * edge_hang + 2 * junc_hang
+    """
+    # check SE event
+    if _check_SE_event(gene) == False:
+        print("This is not exon-skipping event: %s!" %(gene.geneID))
+        exit()
+    
+    l1, l2, l3 = gene.trans[0].exons[:, 1] - gene.trans[0].exons[:, 0]
+    isoLen_mat = np.zeros((2, 3))
+    
+    # isoform length
+    len_isoform1 = l1 + l2 + l3 + rlen - 2 * edge_hang
+    len_isoform2 = l1 + l3 + rlen - 2 * edge_hang
+    
+    # segments
+    isoLen_mat[0, 0] = l2 + rlen - 2 * junc_hang
+    isoLen_mat[1, 1] = rlen - 2 * junc_hang
+    isoLen_mat[0, 2] = l1 + l3 - 2 * edge_hang + 2 * junc_hang
+    isoLen_mat[1, 2] = l1 + l3 - 2 * edge_hang + 2 * junc_hang
+    
+    # prob_mat = isoLen_mat / isoLen_mat.sum(1, keepdims=True)
+    
+    return isoLen_mat
 
 
 def _get_segment(exons, read):
@@ -106,15 +189,20 @@ def fetch_reads_count(gene, sam_file, event_type="SE", RNA_type="spliced",
     
     return Rmat
 
+def get_count_matrix(**kwargs):
+    print('Warning: get_count_matrix() is now renamed by _count_one_bam()')
+    return _count_one_bam(**kwargs)
 
-def get_count_matrix(genes, sam_file, sam_num, event_type="SE", 
-                     edge_hang=10, junc_hang=2):
-    # samFile = load_samfile(sam_file)
-    
+
+def _count_one_bam(genes, sam_file, sam_num, event_type="SE", 
+                   edge_hang=10, junc_hang=2):
+    """Counting reads for all genes in one bam file
+    """
     RV = []
     for g in range(len(genes)):
         _Rmat = fetch_reads_count(
-            genes[g], sam_file, event_type, edge_hang=10, junc_hang=2, 
+            genes[g], sam_file, event_type, edge_hang=edge_hang, 
+            junc_hang=junc_hang, 
             rm_duplicate=True, inner_only=False, mapq_min=0, trimLen_max=5, 
             rlen_min=1, is_mated=True
         )
@@ -129,93 +217,63 @@ def get_count_matrix(genes, sam_file, sam_num, event_type="SE",
         for i in range(len(code_id)):
             count_dict["%d" %(code_id[i])] = code_cnt[i]
             
-        RV.append("%d\t%d\t%s" %(sam_num + 1, g + 1, str(count_dict)))
-    
-    RV_line = ""
-    if len(RV) > 0:
-        RV_line = "\n".join(RV) + "\n"
-        
-    return RV_line
+        RV.append("%d\t%d\t%s\n" %(sam_num + 1, g + 1, str(count_dict)))
+    return RV
 
 
-
-def SE_probability(gene, rlen=75, edge_hang=10, junc_hang=2):
-    """Get read categorical probability of each isoform.
-    In exon-skipping (SE) event, there are two isoform:
-    isoform1 for exon inclusion and isoform2 for exon exclusion.
-    
-    Here, we only treat single-end reads. For paired-end reads,
-    we treat it as the single-end by only using the most informative
-    mate, namely the mate mapped to least number of isoform(s).
-    
-    isoform1: l1 + l2 + l3 + rlen - 2 * edge_hang
-        p1: l2 + rlen - 2 * junc_hang
-        p3: l1 + l3 - 2 * edge_hang + 2 * junc_hang
-    isoform2: l1 + l3 + rlen - 2 * edge_hang
-        p1: rlen - 2 * junc_hang
-        p3: l1 + l3 - 2 * edge_hang + 2 * junc_hang
+### Parallel computing
+def get_smartseq_matrix(genes, sam_table, out_dir, event_type="SE", 
+    edge_hang=10, junc_hang=2, nproc=1, verbose=False):
     """
-    # check SE event
-    if _check_SE_event(gene) == False:
-        print("This is not exon-skipping event: %s!" %(gene.geneID))
-        exit()
-    
-    l1, l2, l3 = gene.trans[0].exons[:, 1] - gene.trans[0].exons[:, 0]
-    prob_mat = np.zeros((2, 3))
-    
-    # Isoform 1
-    len_isoform1 = l1 + l2 + l3 + rlen - 2 * edge_hang
-    prob_mat[0, 0] = (l2 + rlen - 2 * junc_hang) / len_isoform1
-    prob_mat[0, 2] = (l1 + l3 - 2 * edge_hang + 2 * junc_hang) / len_isoform1
-    
-    # Isoform 2
-    len_isoform2 = l1 + l3 + rlen - 2 * edge_hang
-    prob_mat[1, 1] = (rlen - 2 * junc_hang) / len_isoform2
-    prob_mat[1, 2] = (l1 + l3 - 2 * edge_hang + 2 * junc_hang) / len_isoform2
-    
-    return prob_mat
-
-
-def SE_effLen(gene, rlen=75, edge_hang=10, junc_hang=2):
-    """Get effective length matrix for three read categories from two isoforms.
-    
-    In exon-skipping (SE) event, there are two isoform:
-    isoform1 for exon inclusion and isoform2 for exon exclusion.
-    and three read groups:
-    group1: uniquely from isoform1
-    group2: uniquely from isoform2
-    group3: ambiguous identity
-    
-    Here, we only treat single-end reads. For paired-end reads,
-    we treat it as the single-end by only using the most informative
-    mate, namely the mate mapped to least number of isoform(s).
-    
-    isoform1: l1 + l2 + l3 + rlen - 2 * edge_hang
-        read group1: l2 + rlen - 2 * junc_hang
-        read group3: l1 + l3 - 2 * edge_hang + 2 * junc_hang
-    isoform2: l1 + l3 + rlen - 2 * edge_hang
-        read group2: rlen - 2 * junc_hang
-        read group3: l1 + l3 - 2 * edge_hang + 2 * junc_hang
+    Wrap function to run get_count_matrix in multiple processing
     """
-    # check SE event
-    if _check_SE_event(gene) == False:
-        print("This is not exon-skipping event: %s!" %(gene.geneID))
-        exit()
-    
-    l1, l2, l3 = gene.trans[0].exons[:, 1] - gene.trans[0].exons[:, 0]
-    isoLen_mat = np.zeros((2, 3))
-    
-    # isoform length
-    len_isoform1 = l1 + l2 + l3 + rlen - 2 * edge_hang
-    len_isoform2 = l1 + l3 + rlen - 2 * edge_hang
-    
-    # segments
-    isoLen_mat[0, 0] = l2 + rlen - 2 * junc_hang
-    isoLen_mat[1, 1] = rlen - 2 * junc_hang
-    isoLen_mat[0, 2] = l1 + l3 - 2 * edge_hang + 2 * junc_hang
-    isoLen_mat[1, 2] = l1 + l3 - 2 * edge_hang + 2 * junc_hang
-    
-    # prob_mat = isoLen_mat / isoLen_mat.sum(1, keepdims=True)
-    
-    return isoLen_mat
+    global TOTAL_BAMs, START_TIME, FID, PROCESSED
+    FID = None
+    PROCESSED = 0
+    START_TIME = time.time()
+    TOTAL_BAMs = sam_table.shape[0]
 
+    def _show_progress(RV=None):    
+        global PROCESSED, TOTAL_BAMs, START_TIME, FID
+        if RV is not None: 
+            FID.writelines(RV)
+
+            PROCESSED += 1
+            bar_len = 20
+            run_time = time.time() - START_TIME
+            percents = 100.0 * PROCESSED / TOTAL_BAMs
+            filled_len = int(bar_len * percents / 100)
+            bar = '=' * filled_len + '-' * (bar_len - filled_len)
+            
+            sys.stdout.write('\r[BRIE2] [%s] %.1f%% cells done in %.1f sec.' 
+                % (bar, percents, run_time))
+            sys.stdout.flush()
+        return RV
+
+    # write results into file
+    FID = open(out_dir + "/read_count.mtx", "w")
+    FID.writelines("%" + "%MatrixMarket matrix coordinate integer general\n")
+    FID.writelines("%d\t%d\t%d\n" %(sam_table.shape[0], len(genes), 0))
+    
+    if nproc <= 1:
+        for s in range(len(sam_table[:, 0])):
+            sam_file = sam_table[s, 0]
+            res = _count_one_bam(genes, sam_file, s, event_type, edge_hang, 
+                                 junc_hang)
+            _show_progress(res)
+    else:
+        pool = multiprocessing.Pool(processes=nproc)
+        result = []
+        for s in range(len(sam_table[:, 0])):
+            sam_file = sam_table[s, 0]
+            result.append(pool.apply_async(_count_one_bam, 
+                (genes, sam_file, s, event_type, edge_hang, junc_hang), 
+                callback=_show_progress))
+        pool.close()
+        pool.join()
+    
+    FID.close()
+
+    print("")
+    print("[BRIE2] %d genes have been processed." %(len(genes)))
+    return None
