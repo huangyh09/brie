@@ -5,6 +5,11 @@ Release notes
 Release in future
 =================
 
+Release v2.2.1 (14/07/2022)
+===========================
+* fix a bug for `--eventType=Any` in smart-seq
+* change to setting for save to h5ad file for all events with only two-isoforms
+
 Release v2.2.0 (29/05/2022)
 ===========================
 * **Big new feature** `brie-count` now supports cell barcodes based platforms, 

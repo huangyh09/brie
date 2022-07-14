@@ -95,18 +95,21 @@ def smartseq_count(gff_file, samList_file, out_dir=None, nproc=1,
             effLen_tensor[ig, :, :] = SE_effLen(_gene, rlen=76)
     else:
         # placeholder, not support yet
-        effLen_tensor = np.zeros((len(genes), 1), dtype=np.float32)
+        effLen_tensor = np.ones((len(genes), 2, 3), dtype=np.float32)
     
     ## Load read counts
     print("[BRIE2] counting reads for %d genes in %d sam files with %d cores..." 
           %(len(genes), sam_table.shape[0], nproc))
 
-    get_smartseq_matrix(genes, sam_table, out_dir, event_type="SE", 
+    get_smartseq_matrix(genes, sam_table, out_dir, event_type=event_type, 
         edge_hang=10, junc_hang=2, nproc=nproc, verbose=verbose)
     
 
-    ## Don't save into h5ad if not SE
-    if event_type != 'SE':
+    ## Don't save into h5ad if not all genes only with two isoforms
+    n_trans = [len(g.trans) for g in genes]
+    if n_trans.count(2) != len(n_trans):
+        print('[BRIE2] some genes have n_transcripts different 2. ' +
+              'Stop saving to h5ad file')
         sys.exit()
     
     ## Save data into h5ad
@@ -207,7 +210,7 @@ def droplet_count(gff_file, sam_file, barcode_file, out_dir=None, nproc=1,
             effLen_tensor[ig, :, :] = SE_effLen(_gene, rlen=76)
     else:
         # placeholder, not support yet
-        effLen_tensor = np.zeros((len(genes), 1), dtype=np.float32)
+        effLen_tensor = np.ones((len(genes), 2, 3), dtype=np.float32)
     
     ## Load read counts
     print("[BRIE2] counting reads for %d genes in %d cells with %d cores..." 
@@ -216,8 +219,11 @@ def droplet_count(gff_file, sam_file, barcode_file, out_dir=None, nproc=1,
     res = get_droplet_matrix(genes, sam_file, cell_list, out_dir, event_type, 
                              10, 2, CB_tag, UMI_tag, nproc, verbose)
     
-    ## Don't save into h5ad if not SE
-    if event_type != 'SE':
+    ## Don't save into h5ad if not all genes only with two isoforms
+    n_trans = [len(g.trans) for g in genes]
+    if n_trans.count(2) != len(n_trans):
+        print('[BRIE2] some genes have n_transcripts different 2. ' +
+              'Stop saving to h5ad file')
         sys.exit()
     
     ## Save data into h5ad
