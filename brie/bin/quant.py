@@ -36,7 +36,7 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
         os.stat(os.path.dirname(os.path.abspath(out_file)))
     except:
         os.mkdir(os.path.dirname(os.path.abspath(out_file)))
-    
+
     ## Load input data into anndata
     if in_file.endswith(".h5ad"):
         adata = brie.read_h5ad(in_file)
@@ -73,7 +73,7 @@ def quant(in_file, cell_file=None, gene_file=None, out_file=None,
                                  min_MIF_uniq=min_MIF_uniq,
                                  uniq_layers=layer_keys[:2],
                                  ambg_layers=layer_keys[2:], copy=True)
-    
+
     ## Match gene features
     if gene_file is not None:
         if gene_file.endswith('csv') or gene_file.endswith('csv.gz'):
@@ -180,8 +180,8 @@ def main():
         help="Element size per batch: n_gene * total cell [default: %default]")
     group2.add_option("--pseudoCount", type=float, dest="pseudo_count", default=0.01, 
         help="Pseudo count to add on unique count matrices [default: %default]")
-    # group.add_option("--nproc", "-p", type="int", dest="npoc", default="-1",
-    #     help="Number of processes for computing [default: %default]")
+    group2.add_option("--nproc", "-p", type=int, dest="nproc", default=6,
+        help="Number of processes for computing [default: %default]")
 
     parser.add_option_group(group1)
     parser.add_option_group(group2)
@@ -205,15 +205,15 @@ def main():
     intercept = None if options.intercept_mode.upper() in ["GENE", 'CELL'] else 0
     
     ## maximum number of threads (to fix)
-    # if options.nproc != -1:
-    #     tf.config.threading.set_inter_op_parallelism_threads(options.nproc)
-    
-    nproc = -1
-            
+    if options.nproc != -1:
+        import tensorflow as tf
+        tf.config.threading.set_intra_op_parallelism_threads(options.nproc)
+        tf.config.threading.set_inter_op_parallelism_threads(options.nproc)
+
     # run detection function
     quant(options.in_file, options.cell_file, options.gene_file, 
           options.out_file, LRT_index, options.layers.split(','),
-          intercept, options.intercept_mode, nproc, options.min_count, 
+          intercept, options.intercept_mode, options.nproc, options.min_count, 
           options.min_uniq_count, options.min_cell, options.min_MIF,
           options.min_iter, options.max_iter, options.MC_size, 
           options.batch_size, options.pseudo_count, options.test_base)

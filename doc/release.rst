@@ -5,6 +5,10 @@ Release notes
 Release in future
 =================
 
+Release v2.2.2 (04/11/2022)
+===========================
+* support limit the CPU threads used by tensorflow in brie-quant (default 6)
+
 Release v2.2.1 (14/07/2022)
 ===========================
 * fix a bug for `--eventType=Any` in smart-seq
