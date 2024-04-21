@@ -9,11 +9,12 @@ easier and cleaner management of dependent packages, particularly TensorFlow and
 TensorFlow-probability, which are under active development.
 
 The following command line in terminal (Linux or MacOS) will create a conda 
-environment with name ``TFProb``, probably in the path ``~/.conda/envs/TFProb``:
+environment with name ``TFProb``, probably in the path ``~/.conda/envs/TFProb``
+(tested on Python 3.7 to 3.11):
 
 .. code-block:: bash
   
-  conda create -n TFProb python=3.7
+  conda create -n TFProb python=3.11
 
 Alternatively, you can create the environment in another path by replacing 
 ``-n TFProb`` with ``-p ANY_PATH/TFProb`` to specify the path for conda 
@@ -51,32 +52,29 @@ your own conda environment.
 GPU usage
 =========
 One of the key benefits of using TensorFlow backend is its direct support of 
-GPU for substantial speedups (generally >10x). Here is one way to set up GPU 
-configurations with NVIDIA GPU on Ubuntu:
+GPU for substantial speedups (generally >10x). In general, the above 
+installation should directly support GPU use as default by using the newest 
+tensorflow and tensorflow-probability. 
 
-.. code-block:: bash
-
-  pip install -U tensorflow-gpu
-  conda install -c anaconda cudatoolkit
-
-Make sure that you have compatible versions between tensorflow and NVIDIA CUDA. 
-You can check TF's test `here <https://www.tensorflow.org/install/source#gpu>`_.
-For more information on GPU configuration, please refer to the 
-`Tensorflow documentation`_ or `anaconda GPU`_.
-
-.. _Tensorflow documentation: https://www.tensorflow.org/guide/gpu
-.. _anaconda GPU: https://docs.anaconda.com/anaconda/user-guide/tasks/gpu-packages/
-
-Once successfully configured, you will see log info like the following when 
-using ``brie-quant``:
+To check if the installation is compatible with GPUs, you can print out the 
+detectable GPU cards, as below (it gives `[]` if failing to setup properly):
 
 .. code-block:: html
 
-  $ brie-quant
-    I tensorflow/stream_executor/platform/default/dso_loader.cc:53] 
-    Successfully opened dynamic library libcudart.so.11.0
-    Welcome to brie-quant in BRIE v2.0.5!
+  $ python3 -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU'))"
+    [PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU'), ...]
 
+However, occasionally, the newest TensorFlow may not be stable or compatible
+widely, for example the `tensorflow[and-cuda]==2.16.1` is not compatible with GPUs,
+see discussion `here <https://github.com/tensorflow/tensorflow/issues/63362#issuecomment-2053849484>`_
+
+Here is one way to use a lower version for GPU configurations with NVIDIA GPU 
+on Ubuntu (tested on 21/04/2024):
+
+.. code-block:: bash
+
+  pip install tensorflow-probability==0.23.0
+  pip install tensorflow[and-cuda]==2.15.1
 
 .. note::
    At the moment, TensorFlow calls all available GPUs, which is not necessary. 

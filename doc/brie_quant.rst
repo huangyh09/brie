@@ -177,10 +177,10 @@ you are using):
       -g GENE_FILE, --geneFile=GENE_FILE
                             File for gene features in tsv[.gz] with gene and feature ids.
       -o OUT_FILE, --out_file=OUT_FILE
-                            Full path of output file for annData in h5ad [default:
-                            $inFile/brie_quant.h5ad]
-      --LRTindex=LRT_INDEX  Index (0-based) of cell features to test with LRT: All, None
-                            or comma separated integers [default: None]
+                            Full path of output file for annData in h5ad
+                            [default: $inFile/brie_quant.h5ad]
+      --LRTindex=LRT_INDEX  Index (0-based) of cell features to test with LRT: 
+                            All, None or comma separated integers [default: None]
       --testBase=TEST_BASE  Features in testing base model: full, null  [default: full]
       --interceptMode=INTERCEPT_MODE
                             Intercept mode: gene, cell or None [default: None]
@@ -194,8 +194,8 @@ you are using):
                             Minimum unique counts for fitltering genes [default: 10]
         --minCell=MIN_CELL  Minimum number of cells with unique count for fitltering genes
                             [default: 30]
-        --minMIF=MIN_MIF    Minimum minor isoform frequency in unique count [default:
-                            0.001]
+        --minMIF=MIN_MIF    Minimum minor isoform frequency in unique count 
+                            [default: 0.001]
 
       VI Optimization:
         --MCsize=MC_SIZE    Sample size for Monte Carlo Expectation [default: 3]
@@ -205,3 +205,5 @@ you are using):
                             Element size per batch: n_gene * total cell [default: 500000]
         --pseudoCount=PSEUDO_COUNT
                             Pseudo count to add on unique count matrices [default: 0.01]
+        -p NPROC, --nproc=NPROC
+                            Number of processes for computing [default: 6]
