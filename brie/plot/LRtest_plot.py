@@ -75,7 +75,7 @@ def volcano(adata, x="cell_coeff", y="ELBO_gain", index=0, score_red=4,
     plt.scatter(xval[~idx], yval[~idx], color="gray")
     plt.scatter(xval[idx], yval[idx], color="firebrick")
     
-    lable = adata.var.index if anno_id is 'index' else adata.var[anno_id]
+    lable = adata.var.index if anno_id == 'index' else adata.var[anno_id]
     
     texts = []
     for i in idx_anno:

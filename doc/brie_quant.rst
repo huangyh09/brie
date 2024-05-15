@@ -46,6 +46,8 @@ Example command line for mode 2:
 
 .. code-block:: bash
 
+  # keep the following line if you have GPU and want to specify a card
+  CUDA_VISIBLE_DEVICES=1 \
   brie-quant -i out_dir/brie_count.h5ad -o out_dir/brie_quant_aggr.h5ad --interceptMode gene
   
   

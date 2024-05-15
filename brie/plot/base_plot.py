@@ -35,7 +35,7 @@ def counts(adata, genes, size='Psi', color=None, gene_key='index',
     if ncol is None:
         ncol = min(4, len(genes))
     if nrow is None:
-        nrow = np.ceil(len(genes) / ncol)
+        nrow = int(np.ceil(len(genes) / ncol))
     
     if color is None:
         color_use = None

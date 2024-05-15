@@ -57,7 +57,7 @@ installation should directly support GPU use as default by using the newest
 tensorflow and tensorflow-probability. 
 
 To check if the installation is compatible with GPUs, you can print out the 
-detectable GPU cards, as below (it gives `[]` if failing to setup properly):
+detectable GPU cards, as below (it gives `[ ]` if failing to setup properly):
 
 .. code-block:: html
 
@@ -66,7 +66,7 @@ detectable GPU cards, as below (it gives `[]` if failing to setup properly):
 
 However, occasionally, the newest TensorFlow may not be stable or compatible
 widely, for example the `tensorflow[and-cuda]==2.16.1` is not compatible with GPUs,
-see discussion `here <https://github.com/tensorflow/tensorflow/issues/63362#issuecomment-2053849484>`_
+see discussion `here <https://github.com/tensorflow/tensorflow/issues/63362#issuecomment-2053849484>`_.
 
 Here is one way to use a lower version for GPU configurations with NVIDIA GPU 
 on Ubuntu (tested on 21/04/2024):

@@ -1,0 +1,3 @@
+[submodule "brie-tutorials"]
+	path = brie-tutorials
+	url = https://github.com/huangyh09/brie-tutorials
