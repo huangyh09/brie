@@ -118,26 +118,34 @@ def _get_segment(exons, read):
 def check_reads_compatible(transcript, reads, edge_hang=10, junc_hang=2):
     """Check if reads are compatible with a transcript
     """
+    # TODO: the configuration can be further optimized
+    max_all_miss   = junc_hang
+    max_exon_miss  = junc_hang
+    min_all_match  = edge_hang
+    min_side_match = junc_hang
+
     is_compatible = [True] * len(reads)
     for i in range(len(reads)):
         _segs = _get_segment(transcript.exons, reads[i])
         
         # check mismatch to regions not in this transcript
-        if len(reads[i].positions) - sum(_segs) >= junc_hang:
+        if len(reads[i].positions) - sum(_segs) >= max_all_miss:
             is_compatible[i] = False
             continue
 
         # check if edge hang is too short
-        if (_segs[0] > 0 or _segs[-1] > 0) and sum(_segs[1:-1]) < edge_hang:
+        # it may be determined by reads length and transcript completeness
+        if (_segs[0] > 0 or _segs[-1] > 0) and sum(_segs[1:-1]) < min_all_match:
             is_compatible[i] = False
             continue
             
         # check if exon has been skipped
-        if len(_segs) > 4:
+        if len(_segs) > 2:
             for j in range(2, len(_segs) - 2):
-                if (_segs[j-1] >= junc_hang and _segs[j+1] >= junc_hang and
-                    transcript.exons[j-1, 1] - transcript.exons[j-1, 0] - 
-                    _segs[j] >= junc_hang):
+                exon_len = transcript.exons[j-1, 1] - transcript.exons[j-1, 0]
+                if (_segs[j-1] >= min_side_match and 
+                    _segs[j+1] >= min_side_match and
+                    (exon_len - _segs[j]) >= max_exon_miss):
                     is_compatible[i] = False
                     break
 
@@ -180,12 +188,16 @@ def fetch_reads_count(gene, sam_file, event_type="SE", RNA_type="spliced",
         idx_U1 = np.arange(n_readsPE, n_readsPE + n_readsU1)
         idx_U2 = np.arange(n_readsPE + n_readsU1, n_reads)
         
-        Rmat[idx_PE, i] = check_reads_compatible(_tran, reads["reads1"])
+        Rmat[idx_PE, i] = check_reads_compatible(
+            _tran, reads["reads1"], edge_hang=edge_hang, junc_hang=junc_hang)
         if len(reads["reads2"]) > 0:
-            Rmat[idx_PE, i] *= check_reads_compatible(_tran, reads["reads2"])
+            Rmat[idx_PE, i] *= check_reads_compatible(
+                _tran, reads["reads2"], edge_hang=edge_hang, junc_hang=junc_hang)
             
-        Rmat[idx_U1, i] = check_reads_compatible(_tran, reads["reads1u"])
-        Rmat[idx_U2, i] = check_reads_compatible(_tran, reads["reads2u"])
+        Rmat[idx_U1, i] = check_reads_compatible(
+            _tran, reads["reads1u"], edge_hang=edge_hang, junc_hang=junc_hang)
+        Rmat[idx_U2, i] = check_reads_compatible(
+            _tran, reads["reads2u"], edge_hang=edge_hang, junc_hang=junc_hang)
     
     return Rmat
 

@@ -17,7 +17,7 @@ from ..utils.io_utils import read_brieMM, read_gff, convert_to_annData
 #TODO: something wrong as there is no reads for isoform 2. Please check!!
 
 def smartseq_count(gff_file, samList_file, out_dir=None, nproc=1, 
-        event_type='SE', verbose=False):
+        event_type='SE', verbose=False, edge_hang=10, junc_hang=2):
     """CLI for counting reads supporting isoforms
     """
     # Parameter check
@@ -102,7 +102,7 @@ def smartseq_count(gff_file, samList_file, out_dir=None, nproc=1,
           %(len(genes), sam_table.shape[0], nproc))
 
     get_smartseq_matrix(genes, sam_table, out_dir, event_type=event_type, 
-        edge_hang=10, junc_hang=2, nproc=nproc, verbose=verbose)
+        edge_hang=edge_hang, junc_hang=junc_hang, nproc=nproc, verbose=verbose)
     
 
     ## Don't save into h5ad if not all genes only with two isoforms
@@ -134,7 +134,8 @@ def smartseq_count(gff_file, samList_file, out_dir=None, nproc=1,
 
 
 def droplet_count(gff_file, sam_file, barcode_file, out_dir=None, nproc=1, 
-                  event_type='SE', CB_tag='CB', UMI_tag='UR', verbose=False):
+                  event_type='SE', CB_tag='CB', UMI_tag='UR', verbose=False,
+                  edge_hang=10, junc_hang=2):
     """CLI for counting reads supporting isoforms
     """
     ## TODO: Parameter check
@@ -217,7 +218,8 @@ def droplet_count(gff_file, sam_file, barcode_file, out_dir=None, nproc=1,
           %(len(genes), cell_list.shape[0], nproc))
 
     res = get_droplet_matrix(genes, sam_file, cell_list, out_dir, event_type, 
-                             10, 2, CB_tag, UMI_tag, nproc, verbose)
+                             edge_hang, junc_hang, CB_tag, UMI_tag, nproc, 
+                             verbose)
     
     ## Don't save into h5ad if not all genes only with two isoforms
     n_trans = [len(g.trans) for g in genes]
@@ -278,6 +280,13 @@ def main():
     group2.add_option("--eventType", "-t", dest="event_type", default="SE",
         help="Type of splicing event for check. SE: skipping-exon; "
              "Any: no-checking [default: %default]")
+
+    group3 = OptionGroup(parser, "Reads compatibility")
+    group3.add_option("--minMatch", type="int", dest="min_match", default="10", 
+        help="Min matched bases to the isoform; consider the read length and "
+             "transcript completeness [default: %default]")
+    group3.add_option("--maxMiss", type="int", dest="max_miss", default="2", 
+        help="Max missed bases in the isoform range [default: %default]")
     
     # group.add_option("--add_premRNA", action="store_true", dest="add_premRNA", 
     #     default=False, help="Add the pre-mRNA as a transcript")
@@ -285,6 +294,7 @@ def main():
     parser.add_option_group(group0)
     parser.add_option_group(group1)
     parser.add_option_group(group2)
+    parser.add_option_group(group3)
     
     (options, args) = parser.parse_args()
     if len(sys.argv[1:]) == 0:
@@ -301,11 +311,13 @@ def main():
     
     if options.samList_file is not None:
         smartseq_count(options.gff_file, options.samList_file, options.out_dir, 
-            options.nproc, options.event_type, options.verbose)
+            options.nproc, options.event_type, options.verbose, 
+            options.min_match, options.max_miss)
     else:
         droplet_count(options.gff_file, options.sam_file, options.barcodes_file, 
-            options.out_dir, options.nproc, options.event_type, options.cell_tag,
-            options.UMI_tag, options.verbose)
+            options.out_dir, options.nproc, options.event_type, 
+            options.cell_tag, options.UMI_tag, options.verbose, 
+            options.min_match, options.max_miss)
 
 
 if __name__ == "__main__":

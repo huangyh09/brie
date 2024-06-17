@@ -5,7 +5,11 @@ Release notes
 Release in future
 =================
 
-Release v2.2.3 (15/05/2022)
+Release v2.3.0 (17/06/2024)
+===========================
+* support arguments: min_match and max_miss
+
+Release v2.2.3 (15/05/2024)
 ===========================
 * minor fix in plotting function brie.pl.count()
 * add submodule brie-tutorials

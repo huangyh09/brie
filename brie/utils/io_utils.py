@@ -48,8 +48,7 @@ def convert_to_annData(Rmat_dict, effLen_tensor, cell_note, gene_note,
                                effLen_tensor[:, 1, :], axis=1)
     varm['p_ambiguous'] = Prob_tensor[:, :, 2]
     
-    adata = anndata.AnnData(X=X, obs=obs, var=var, varm=varm,
-                            layers=layers, dtype='float32')
+    adata = anndata.AnnData(X=X, obs=obs, var=var, varm=varm, layers=layers)
     return adata
 
 
