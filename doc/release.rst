@@ -5,6 +5,10 @@ Release notes
 Release in future
 =================
 
+Release v2.3.1 (03/11/2026)
+===========================
+* fix pypi release by adding requirements.txt
+
 Release v2.3.0 (17/06/2024)
 ===========================
 * support arguments: min_match and max_miss
