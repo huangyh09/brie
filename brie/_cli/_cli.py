@@ -6,8 +6,8 @@ from .extract import extract
 from .download import download
 
 def _get_version():
-    import pkg_resources
     import re
+    from importlib.resources import files
     from os.path import realpath, dirname, join
 
     if __name__ == "__main__":
@@ -16,8 +16,7 @@ def _get_version():
         with open(filepath, "r") as f:
             content = f.read()
     else:
-        content = pkg_resources.resource_string(__name__.split(".")[0], "version.py")
-        content = content.decode()
+        content = files(__name__.split(".")[0]).joinpath("version.py").read_text(encoding="utf-8")
 
     c = re.compile(r"__version__ *= *('[^']+'|\"[^\"]+\")")
     m = c.search(content)
